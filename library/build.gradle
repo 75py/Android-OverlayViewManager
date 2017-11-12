@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'com.android.library'
+apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'jacoco-android'
 
 jacoco {
@@ -62,4 +62,11 @@ dependencies {
     androidTestImplementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.3'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+}
+
+publish {
+    groupId = 'com.nagopy.android'
+    artifactId = 'overlayviewmanager'
+    publishVersion = publish_version_name
+    desc = 'Simple APIs for displaying overlay your views'
 }

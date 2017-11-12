@@ -22,7 +22,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.0.0'
-        classpath 'com.novoda:bintray-release:0.5.0'
+        classpath 'com.novoda:bintray-release:0.7.0'
         classpath 'com.dicedmelon.gradle:jacoco-android:0.1.2'
     }
 }
@@ -40,6 +40,8 @@ task clean(type: Delete) {
 
 ext {
     SUPPORT_LIBRARY_VERSION = '26.1.0'
+    publish_version_name = versionName()
+    publish_version_code = versionCode()
 }
 
 task bumpMajor << {
