@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2017 75py
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+
+        <variable
+            name="gravityCheckId"
+            type="int" />
+
+        <variable
+            name="onRadioCheckedChangeListener"
+            type="android.widget.RadioGroup.OnCheckedChangeListener" />
+
+        <import type="android.view.Gravity" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/lbl_gravity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gravity" />
+
+        <RadioGroup
+            android:id="@+id/rgrp_gravity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checkedButton="@{gravityCheckId}"
+            android:onCheckedChanged="@{onRadioCheckedChangeListener}">
+
+            <RadioButton
+                android:id="@+id/rbtn_top_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.TOP | Gravity.START}"
+                android:text="Gravity.TOP | Gravity.START" />
+
+            <RadioButton
+                android:id="@+id/rbtn_top_center_vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.TOP | Gravity.CENTER_VERTICAL}"
+                android:text="Gravity.TOP | Gravity.CENTER_VERTICAL" />
+
+            <RadioButton
+                android:id="@+id/rbtn_top_end"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.TOP | Gravity.END}"
+                android:text="Gravity.TOP | Gravity.END" />
+
+            <RadioButton
+                android:id="@+id/rbtn_center_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.CENTER_VERTICAL | Gravity.START}"
+                android:text="Gravity.CENTER_VERTICAL | Gravity.START" />
+
+            <RadioButton
+                android:id="@+id/rbtn_center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.CENTER}"
+                android:text="Gravity.CENTER" />
+
+            <RadioButton
+                android:id="@+id/rbtn_center_end"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.CENTER_VERTICAL | Gravity.END}"
+                android:text="Gravity.CENTER_VERTICAL | Gravity.END" />
+
+            <RadioButton
+                android:id="@+id/rbtn_bottom_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.BOTTOM | Gravity.START}"
+                android:text="Gravity.BOTTOM | Gravity.START" />
+
+            <RadioButton
+                android:id="@+id/rbtn_bottom_center_vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.BOTTOM | Gravity.CENTER_VERTICAL}"
+                android:text="Gravity.BOTTOM | Gravity.CENTER_VERTICAL" />
+
+            <RadioButton
+                android:id="@+id/rbtn_bottom_end"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tag="@{Gravity.BOTTOM | Gravity.END}"
+                android:text="Gravity.BOTTOM | Gravity.END" />
+
+        </RadioGroup>
+    </LinearLayout>
+</layout>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2017 75py
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+
+        <variable
+            name="heightCheckId"
+            type="int" />
+
+        <variable
+            name="heightPixels"
+            type="int" />
+
+        <variable
+            name="displayHeight"
+            type="int" />
+
+        <variable
+            name="onProgressChanged"
+            type="android.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+
+        <variable
+            name="onRadioCheckedChangeListener"
+            type="android.widget.RadioGroup.OnCheckedChangeListener" />
+    </data>
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/lbl_height"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:text="Height" />
+
+        <RadioGroup
+            android:id="@+id/rgrp_height"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/lbl_height"
+            android:checkedButton="@{heightCheckId}"
+            android:onCheckedChanged="@{onRadioCheckedChangeListener}"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/rbtn_height_wc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WRAP_CONTENT" />
+
+            <RadioButton
+                android:id="@+id/rbtn_height_mp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MATCH_PARENT" />
+
+            <RadioButton
+                android:id="@+id/rbtn_height_px"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pixels" />
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/lbl_height_px"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/rgrp_height"
+            android:enabled="@{heightCheckId == @id/rbtn_height_px}"
+            android:text="@{String.format(&quot;%4d&quot;,heightPixels)}" />
+
+        <SeekBar
+            android:id="@+id/seek_height_px"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/rgrp_height"
+            android:layout_toEndOf="@+id/lbl_height_px"
+            android:enabled="@{heightCheckId == @id/rbtn_height_px}"
+            android:max="@{displayHeight}"
+            android:onProgressChanged="@{onProgressChanged}"
+            android:progress="@{heightPixels}" />
+
+    </RelativeLayout>
+</layout>
