@@ -2,17 +2,72 @@
 
 OverlayViewManager provides simple APIs for displaying overlay your views.
 
+
 ## Usage
+
+### Create OverlayView instance
 
 ```java
 OverlayView overlayView = OverlayView.create(yourView);
+```
 
+### Start and stop overlay
+
+```java
 // Start overlay
 overlayView.show();
 
 // Stop overlay
 overlayView.hide();
 ```
+
+<img src="images/anime/show_hide.gif" width="270" height="480" alt="">
+
+
+### OverlayView#setTouchable(boolean)
+
+```java
+OverlayView overlayView = OverlayView.create(yourView)
+    // .setTouchable(false) default
+    .show();
+
+overlayView.setTouchable(true)
+    .update();
+```
+
+<img src="images/anime/setTouchable.gif" width="270" height="480" alt="">
+
+
+### OverlayView#setDraggable(boolean)
+
+```java
+OverlayView overlayView = OverlayView.create(yourView)
+    // .setDraggable(false) default
+    .show();
+
+overlayView.setDraggable(true)
+    .update();
+```
+
+<img src="images/anime/setDraggable.gif" width="270" height="480" alt="">
+
+
+### OverlayView#setWidth(boolean)
+
+```java
+OverlayView overlayView = OverlayView.create(yourView)
+    // .setWidth(WRAP_CONTENT) default
+    .show();
+
+overlayView.setWidth(MATCH_PARENT)
+    .update();
+
+overlayView.setWidth(400)
+    .update();
+```
+
+<img src="images/anime/setWidth.gif" width="270" height="480" alt="">
+
 
 ## Installation
 
