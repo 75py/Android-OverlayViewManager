@@ -73,6 +73,14 @@
             android:onClick="onClick"
             android:text="SAMPLE2(depends on Service)" />
 
+        <Button
+            android:id="@+id/btn_sample_timber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="@{canDrawOverlays}"
+            android:onClick="onClick"
+            android:text="SAMPLE3(Timber, depends on Activity)" />
+
 
     </LinearLayout>
 </layout>

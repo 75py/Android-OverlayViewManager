@@ -24,7 +24,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
-import com.nagopy.android.overlayviewmanager.opt.timber.DebugOverlayTree;
 import com.nagopy.android.overlayviewmanager.sample.databinding.ActivitySampleStartBinding;
 
 import timber.log.Timber;
@@ -36,7 +35,6 @@ public class SampleStartActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        DebugOverlayTree.getInstance().register(this);
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_sample_start);
 
@@ -59,14 +57,17 @@ public class SampleStartActivity extends AppCompatActivity {
             case R.id.btn_requestPermission:
                 OverlayViewManager.requestOverlayPermission();
                 break;
+            case R.id.btn_sample_all_options:
+                startActivity(new Intent(this, SampleAllOptionsActivity.class));
+                break;
             case R.id.btn_sample1:
                 startActivity(new Intent(this, Sample1Activity.class));
                 break;
             case R.id.btn_sample2:
                 startActivity(new Intent(this, Sample2Activity.class));
                 break;
-            case R.id.btn_sample_all_options:
-                startActivity(new Intent(this, SampleAllOptionsActivity.class));
+            case R.id.btn_sample_timber:
+                startActivity(new Intent(this, SampleTimberActivity.class));
                 break;
         }
     }

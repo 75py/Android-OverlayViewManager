@@ -38,6 +38,7 @@
         <activity android:name=".SampleAllOptionsActivity" />
         <activity android:name=".Sample1Activity" />
         <activity android:name=".Sample2Activity" />
+        <activity android:name=".SampleTimberActivity" />
 
         <service android:name=".Sample2Activity$Sample2Service" />
     </application>
