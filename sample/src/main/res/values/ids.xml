@@ -17,4 +17,5 @@
 
 <resources>
     <item name="sample_text_view" type="id">75</item>
+    <item name="sample_image_view" type="id">76</item>
 </resources>

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Copyright 2017 75py
   ~
@@ -14,11 +15,21 @@
   ~ limitations under the License.
   -->
 
-<resources>
-    <string name="app_name">OverlayViewManager Sample</string>
-    <string name="api_level">API Level %d</string>
-    <string name="request_overlay_permisson">Allow "display over other apps"</string>
-    <string name="overlay_permission_is_allowed">"display over other apps" is Allowed</string>
-    <string name="showhide">Show / Hide</string>
-    <string name="startstop">Start / Stop</string>
-</resources>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <Button
+        android:id="@+id/button"
+        android:onClick="onClick"
+        android:text="@string/showhide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

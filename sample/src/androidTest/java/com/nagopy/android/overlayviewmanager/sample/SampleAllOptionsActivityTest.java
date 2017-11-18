@@ -295,15 +295,15 @@ public class SampleAllOptionsActivityTest {
 
             ViewInteraction seekMarginVertical = onView(withId(R.id.seek_margin_vertical));
             for (int i = 0; i <= 100; i += 20) {
-                performAndWait(seekMarginVertical, clickSeekBar(i));
+                performAndWait(seekMarginVertical, scrollTo(), clickSeekBar(i));
             }
-            performAndWait(seekMarginVertical, clickSeekBar(0));
+            performAndWait(seekMarginVertical, scrollTo(), clickSeekBar(0));
 
             ViewInteraction seekMarginHorizontal = onView(withId(R.id.seek_margin_horizontal));
             for (int i = 0; i <= 15; i += 3) {
                 performAndWait(seekMarginHorizontal, scrollTo(), clickSeekBar(i));
             }
-            performAndWait(seekMarginHorizontal, clickSeekBar(0));
+            performAndWait(seekMarginHorizontal, scrollTo(), clickSeekBar(0));
         }
     }
 

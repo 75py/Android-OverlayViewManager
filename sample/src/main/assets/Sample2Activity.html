@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!--
+  ~ Copyright 2017 75py
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<style>
+pre {
+    white-space: pre-wrap;
+}
+
+</style>
+<ul>
+    <li>OverlayView with android.app.Service
+    <li>Show ImageView during the Service is running
+    <li>Start Sample2Activity on click the overlay view
+</ul>
+<pre class="prettyprint">
+public class Sample2Activity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_sample2);
+    }
+
+    public void onClick(View view) {
+        if (isServiceRunning()) {
+            stopService(new Intent(this, Sample2Service.class));
+        } else {
+            startService(new Intent(this, Sample2Service.class));
+        }
+    }
+}
+
+public class Sample2Service extends Service {
+
+    OverlayView<ImageView> overlayView;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        overlayView = OverlayView.create(createImageView())
+                .setTouchable(true)
+                .setDraggable(true)
+                .setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        startActivity(new Intent(getApplicationContext(), Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    }
+                }).show();
+    }
+
+    @Override
+    public void onDestroy() {
+        overlayView.hide();
+        super.onDestroy();
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    ImageView createImageView() {
+        ImageView imageView = new ImageView(this);
+        imageView.setId(R.id.sample_text_view);
+        imageView.setImageResource(R.mipmap.ic_launcher);
+        return imageView;
+    }
+}
+</pre>
+
+<script src="run_prettify.js"></script>

@@ -25,7 +25,7 @@ import android.widget.TextView;
 
 import com.nagopy.android.overlayviewmanager.OverlayView;
 
-public class Sample1Activity extends BaseSampleActiity {
+public class Sample1Activity extends BaseSampleWithCodeActivity {
 
     OverlayView<TextView> overlayView;
     int clickCounter = 0;

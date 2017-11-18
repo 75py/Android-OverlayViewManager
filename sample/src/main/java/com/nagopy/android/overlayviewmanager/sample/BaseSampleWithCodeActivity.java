@@ -21,7 +21,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.webkit.WebView;
 
-public abstract class BaseSampleActiity extends AppCompatActivity {
+public abstract class BaseSampleWithCodeActivity extends AppCompatActivity {
 
     private WebView webView;
 

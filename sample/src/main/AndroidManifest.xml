@@ -35,8 +35,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".Sample1Activity" />
         <activity android:name=".SampleAllOptionsActivity" />
+        <activity android:name=".Sample1Activity" />
+        <activity android:name=".Sample2Activity" />
 
+        <service android:name=".Sample2Activity$Sample2Service" />
     </application>
 </manifest>

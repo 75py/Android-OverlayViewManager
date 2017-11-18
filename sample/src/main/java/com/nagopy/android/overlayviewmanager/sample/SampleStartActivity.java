@@ -62,6 +62,9 @@ public class SampleStartActivity extends AppCompatActivity {
             case R.id.btn_sample1:
                 startActivity(new Intent(this, Sample1Activity.class));
                 break;
+            case R.id.btn_sample2:
+                startActivity(new Intent(this, Sample2Activity.class));
+                break;
             case R.id.btn_sample_all_options:
                 startActivity(new Intent(this, SampleAllOptionsActivity.class));
                 break;
