@@ -5,6 +5,14 @@ OverlayViewManager provides simple APIs for displaying overlay your views.
 
 ## Usage
 
+### Check permissions and request if needed
+
+```java
+if (!OverlayViewManager.canDrawOverlays()) {
+    OverlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
+}
+```
+
 ### Create OverlayView instance
 
 ```java
@@ -71,6 +79,8 @@ overlayView.setWidth(400)
 
 ## Installation
 
+### Download
+
 Latest version: %%version%%
 
 ```groovy
@@ -78,6 +88,22 @@ dependencies {
     compile 'com.nagopy.android:overlayviewmanager:%%version%%'
 }
 ```
+
+### Setup
+
+Call OverlayViewManager.init() in the onCreate() of your Application class.
+```java
+public class YourApplication extends Application {
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        OverlayViewManager.init(this);
+    }
+
+}
+```
+
 
 ## License
 
