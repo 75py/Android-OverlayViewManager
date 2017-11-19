@@ -22,6 +22,7 @@
         android:id="@+id/button_a"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:onClick="onClick"
@@ -33,6 +34,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@id/button_a"
+        android:layout_toRightOf="@id/button_a"
         android:onClick="onClick"
         android:text="B" />
 
@@ -42,6 +44,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_toEndOf="@id/button_b"
+        android:layout_toRightOf="@id/button_b"
         android:onClick="onClick"
         android:text="C" />
 

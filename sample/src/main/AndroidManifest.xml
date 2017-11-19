@@ -15,10 +15,13 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.nagopy.android.overlayviewmanager.sample">
 
     <!-- Read the Javascript file for code highlighting -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-sdk tools:overrideLibrary="android.support.test.uiautomator.v18" />
 
     <application
         android:name=".SampleApplication"

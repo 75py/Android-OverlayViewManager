@@ -22,6 +22,8 @@ import android.support.annotation.FloatRange;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.view.ViewCompat;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,7 +45,6 @@ import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
 import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ERROR;
 import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
-import static com.nagopy.android.overlayviewmanager.OverlayViewManager.applicationContext;
 
 /**
  * The wrapper class of the view to overlay.
@@ -285,8 +286,8 @@ public class OverlayView<T extends View> {
      */
     @NonNull
     public OverlayView<T> setGravity(int gravity) {
-        params.gravity = Gravity.getAbsoluteGravity(gravity,
-                applicationContext.getResources().getConfiguration().getLayoutDirection());
+        params.gravity = GravityCompat.getAbsoluteGravity(gravity,
+                ViewCompat.getLayoutDirection(view));
         return this;
     }
 
