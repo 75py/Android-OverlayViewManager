@@ -19,7 +19,6 @@ package com.nagopy.android.overlayviewmanager.sample;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.support.test.InstrumentationRegistry;
 import android.support.test.espresso.Espresso;
 import android.support.test.espresso.ViewAction;
 import android.support.test.espresso.ViewInteraction;
@@ -30,7 +29,6 @@ import android.support.test.espresso.action.Tap;
 import android.support.test.espresso.assertion.ViewAssertions;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
-import android.support.test.uiautomator.UiDevice;
 import android.support.v7.widget.CardView;
 import android.test.suitebuilder.annotation.LargeTest;
 import android.view.InputDevice;
@@ -57,13 +55,11 @@ public class SampleAllOptionsActivityTest {
 
     @Rule
     public ActivityTestRule<SampleAllOptionsActivity> mActivityTestRule = new ActivityTestRule<>(SampleAllOptionsActivity.class);
-    private UiDevice uiDevice;
     private SampleAllOptionsActivity activity;
     private ColorStateList defaultCardColor;
 
     @Before
     public void setup() {
-        uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         activity = mActivityTestRule.getActivity();
         defaultCardColor = activity.binding.parentFlags.getCardBackgroundColor();
 
@@ -82,7 +78,6 @@ public class SampleAllOptionsActivityTest {
     private void waitALittle(long ms) {
         try {
             Espresso.onIdle();
-            uiDevice.waitForIdle(ms);
             Thread.sleep(ms);
         } catch (Exception e) {
             e.printStackTrace();
@@ -212,18 +207,20 @@ public class SampleAllOptionsActivityTest {
         // X,Y
         if (!skipXy) {
             updateActiveCard(activity.binding.parentXy);
+            int displayWidth = activity.binding.getDisplayWidth();
+            int displayHeight = activity.binding.getDisplayHeight();
 
             ViewInteraction seekX = onView(withId(R.id.seek_x));
             for (int i = 0; i <= 500; i += 100) {
-                performAndWait(seekX, clickSeekBar(i + uiDevice.getDisplayWidth()));
+                performAndWait(seekX, clickSeekBar(i + displayWidth));
             }
-            performAndWait(seekX, clickSeekBar(uiDevice.getDisplayWidth()));
+            performAndWait(seekX, clickSeekBar(displayWidth));
 
             ViewInteraction seekY = onView(withId(R.id.seek_y));
             for (int i = 0; i <= 500; i += 100) {
-                performAndWait(seekY, clickSeekBar(i + uiDevice.getDisplayHeight()));
+                performAndWait(seekY, clickSeekBar(i + displayHeight));
             }
-            performAndWait(seekY, clickSeekBar(uiDevice.getDisplayHeight()));
+            performAndWait(seekY, clickSeekBar(displayHeight));
         }
 
         // Alpha

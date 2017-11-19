@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright 2017 75py
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -84,6 +83,7 @@
             android:id="@+id/lbl_width_px"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:layout_below="@+id/rgrp_width"
             android:enabled="@{widthCheckId == @id/rbtn_width_px}"
@@ -95,6 +95,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/rgrp_width"
             android:layout_toEndOf="@+id/lbl_width_px"
+            android:layout_toRightOf="@+id/lbl_width_px"
             android:enabled="@{widthCheckId == @id/rbtn_width_px}"
             android:max="@{displayWidth}"
             android:onProgressChanged="@{onProgressChanged}"

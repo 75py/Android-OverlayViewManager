@@ -1,10 +1,12 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 
+import android.os.Build;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.espresso.Espresso;
 import android.support.test.espresso.ViewInteraction;
 import android.support.test.espresso.matcher.RootMatchers;
+import android.support.test.filters.SdkSuppress;
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.UiDevice;
@@ -32,6 +34,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertTrue;
 
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.JELLY_BEAN_MR2)
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class Sample1ActivityTest {
