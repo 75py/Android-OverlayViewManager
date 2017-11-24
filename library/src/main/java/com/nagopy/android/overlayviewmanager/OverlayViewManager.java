@@ -17,6 +17,7 @@
 package com.nagopy.android.overlayviewmanager;
 
 import android.annotation.TargetApi;
+import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -37,10 +38,33 @@ import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
  */
 public final class OverlayViewManager {
 
-    static Context applicationContext;
-    private static WindowManager windowManager;
+    Context applicationContext;
+    WindowManager windowManager;
 
-    private OverlayViewManager() {
+    static OverlayViewManager INSTANCE = new OverlayViewManager();
+
+    /**
+     * Initialize.
+     *
+     * @param application Your {@link Application} instance
+     */
+    public static void init(Application application) {
+        INSTANCE.initialize(application);
+    }
+
+    /**
+     * Return the {@link OverlayViewManager} instance. The instance is singleton.
+     *
+     * @return instance
+     */
+    public static OverlayViewManager getInstance() {
+        if (INSTANCE.applicationContext == null) {
+            throw new IllegalStateException("OverlayViewManager is not initialized. Please call init(Application).");
+        }
+        return INSTANCE;
+    }
+
+    OverlayViewManager() {
     }
 
     /**
@@ -48,7 +72,7 @@ public final class OverlayViewManager {
      *
      * @param context {@link Context}
      */
-    public static void init(@NonNull Context context) {
+    void initialize(@NonNull Context context) {
         applicationContext = context.getApplicationContext();
         windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         OverlayWindowManager.init(windowManager);
@@ -60,7 +84,7 @@ public final class OverlayViewManager {
      *
      * @return true: This app context is allowed display over other apps
      */
-    public static boolean canDrawOverlays() {
+    public boolean canDrawOverlays() {
         //noinspection SimplifiableIfStatement
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return true;
@@ -76,7 +100,7 @@ public final class OverlayViewManager {
      * @param appNameId       String resource id of application name
      */
     @TargetApi(Build.VERSION_CODES.M)
-    public static void showPermissionRequestDialog(@NonNull FragmentManager fragmentManager, @StringRes int appNameId) {
+    public void showPermissionRequestDialog(@NonNull FragmentManager fragmentManager, @StringRes int appNameId) {
         PermissionRequestDialogFragment dialog = PermissionRequestDialogFragment.newInstance(appNameId);
         dialog.show(fragmentManager, "PermissionRequestDialogFragment");
     }
@@ -85,7 +109,7 @@ public final class OverlayViewManager {
      * Request overlay permission. Open the setting app.
      */
     @TargetApi(Build.VERSION_CODES.M)
-    public static void requestOverlayPermission() {
+    public void requestOverlayPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!canDrawOverlays()) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION
@@ -103,7 +127,7 @@ public final class OverlayViewManager {
      *
      * @return Display width(px)
      */
-    public static int getDisplayWidth() {
+    public int getDisplayWidth() {
         DisplayMetrics metrics = new DisplayMetrics();
         windowManager.getDefaultDisplay().getMetrics(metrics);
         return metrics.widthPixels;
@@ -114,7 +138,7 @@ public final class OverlayViewManager {
      *
      * @return Display height(px)
      */
-    public static int getDisplayHeight() {
+    public int getDisplayHeight() {
         DisplayMetrics metrics = new DisplayMetrics();
         windowManager.getDefaultDisplay().getMetrics(metrics);
         return metrics.heightPixels;

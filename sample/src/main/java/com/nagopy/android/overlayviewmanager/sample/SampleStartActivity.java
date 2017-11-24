@@ -31,16 +31,18 @@ import timber.log.Timber;
 public class SampleStartActivity extends AppCompatActivity {
 
     ActivitySampleStartBinding binding;
+    OverlayViewManager overlayViewManager;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_sample_start);
+        overlayViewManager = OverlayViewManager.getInstance();
 
         if (savedInstanceState == null) {
-            if (!OverlayViewManager.canDrawOverlays()) {
-                OverlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
+            if (!overlayViewManager.canDrawOverlays()) {
+                overlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
             }
         }
     }
@@ -48,14 +50,14 @@ public class SampleStartActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        Timber.d("canDrawOverlays:%s", OverlayViewManager.canDrawOverlays());
-        binding.setCanDrawOverlays(OverlayViewManager.canDrawOverlays());
+        Timber.d("canDrawOverlays:%s", overlayViewManager.canDrawOverlays());
+        binding.setCanDrawOverlays(overlayViewManager.canDrawOverlays());
     }
 
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_requestPermission:
-                OverlayViewManager.requestOverlayPermission();
+                overlayViewManager.requestOverlayPermission();
                 break;
             case R.id.btn_sample_all_options:
                 startActivity(new Intent(this, SampleAllOptionsActivity.class));

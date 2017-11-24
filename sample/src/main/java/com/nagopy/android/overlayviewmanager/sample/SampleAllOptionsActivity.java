@@ -54,12 +54,15 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
         , RadioGroup.OnCheckedChangeListener {
 
     ActivitySampleAllOptionsBinding binding;
+    OverlayViewManager overlayViewManager;
     OverlayView<TextView> overlayView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Timber.d("onCreate %s", savedInstanceState);
+
+        overlayViewManager = OverlayViewManager.getInstance();
 
         overlayView = OverlayView.create(createTextView())
                 .setAlpha(0.9f)
@@ -70,11 +73,11 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
         binding.setOnCheckedChangeListener(this);
         binding.setOnProgressChanged(this);
         binding.setOnRadioCheckedChangeListener(this);
-        binding.setDisplayWidth(OverlayViewManager.getDisplayWidth());
-        binding.setDisplayHeight(OverlayViewManager.getDisplayHeight());
+        binding.setDisplayWidth(overlayViewManager.getDisplayWidth());
+        binding.setDisplayHeight(overlayViewManager.getDisplayHeight());
         if (savedInstanceState == null) {
-            binding.xy.setXSeek(OverlayViewManager.getDisplayWidth()); // Seekbar progress = 0
-            binding.xy.setYSeek(OverlayViewManager.getDisplayHeight()); // Seekbar progress = 0
+            binding.xy.setXSeek(overlayViewManager.getDisplayWidth()); // Seekbar progress = 0
+            binding.xy.setYSeek(overlayViewManager.getDisplayHeight()); // Seekbar progress = 0
             binding.alpha.setAlphaPercentage(90);
             binding.gravity.setGravityCheckId(R.id.rbtn_top_start);
             binding.width.setWidthPixels(400);

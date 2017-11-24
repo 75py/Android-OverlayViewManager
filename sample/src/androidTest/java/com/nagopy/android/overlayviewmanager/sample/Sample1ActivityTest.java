@@ -1,6 +1,7 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 
+import android.Manifest;
 import android.os.Build;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.espresso.Espresso;
@@ -8,6 +9,7 @@ import android.support.test.espresso.ViewInteraction;
 import android.support.test.espresso.matcher.RootMatchers;
 import android.support.test.filters.SdkSuppress;
 import android.support.test.rule.ActivityTestRule;
+import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.UiDevice;
 import android.test.suitebuilder.annotation.LargeTest;
@@ -32,12 +34,14 @@ import static android.support.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertTrue;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.JELLY_BEAN_MR2)
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class Sample1ActivityTest {
+
+    @Rule
+    public GrantPermissionRule grantPermissionRule = GrantPermissionRule.grant(Manifest.permission.SYSTEM_ALERT_WINDOW);
 
     @Rule
     public ActivityTestRule<Sample1Activity> mActivityTestRule = new ActivityTestRule<>(Sample1Activity.class);
@@ -50,9 +54,7 @@ public class Sample1ActivityTest {
         uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         activity = mActivityTestRule.getActivity();
 
-        OverlayViewManager.init(activity.getApplicationContext());
-        assertTrue("Settings.canDrawOverlays(Context) returns false. Please allow first.",
-                OverlayViewManager.canDrawOverlays());
+        OverlayViewManager.init(activity.getApplication());
     }
 
     private void waitALittle() {
