@@ -1,6 +1,10 @@
 language: android
 jdk: oraclejdk8
 
+branches:
+  only:
+    - master
+
 android:
   components:
     - tools
@@ -14,7 +18,7 @@ android:
     - google-gdk-license-.+
 
 script:
-  - "./gradlew clean build jacocoTestDebugUnitTestReport"
+  - "./gradlew clean assembleDebug jacocoTestDebugUnitTestReport"
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
