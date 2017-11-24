@@ -15,7 +15,6 @@
  */
 
 buildscript {
-
     repositories {
         google()
         jcenter()
@@ -90,4 +89,15 @@ int versionCode() {
     Properties properties = new Properties()
     properties.load(project.rootProject.file('version.properties').newDataInputStream())
     return Integer.parseInt(properties['id'].toString())
+}
+
+tasks.withType(JavaCompile) {
+    options.fork = true
+    options.incremental = true
+}
+
+tasks.withType(Test) {
+    def maxCount = gradle.startParameter.maxWorkerCount
+    maxParallelForks = (maxCount < 2) ? 1 : maxCount / 2
+    forkEvery = 100
 }
