@@ -14,7 +14,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.robolectric.RobolectricTestRunner;
-import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -60,7 +59,6 @@ public class OverlayViewTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        OverlayViewManager.applicationContext = RuntimeEnvironment.application;
         OverlayWindowManager.setInstance(overlayWindowManager); // set mock
         ScreenMonitor.setInstance(screenMonitor); // set mock
         overlayView = OverlayView.create(view);

@@ -20,6 +20,7 @@ package com.nagopy.android.overlayviewmanager.opt.timber;
 import android.app.Activity;
 import android.app.Application;
 import android.graphics.Color;
+import android.support.annotation.VisibleForTesting;
 import android.util.Log;
 import android.view.Gravity;
 import android.widget.TextView;
@@ -56,13 +57,19 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
  */
 public class DebugOverlayTree extends Timber.DebugTree {
 
+    @VisibleForTesting
     ArrayList<String> messages;
+    @VisibleForTesting
     OverlayView<TextView> overlayView;
+    @VisibleForTesting
     WeakReferenceCache<Activity> registeredActivities;
+    @VisibleForTesting
     int threshold;
+    @VisibleForTesting
     int maxLines;
 
-    private static final DebugOverlayTree INSTANCE = new DebugOverlayTree();
+    @VisibleForTesting
+    static DebugOverlayTree INSTANCE = new DebugOverlayTree();
 
     /**
      * Initialize and return the {@link Timber.Tree} implementation.
@@ -83,11 +90,12 @@ public class DebugOverlayTree extends Timber.DebugTree {
      */
     public static DebugOverlayTree getInstance() {
         if (INSTANCE.overlayView == null) {
-            throw new IllegalArgumentException("DebugOverlayTree is not initialized. Please call init(Context).");
+            throw new IllegalStateException("DebugOverlayTree is not initialized. Please call init(Context).");
         }
         return INSTANCE;
     }
 
+    @VisibleForTesting
     DebugOverlayTree() {
         overlayView = null;
     }
@@ -109,36 +117,7 @@ public class DebugOverlayTree extends Timber.DebugTree {
         overlayView.getView().setBackgroundColor(Color.BLACK);
 
         registeredActivities = new WeakReferenceCache<>();
-        application.registerActivityLifecycleCallbacks(new SimpleActivityLifecycleCallbacks() {
-            int startedCount = 0;
-
-            @Override
-            public void onActivityStarted(Activity activity) {
-                Logger.d("onActivityStarted %s", activity);
-                if (registeredActivities.contains(activity)) {
-                    startedCount++;
-                    overlayView.show();
-                }
-            }
-
-            @Override
-            public void onActivityStopped(Activity activity) {
-                Logger.d("onActivityStopped %s", activity);
-                if (registeredActivities.contains(activity) || registeredActivities.isEmpty()) {
-                    startedCount--;
-                    if (startedCount <= 0) {
-                        startedCount = 0;
-                        overlayView.hide();
-                    }
-                }
-            }
-
-            @Override
-            public void onActivityDestroyed(Activity activity) {
-                Logger.d("onActivityDestroyed %s", activity);
-                registeredActivities.remove(activity);
-            }
-        });
+        application.registerActivityLifecycleCallbacks(activityLifecycleCallbacks);
     }
 
     /**
@@ -174,7 +153,7 @@ public class DebugOverlayTree extends Timber.DebugTree {
             return;
         }
 
-        messages.add(tag + "\n  " + message);
+        messages.add(tag + ": " + message);
         while (messages.size() > maxLines) {
             messages.remove(0);
         }
@@ -187,4 +166,40 @@ public class DebugOverlayTree extends Timber.DebugTree {
         out.setLength(out.length() - 1);
         overlayView.getView().setText(out.toString());
     }
+
+    @VisibleForTesting
+    class MyActivityLifecycleCallbacks extends SimpleActivityLifecycleCallbacks {
+        int startedCount = 0;
+    }
+
+    @VisibleForTesting
+    MyActivityLifecycleCallbacks activityLifecycleCallbacks = new MyActivityLifecycleCallbacks() {
+
+        @Override
+        public void onActivityStarted(Activity activity) {
+            Logger.d("onActivityStarted %s", activity);
+            if (registeredActivities.contains(activity)) {
+                startedCount++;
+                overlayView.show();
+            }
+        }
+
+        @Override
+        public void onActivityStopped(Activity activity) {
+            Logger.d("onActivityStopped %s", activity);
+            if (registeredActivities.contains(activity) || registeredActivities.isEmpty()) {
+                startedCount--;
+                if (startedCount <= 0) {
+                    startedCount = 0;
+                    overlayView.hide();
+                }
+            }
+        }
+
+        @Override
+        public void onActivityDestroyed(Activity activity) {
+            Logger.d("onActivityDestroyed %s", activity);
+            registeredActivities.remove(activity);
+        }
+    };
 }
