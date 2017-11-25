@@ -2,7 +2,7 @@
 
 set -ev
 
-echo "before_install: $TEST_TYPE, $TARGET_PROJECT"
+echo "before_install: $TEST_TYPE"
 
 if [ "$TEST_TYPE" == "instrument" ]; then
     mkdir "$ANDROID_HOME/licenses" || true

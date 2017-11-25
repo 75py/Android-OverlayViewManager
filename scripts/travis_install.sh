@@ -2,12 +2,12 @@
 
 set -ev
 
-echo "install: $TEST_TYPE, $TARGET_PROJECT"
+echo "install: $TEST_TYPE"
 
 if [ "$TEST_TYPE" == "unit" ]; then
-    ./gradlew :${TARGET_PROJECT}:assembleDebug --stacktrace
+    ./gradlew assembleDebug --stacktrace
 elif [ "$TEST_TYPE" == "instrument" ]; then
-    ./gradlew :${TARGET_PROJECT}:assembleDebugAndroidTest --stacktrace
+    ./gradlew assembleDebugAndroidTest --stacktrace
 else
     exit 1
 fi

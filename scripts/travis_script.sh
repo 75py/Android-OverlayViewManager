@@ -2,16 +2,12 @@
 
 set -ev
 
-echo "script: $TEST_TYPE, $TARGET_PROJECT"
+echo "script: $TEST_TYPE"
 
 if [ "$TEST_TYPE" == "unit" ]; then
-    if [ "$TARGET_PROJECT" == "library" ]; then
-        ./gradlew :${TARGET_PROJECT}:testDebug :${TARGET_PROJECT}:lintDebug :${TARGET_PROJECT}:jacocoTestDebugUnitTestReport --stacktrace
-    else
-        ./gradlew :${TARGET_PROJECT}:testDebug :${TARGET_PROJECT}:lintDebug --stacktrace
-    fi
+    ./gradlew testDebug lintDebug jacocoTestDebugUnitTestReport --stacktrace
 elif [ "$TEST_TYPE" == "instrument" ]; then
-    ./gradlew :${TARGET_PROJECT}:connectedDebugAndroidTest --stacktrace
+    ./gradlew connectedDebugAndroidTest --stacktrace
 else
     exit 1
 fi

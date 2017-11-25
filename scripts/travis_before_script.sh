@@ -2,7 +2,7 @@
 
 set -ev
 
-echo "before_script: $TEST_TYPE, $TARGET_PROJECT"
+echo "before_script: $TEST_TYPE"
 
 if [ "$TEST_TYPE" == "instrument" ]; then
     android-wait-for-emulator
