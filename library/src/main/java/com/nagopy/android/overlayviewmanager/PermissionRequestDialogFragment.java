@@ -66,7 +66,7 @@ public class PermissionRequestDialogFragment extends DialogFragment {
                 .setPositiveButton(R.string.overlayviewmanager_grant_permission, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        OverlayViewManager.requestOverlayPermission();
+                        OverlayViewManager.getInstance().requestOverlayPermission();
                     }
                 })
                 .create();

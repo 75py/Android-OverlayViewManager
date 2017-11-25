@@ -17,20 +17,51 @@ android:
     - android-sdk-license-.+
     - google-gdk-license-.+
 
+before_install:
+  - chmod ugo+x scripts/travis_before_install.sh
+  - ./scripts/travis_before_install.sh
+
+install:
+  - chmod ugo+x scripts/travis_install.sh
+  - ./scripts/travis_install.sh
+
+before_script:
+  - chmod ugo+x scripts/travis_before_script.sh
+  - ./scripts/travis_before_script.sh
+
 script:
-  - "./gradlew clean assembleDebug jacocoTestDebugUnitTestReport"
+  - chmod ugo+x scripts/travis_script.sh
+  - ./scripts/travis_script.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 
 deploy:
   provider: script
-  script: "./gradlew clean assembleRelease bintrayUpload -PbintrayUser=$bintray_user -PbintrayKey=$bintray_api_key -PdryRun=false"
+  script: "./gradlew clean :library:assembleRelease :library:bintrayUpload -PbintrayUser=$bintray_user -PbintrayKey=$bintray_api_key -PdryRun=false"
   on:
     tags: true
     all_branches: true
 
 env:
+#  matrix:
+#    - TEST_TYPE=unit
+#    - TEST_TYPE=instrument
   global:
+    - TEST_TYPE=unit
     - secure: qI9rc8Kmv5mhGqQFiHaQ4bgFBFOdvo5EQXBp4eutbY7aC26j+3V4sabsE5HX7PUo5/AMlFPqjJ8eRIfKuR3iQEJonrSNSv7X+sxE3PTplT4sHDGnbvjPlUObl+Fm6s9TniaEp9svVzMmUDY+uzu5PvWysdgjF9XFPMAFuJ9tUfExI9c8Cw57eNGxndnKUiu00Y6UHYmMsbr5Ut9DqI3nWk6gCH8yQNcEh92y1S398xX+yVP6cZZkNcpCY8+RqaeA/3POK5n8wBrNDwxIbM169Wa4lljy8lDxo1nc+/aCYazuWuoYyV86y0W/NdZjTpzTIPxEMZARTVJRvLfgGlNZm7xoHjrHBhHFsW7/3gPgS9Y+RCu6cX/LNZcy9/HtWwBcHfHBCeOsNm48etexnx1fKAOAw4my50SHpMM1kVJ4iexEk6BnLX/4SvdTlrhbOXSKDgJosUgUBpbbj4/54+vGEWix3nezyU/AIJwHOPcYQudlnzC0VQBj4NtF/lPAx112JA+sl2n1mBXlVG+k/LjDuEzv+JHvWZNrLWWnPNJXUeaLl3Wg8KuKPyh65Dmp8V+lJgcMt2h2VfvEUTo9clG5q+/JJvbTTdnebTFcxFSAtpSlGEpE2J119tOhsNesxfvGrgj6ZQJJAbbVLwEJqggzxvnCfFlgds+AWunOYM4noqg=
     - secure: rdv+98DWsblJ/zkV5IMRkE3XoSNE4mDBsKTUFYRwsoGqmjnbafq3iE+aDtw+DABis8UnZG17lM/GR5qJ3Gi6ccpIjwyVdy3xpcuDWXxXTNTiradPlQm44Bfav3Uq3eqkODYwoYUsVfoY7jz2aopWkSq3qrbyOGJ7Emwa/o4iIfRXT+7PXDZiyt6VCcYzjRmE0cQrLY1hH3akunuX3hYLm577Xu1FyxMathnppkrPFfF5sxNc+tIFkkBhXSkTqZjfOHccescXeV+ZeZymWmoaSxyzZQ6dK2w7l4T0mMWFeFvcKq/hbaPh9Fgo2oM5wOQk7osOdDUZB1t8t7BIk165T1E4WnFwN95IJdm4+J7NaC2IsubfCXrvbOj1YZ7YfFGjPMLNJ9uw902L32BC0b3wEYJUS8K/KkLwKyw7FqAAeirzLGF3TFm6uDLOLLrTvSdKIUNPbe4G7GVDceYmSd0NFTvm4kqgA69a9giybPz+br1kE8VaQpPHxCbBZbP8WLZpmWZAikgXrVTKJXuIeBjRn842snbpEPsAPy2KVm8N+gHkJKrqFiAUdByzdQItFNoTQFeBPkp7LfPqyiLvtt9QNZ/WFqN5DRZF2W5H0kWJYfdgkFaOaQHwGcBIVOKqDlfGNzM+hK3bkM4t0/uqM6qvs+dsKv6m0n1sBcMuGK9KdLw=
+
+matrix:
+  allow_failures:
+    - env: TEST_TYPE=instrument
+
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+    - $HOME/.android/build-cache

@@ -17,6 +17,7 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 
+import android.Manifest;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.support.test.espresso.Espresso;
@@ -28,6 +29,7 @@ import android.support.test.espresso.action.Press;
 import android.support.test.espresso.action.Tap;
 import android.support.test.espresso.assertion.ViewAssertions;
 import android.support.test.rule.ActivityTestRule;
+import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.v7.widget.CardView;
 import android.test.suitebuilder.annotation.LargeTest;
@@ -52,6 +54,9 @@ import static org.hamcrest.Matchers.allOf;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class SampleAllOptionsActivityTest {
+
+    @Rule
+    public GrantPermissionRule grantPermissionRule = GrantPermissionRule.grant(Manifest.permission.SYSTEM_ALERT_WINDOW);
 
     @Rule
     public ActivityTestRule<SampleAllOptionsActivity> mActivityTestRule = new ActivityTestRule<>(SampleAllOptionsActivity.class);
