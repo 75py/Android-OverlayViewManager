@@ -39,7 +39,7 @@ after_success:
 
 deploy:
   provider: script
-  script: "./gradlew clean :library:assembleRelease bintrayUpload -PbintrayUser=$bintray_user -PbintrayKey=$bintray_api_key -PdryRun=false"
+  script: "./gradlew clean assembleRelease bintrayUpload -PbintrayUser=$bintray_user -PbintrayKey=$bintray_api_key -PdryRun=false"
   on:
     tags: true
     all_branches: true
