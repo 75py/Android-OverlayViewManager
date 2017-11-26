@@ -4,6 +4,7 @@ jdk: oraclejdk8
 branches:
   only:
     - master
+    - "/^[0-9\\.]+/"
 
 android:
   components:
