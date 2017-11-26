@@ -21,4 +21,8 @@
     <string name="overlay_permission_is_allowed">"display over other apps" is Allowed</string>
     <string name="showhide">Show / Hide</string>
     <string name="startstop">Start / Stop</string>
+    <string name="title_sample_all_options">SAMPLE(All options)</string>
+    <string name="title_sample1_clickable_draggable">SAMPLE1(Clickable, Draggable)</string>
+    <string name="title_sample2_depends_on_service">SAMPLE2(depends on Service)</string>
+    <string name="title_sample3_timber_depends_on_activity">SAMPLE3(Timber, depends on Activity)</string>
 </resources>
