@@ -16,6 +16,7 @@
 
 package com.nagopy.android.overlayviewmanager.internal;
 
+import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.RestrictTo;
@@ -23,28 +24,50 @@ import android.support.annotation.VisibleForTesting;
 import android.view.View;
 import android.view.WindowManager;
 
+import java.util.WeakHashMap;
+
 import static android.support.annotation.RestrictTo.Scope.LIBRARY;
 import static android.support.annotation.RestrictTo.Scope.TESTS;
 
 @RestrictTo(LIBRARY)
 public class OverlayWindowManager {
 
-    static OverlayWindowManager instance = new OverlayWindowManager();
+    static OverlayWindowManager applicationInstance = new OverlayWindowManager();
     static Handler handler = new Handler(Looper.getMainLooper());
+    static WeakHashMap<Activity, OverlayWindowManager> activityInstances = new WeakHashMap<>();
 
-    public static OverlayWindowManager getInstance() {
-        return instance;
+    public static OverlayWindowManager getApplicationInstance() {
+        return applicationInstance;
     }
 
     @RestrictTo(TESTS)
-    public static void setInstance(OverlayWindowManager instance) {
-        OverlayWindowManager.instance = instance;
+    public static void setApplicationInstance(OverlayWindowManager applicationInstance) {
+        OverlayWindowManager.applicationInstance = applicationInstance;
     }
+
+    public static void initApplicationInstance(WindowManager windowManager) {
+        applicationInstance.windowManager = windowManager;
+    }
+
+    public static OverlayWindowManager getActivityInstance(Activity activity) {
+        OverlayWindowManager activityInstance = activityInstances.get(activity);
+        if (activityInstance == null) {
+            activityInstance = new OverlayWindowManager();
+            activityInstance.windowManager = activity.getWindowManager();
+            activityInstances.put(activity, activityInstance);
+        }
+        return activityInstance;
+    }
+
+    @RestrictTo(TESTS)
+    public static void setActivityInstance(Activity activity, OverlayWindowManager activityInstance) {
+        activityInstances.put(activity, activityInstance);
+    }
+
 
     WindowManager windowManager;
 
-    public static void init(WindowManager windowManager) {
-        instance.windowManager = windowManager;
+    OverlayWindowManager() {
     }
 
     public void show(final View view, final WindowManager.LayoutParams params) {

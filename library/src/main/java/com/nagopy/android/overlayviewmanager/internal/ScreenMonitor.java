@@ -81,7 +81,7 @@ public class ScreenMonitor {
         params.format = PixelFormat.TRANSLUCENT;
         requestedViews = new WeakReferenceCache<>();
 
-        overlayWindowManager = OverlayWindowManager.getInstance();
+        overlayWindowManager = OverlayWindowManager.getApplicationInstance();
     }
 
     public synchronized void request(OverlayView overlayView) {

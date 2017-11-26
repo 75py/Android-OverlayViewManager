@@ -26,6 +26,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import com.nagopy.android.overlayviewmanager.OverlayView;
+import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 
 import java.util.List;
 
@@ -66,7 +67,7 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
         @Override
         public void onCreate() {
             super.onCreate();
-            overlayView = OverlayView.create(createImageView())
+            overlayView = OverlayViewManager.getInstance().newOverlayView(createImageView())
                     .setTouchable(true)
                     .setDraggable(true)
                     .setOnClickListener(new View.OnClickListener() {

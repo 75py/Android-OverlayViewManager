@@ -64,7 +64,7 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
 
         overlayViewManager = OverlayViewManager.getInstance();
 
-        overlayView = OverlayView.create(createTextView())
+        overlayView = overlayViewManager.newOverlayView(createTextView(), this)
                 .setAlpha(0.9f)
                 .setOnClickListener(this);
 

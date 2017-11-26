@@ -3,9 +3,12 @@ package com.nagopy.android.overlayviewmanager.opt.timber;
 import android.app.Activity;
 import android.app.Application;
 import android.util.Log;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import com.nagopy.android.overlayviewmanager.OverlayView;
+import com.nagopy.android.overlayviewmanager.OverlayViewManager;
+import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager;
 import com.nagopy.android.overlayviewmanager.internal.WeakReferenceCache;
 
 import org.junit.After;
@@ -30,6 +33,12 @@ public class DebugOverlayTreeTest {
     DebugOverlayTree debugOverlayTree;
 
     @Mock
+    OverlayWindowManager overlayWindowManager;
+
+    @Mock
+    WindowManager windowManager;
+
+    @Mock
     Application application;
 
     @Mock
@@ -47,6 +56,12 @@ public class DebugOverlayTreeTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+
+        when(application.getApplicationContext()).thenReturn(application);
+        OverlayViewManager.init(application);
+        OverlayWindowManager.setApplicationInstance(overlayWindowManager);
+        OverlayWindowManager.initApplicationInstance(windowManager);
+
 
         debugOverlayTree = new DebugOverlayTree();
         assertThat(debugOverlayTree.overlayView, is(nullValue()));

@@ -1,5 +1,6 @@
 package com.nagopy.android.overlayviewmanager;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Build;
@@ -19,6 +20,7 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -109,5 +111,17 @@ public class OverlayViewManagerTest {
         assertTrue(OverlayViewManager.canDrawOverlays());
     }
     */
+
+    @Test
+    public void newOverlayView() throws Exception {
+        OverlayView<View> overlayView = overlayViewManager.newOverlayView(view);
+        assertThat(overlayView.getView(), is(view));
+        assertThat(overlayView.viewScope, is(OverlayView.ViewScope.APPLICATION));
+
+        Activity activity = mock(Activity.class);
+        OverlayView<View> overlayView2 = overlayViewManager.newOverlayView(view2, activity);
+        assertThat(overlayView2.getView(), is(view2));
+        assertThat(overlayView2.viewScope, is(OverlayView.ViewScope.ACTIVITY));
+    }
 
 }

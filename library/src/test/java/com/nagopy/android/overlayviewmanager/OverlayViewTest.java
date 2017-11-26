@@ -59,7 +59,7 @@ public class OverlayViewTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        OverlayWindowManager.setInstance(overlayWindowManager); // set mock
+        OverlayWindowManager.setApplicationInstance(overlayWindowManager); // set mock
         ScreenMonitor.setInstance(screenMonitor); // set mock
         overlayView = OverlayView.create(view);
     }
