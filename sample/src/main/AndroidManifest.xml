@@ -38,10 +38,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SampleAllOptionsActivity" />
-        <activity android:name=".Sample1Activity" />
-        <activity android:name=".Sample2Activity" />
-        <activity android:name=".SampleTimberActivity" />
+        <activity
+            android:name=".SampleAllOptionsActivity"
+            android:label="@string/title_sample_all_options" />
+        <activity
+            android:name=".Sample1Activity"
+            android:label="@string/title_sample1_clickable_draggable" />
+        <activity
+            android:name=".Sample2Activity"
+            android:label="@string/title_sample2_depends_on_service" />
+        <activity
+            android:name=".SampleTimberActivity"
+            android:label="@string/title_sample3_timber_depends_on_activity" />
 
         <service android:name=".Sample2Activity$Sample2Service" />
     </application>
