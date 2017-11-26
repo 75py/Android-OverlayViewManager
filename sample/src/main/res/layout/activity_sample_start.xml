@@ -53,7 +53,6 @@
             android:id="@+id/btn_sample_all_options"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="@{canDrawOverlays}"
             android:onClick="onClick"
             android:text="SAMPLE(All options)" />
 
@@ -61,7 +60,6 @@
             android:id="@+id/btn_sample1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="@{canDrawOverlays}"
             android:onClick="onClick"
             android:text="SAMPLE1(Clickable, Draggable)" />
 
@@ -77,7 +75,6 @@
             android:id="@+id/btn_sample_timber"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:enabled="@{canDrawOverlays}"
             android:onClick="onClick"
             android:text="SAMPLE3(Timber, depends on Activity)" />
 

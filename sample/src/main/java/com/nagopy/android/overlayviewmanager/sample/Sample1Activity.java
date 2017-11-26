@@ -24,6 +24,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.nagopy.android.overlayviewmanager.OverlayView;
+import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 
 public class Sample1Activity extends BaseSampleWithCodeActivity {
 
@@ -36,7 +37,7 @@ public class Sample1Activity extends BaseSampleWithCodeActivity {
         setContentView(R.layout.activity_sample1);
 
         TextView textView = createTextView();
-        overlayView = OverlayView.create(textView)
+        overlayView = OverlayViewManager.getInstance().newOverlayView(textView, this)
                 .setTouchable(true)
                 .setDraggable(true)
                 .setOnClickListener(new View.OnClickListener() {

@@ -26,6 +26,7 @@ import android.view.Gravity;
 import android.widget.TextView;
 
 import com.nagopy.android.overlayviewmanager.OverlayView;
+import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 import com.nagopy.android.overlayviewmanager.internal.Logger;
 import com.nagopy.android.overlayviewmanager.internal.SimpleActivityLifecycleCallbacks;
 import com.nagopy.android.overlayviewmanager.internal.WeakReferenceCache;
@@ -46,10 +47,10 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
  *     public void onCreate() {
  *         super.onCreate();
  *
- *         OverlayViewManager.init(this);
+ *         OverlayViewManager.initApplicationInstance(this);
  *
  *         Timber.plant(new Timber.DebugTree());
- *         Timber.plant(DebugOverlayTree.init(this));
+ *         Timber.plant(DebugOverlayTree.initApplicationInstance(this));
  *     }
  *
  * }
@@ -73,7 +74,7 @@ public class DebugOverlayTree extends Timber.DebugTree {
 
     /**
      * Initialize and return the {@link Timber.Tree} implementation.
-     * Usage: <code>Timber.plant(DebugOverlayTree.init(this /&#42; Application &#42;/));</code>
+     * Usage: <code>Timber.plant(DebugOverlayTree.initApplicationInstance(this /&#42; Application &#42;/));</code>
      *
      * @param application Your {@link Application} instance
      * @return The {@link Timber.Tree} implementation
@@ -90,7 +91,7 @@ public class DebugOverlayTree extends Timber.DebugTree {
      */
     public static DebugOverlayTree getInstance() {
         if (INSTANCE.overlayView == null) {
-            throw new IllegalStateException("DebugOverlayTree is not initialized. Please call init(Context).");
+            throw new IllegalStateException("DebugOverlayTree is not initialized. Please call initApplicationInstance(Context).");
         }
         return INSTANCE;
     }
@@ -109,7 +110,7 @@ public class DebugOverlayTree extends Timber.DebugTree {
         messages = new ArrayList<>();
         threshold = Log.DEBUG;
         maxLines = 5;
-        overlayView = OverlayView.create(new TextView(application))
+        overlayView = OverlayViewManager.getInstance().newOverlayView(new TextView(application))
                 .setAlpha(0.4f)
                 .setGravity(Gravity.BOTTOM)
                 .setWidth(MATCH_PARENT);

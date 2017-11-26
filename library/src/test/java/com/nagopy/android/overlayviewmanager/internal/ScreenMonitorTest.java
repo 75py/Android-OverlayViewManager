@@ -58,7 +58,7 @@ public class ScreenMonitorTest {
         screenMonitor.params = params;
         screenMonitor.requestedViews = requestedViews;
         screenMonitor.overlayWindowManager = overlayWindowManager;
-        OverlayWindowManager.setInstance(overlayWindowManager);
+        OverlayWindowManager.setApplicationInstance(overlayWindowManager);
     }
 
     @Config(sdk = Build.VERSION_CODES.O)

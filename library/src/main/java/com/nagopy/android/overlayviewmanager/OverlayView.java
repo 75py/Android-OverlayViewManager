@@ -16,6 +16,7 @@
 
 package com.nagopy.android.overlayviewmanager;
 
+import android.app.Activity;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.support.annotation.FloatRange;
@@ -76,16 +77,40 @@ public class OverlayView<T extends View> {
     @VisibleForTesting
     ScreenMonitor screenMonitor;
 
+    enum ViewScope {APPLICATION, ACTIVITY}
+
+    @VisibleForTesting
+    ViewScope viewScope;
+
     /**
-     * Create a new instance.
+     * Create a new instance. ViewScope = APPLICATION
      *
      * @param view The view that you want to overlay
      * @param <T>  View
      * @return A new instance
      */
     @NonNull
-    public static <T extends View> OverlayView<T> create(@NonNull T view) {
-        return new OverlayView<>(view);
+    static <T extends View> OverlayView<T> create(@NonNull T view) {
+        OverlayView<T> overlayView = new OverlayView<>(view);
+        overlayView.viewScope = ViewScope.APPLICATION;
+        overlayView.overlayWindowManager = OverlayWindowManager.getApplicationInstance();
+        return overlayView;
+    }
+
+    /**
+     * Create a new instance. ViewScope = ACTIVITY
+     *
+     * @param view     The view that you want to overlay
+     * @param <T>      View
+     * @param activity Parent activity
+     * @return A new instance
+     */
+    @NonNull
+    static <T extends View> OverlayView<T> create(@NonNull T view, Activity activity) {
+        OverlayView<T> overlayView = new OverlayView<>(view);
+        overlayView.viewScope = ViewScope.ACTIVITY;
+        overlayView.overlayWindowManager = OverlayWindowManager.getActivityInstance(activity);
+        return overlayView;
     }
 
     /**
@@ -105,7 +130,6 @@ public class OverlayView<T extends View> {
                 .allowViewToExtendOutsideScreen(false)
                 .setGravity(Gravity.TOP | Gravity.START);
         isVisible = false;
-        overlayWindowManager = OverlayWindowManager.getInstance();
         screenMonitor = ScreenMonitor.getInstance();
     }
 
@@ -387,6 +411,10 @@ public class OverlayView<T extends View> {
             } else {
                 params.type = TYPE_SYSTEM_OVERLAY;
             }
+        }
+
+        if (viewScope == ViewScope.ACTIVITY) {
+            params.type = TYPE_APPLICATION;
         }
     }
 

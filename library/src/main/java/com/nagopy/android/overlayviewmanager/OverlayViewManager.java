@@ -17,6 +17,7 @@
 package com.nagopy.android.overlayviewmanager;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
@@ -27,6 +28,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.app.FragmentManager;
 import android.util.DisplayMetrics;
+import android.view.View;
 import android.view.WindowManager;
 
 import com.nagopy.android.overlayviewmanager.internal.Logger;
@@ -59,7 +61,7 @@ public final class OverlayViewManager {
      */
     public static OverlayViewManager getInstance() {
         if (INSTANCE.applicationContext == null) {
-            throw new IllegalStateException("OverlayViewManager is not initialized. Please call init(Application).");
+            throw new IllegalStateException("OverlayViewManager is not initialized. Please call initApplicationInstance(Application).");
         }
         return INSTANCE;
     }
@@ -75,7 +77,7 @@ public final class OverlayViewManager {
     void initialize(@NonNull Context context) {
         applicationContext = context.getApplicationContext();
         windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        OverlayWindowManager.init(windowManager);
+        OverlayWindowManager.initApplicationInstance(windowManager);
         ScreenMonitor.init(applicationContext);
     }
 
@@ -144,4 +146,34 @@ public final class OverlayViewManager {
         return metrics.heightPixels;
     }
 
+    /**
+     * Create a new OverlayView instance. ViewScope = ACTIVITY
+     * if you want to show your view in Activity's lifecycle, use #newOverlayView(View, Activity).
+     * Otherwise(If you want to show your view regardless of whether Activity is alive), use #newOverlayView(View).
+     * <p>
+     * If you use OverlayView from Activity only, you don't have to get "Draw over other apps" permission.
+     *
+     * @param view     The view that you want to overlay
+     * @param <T>      View
+     * @param activity Parent activity
+     * @return A new instance of OverlayView
+     */
+    @NonNull
+    public <T extends View> OverlayView<T> newOverlayView(T view, Activity activity) {
+        return OverlayView.create(view, activity);
+    }
+
+    /**
+     * Create a new OverlayView instance. ViewScope = APPLICATION
+     * If you want to show your view regardless of whether Activity is alive, use #newOverlayView(View).
+     * Otherwise(if you want to show your view in Activity's lifecycle), use #newOverlayView(View, Activity).
+     *
+     * @param view The view that you want to overlay
+     * @param <T>  View
+     * @return A new instance of OverlayView
+     */
+    @NonNull
+    public <T extends View> OverlayView<T> newOverlayView(T view) {
+        return OverlayView.create(view);
+    }
 }

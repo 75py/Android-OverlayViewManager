@@ -8,15 +8,16 @@ OverlayViewManager provides simple APIs for displaying overlay your views.
 ### Check permissions and request if needed
 
 ```java
-if (!OverlayViewManager.canDrawOverlays()) {
-    OverlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
+OverlayViewManager overlayViewManager = OverlayViewManager.getInstance();
+if (!overlayViewManager.canDrawOverlays()) {
+    overlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
 }
 ```
 
 ### Create OverlayView instance
 
 ```java
-OverlayView overlayView = OverlayView.create(yourView);
+OverlayView overlayView = overlayViewManager.newOverlayView(yourView);
 ```
 
 ### Start and stop overlay
@@ -35,7 +36,7 @@ overlayView.hide();
 ### OverlayView#setTouchable(boolean)
 
 ```java
-OverlayView overlayView = OverlayView.create(yourView)
+OverlayView overlayView = overlayViewManager.newOverlayView(yourView)
     // .setTouchable(false) default
     .show();
 
@@ -49,7 +50,7 @@ overlayView.setTouchable(true)
 ### OverlayView#setDraggable(boolean)
 
 ```java
-OverlayView overlayView = OverlayView.create(yourView)
+OverlayView overlayView = overlayViewManager.newOverlayView(yourView)
     // .setDraggable(false) default
     .show();
 
@@ -63,7 +64,7 @@ overlayView.setDraggable(true)
 ### OverlayView#setWidth(boolean)
 
 ```java
-OverlayView overlayView = OverlayView.create(yourView)
+OverlayView overlayView = overlayViewManager.newOverlayView(yourView)
     // .setWidth(WRAP_CONTENT) default
     .show();
 
