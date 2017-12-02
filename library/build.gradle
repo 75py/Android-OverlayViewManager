@@ -46,6 +46,10 @@ android {
         unitTests.returnDefaultValues = true
         unitTests.includeAndroidResources = true
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 dependencies {
@@ -69,5 +73,5 @@ publish {
     groupId = 'com.nagopy.android'
     artifactId = 'overlayviewmanager'
     publishVersion = publish_version_name
-    desc = 'Simple APIs for displaying overlay your views'
+    desc = 'Simple API for displaying overlay your views'
 }
