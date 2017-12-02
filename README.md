@@ -83,11 +83,11 @@ overlayView.setWidth(400)
 
 ### Download
 
-Latest version: 0.2.0
+Latest version: 0.2.1
 
 ```groovy
 dependencies {
-    compile 'com.nagopy.android:overlayviewmanager:0.2.0'
+    compile 'com.nagopy.android:overlayviewmanager:0.2.1'
 }
 ```
 
