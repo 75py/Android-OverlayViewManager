@@ -11,14 +11,15 @@ android:
     - tools
     - platform-tools
     - tools
-    - build-tools-27.0.1
-    - android-26
+    - build-tools-27.0.3
+    - android-27
     - extra-google-m2repository
   licenses:
     - android-sdk-license-.+
     - google-gdk-license-.+
 
 before_install:
+  - yes | sdkmanager "platforms;android-27"
   - chmod ugo+x scripts/travis_before_install.sh
   - ./scripts/travis_before_install.sh
 
