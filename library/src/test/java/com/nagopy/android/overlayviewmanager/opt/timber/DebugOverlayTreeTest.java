@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,7 +46,13 @@ public class DebugOverlayTreeTest {
     Activity activity;
 
     @Mock
-    WeakReferenceCache<Activity> weakReferenceCache;
+    WeakReferenceCache<Activity> registeredActivitiesMock;
+
+    @Mock
+    WeakReferenceCache<Activity> runningActivitiesMock;
+
+    @Mock
+    WeakReferenceCache<Activity> registeredAndRunningActivitiesMock;
 
     @Mock
     OverlayView<TextView> overlayView;
@@ -123,11 +130,34 @@ public class DebugOverlayTreeTest {
     }
 
     @Test
-    public void register() throws Exception {
-        debugOverlayTree.registeredActivities = weakReferenceCache;
+    public void register_notRunning() throws Exception {
+        debugOverlayTree.registeredActivities = registeredActivitiesMock;
+        debugOverlayTree.runningActivities = runningActivitiesMock;
+        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock;
+        when(runningActivitiesMock.contains(activity)).thenReturn(false);
+
         debugOverlayTree.register(activity);
 
-        verify(weakReferenceCache, times(1)).add(activity);
+        verify(registeredActivitiesMock, times(1)).add(activity);
+        verify(runningActivitiesMock, times(1)).contains(activity);
+        verify(registeredAndRunningActivitiesMock, never()).add(activity);
+        verify(overlayView, never()).show();
+    }
+
+    @Test
+    public void register_running() throws Exception {
+        debugOverlayTree.overlayView = overlayView;
+        debugOverlayTree.registeredActivities = registeredActivitiesMock;
+        debugOverlayTree.runningActivities = runningActivitiesMock;
+        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock;
+        when(runningActivitiesMock.contains(activity)).thenReturn(true);
+
+        debugOverlayTree.register(activity);
+
+        verify(registeredActivitiesMock, times(1)).add(activity);
+        verify(runningActivitiesMock, times(1)).contains(activity);
+        verify(registeredAndRunningActivitiesMock, times(1)).add(activity);
+        verify(overlayView, times(1)).show();
     }
 
     @Test
@@ -182,85 +212,106 @@ public class DebugOverlayTreeTest {
 
     @Test
     public void SimpleActivityLifecycleCallbacks_onActivityStarted() throws Exception {
+        debugOverlayTree.registeredActivities = registeredActivitiesMock;
+        debugOverlayTree.runningActivities = runningActivitiesMock;
+        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock;
+        debugOverlayTree.overlayView = overlayView;
         {
-            debugOverlayTree.registeredActivities = weakReferenceCache;
-            debugOverlayTree.overlayView = overlayView;
-            when(weakReferenceCache.contains(activity)).thenReturn(false);
+            when(registeredActivitiesMock.contains(activity)).thenReturn(false);
 
             debugOverlayTree.activityLifecycleCallbacks.onActivityStarted(activity);
 
+            verify(registeredAndRunningActivitiesMock, never()).add(activity);
             verify(overlayView, never()).show();
         }
+        reset(overlayView, registeredActivitiesMock, runningActivitiesMock, registeredAndRunningActivitiesMock);
         {
-            debugOverlayTree.registeredActivities = weakReferenceCache;
-            debugOverlayTree.overlayView = overlayView;
-            when(weakReferenceCache.contains(activity)).thenReturn(true);
+            when(registeredActivitiesMock.contains(activity)).thenReturn(true);
 
             debugOverlayTree.activityLifecycleCallbacks.onActivityStarted(activity);
 
+            verify(runningActivitiesMock, times(1)).add(activity);
             verify(overlayView, times(1)).show();
         }
     }
 
     @Test
     public void SimpleActivityLifecycleCallbacks_onActivityStopped() throws Exception {
+        debugOverlayTree.overlayView = overlayView;
+        debugOverlayTree.registeredActivities = registeredActivitiesMock;
+        debugOverlayTree.runningActivities = runningActivitiesMock;
+        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock;
         {
-            debugOverlayTree.registeredActivities = weakReferenceCache;
-            debugOverlayTree.overlayView = overlayView;
-            when(weakReferenceCache.contains(activity)).thenReturn(false);
+            when(registeredActivitiesMock.contains(activity)).thenReturn(false);
+            when(registeredActivitiesMock.isEmpty()).thenReturn(false);
 
             debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity);
 
+            verify(registeredAndRunningActivitiesMock, never()).remove(activity);
             verify(overlayView, never()).hide();
+            verify(runningActivitiesMock, times(1)).remove(activity);
         }
         {
+            reset(overlayView, registeredActivitiesMock, runningActivitiesMock, registeredAndRunningActivitiesMock);
             {
-                debugOverlayTree.registeredActivities = weakReferenceCache;
-                debugOverlayTree.overlayView = overlayView;
-                debugOverlayTree.activityLifecycleCallbacks.startedCount = 2;
-                when(weakReferenceCache.contains(activity)).thenReturn(true);
-                when(weakReferenceCache.isEmpty()).thenReturn(false);
+                when(registeredActivitiesMock.contains(activity)).thenReturn(true);
+                when(registeredActivitiesMock.isEmpty()).thenReturn(false);
+                when(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(false);
 
                 debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity);
 
-                assertThat(debugOverlayTree.activityLifecycleCallbacks.startedCount, is(1));
+                verify(registeredAndRunningActivitiesMock, times(1)).isEmpty();
                 verify(overlayView, never()).hide();
+                verify(runningActivitiesMock, times(1)).remove(activity);
             }
+            reset(overlayView, registeredActivitiesMock, runningActivitiesMock, registeredAndRunningActivitiesMock);
             {
-                debugOverlayTree.registeredActivities = weakReferenceCache;
-                debugOverlayTree.overlayView = overlayView;
-                debugOverlayTree.activityLifecycleCallbacks.startedCount = 2;
-                when(weakReferenceCache.contains(activity)).thenReturn(false);
-                when(weakReferenceCache.isEmpty()).thenReturn(true);
+                when(registeredActivitiesMock.contains(activity)).thenReturn(true);
+                when(registeredActivitiesMock.isEmpty()).thenReturn(false);
+                when(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(true);
 
                 debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity);
 
-                assertThat(debugOverlayTree.activityLifecycleCallbacks.startedCount, is(1));
-                verify(overlayView, never()).hide();
-            }
-            {
-                debugOverlayTree.registeredActivities = weakReferenceCache;
-                debugOverlayTree.overlayView = overlayView;
-                debugOverlayTree.activityLifecycleCallbacks.startedCount = 1;
-                when(weakReferenceCache.contains(activity)).thenReturn(true);
-                when(weakReferenceCache.isEmpty()).thenReturn(true);
-
-                debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity);
-
-                assertThat(debugOverlayTree.activityLifecycleCallbacks.startedCount, is(0));
+                verify(registeredAndRunningActivitiesMock, times(1)).isEmpty();
                 verify(overlayView, times(1)).hide();
+                verify(runningActivitiesMock, times(1)).remove(activity);
             }
+            reset(overlayView, registeredActivitiesMock, runningActivitiesMock, registeredAndRunningActivitiesMock);
+            {
+                when(registeredActivitiesMock.contains(activity)).thenReturn(false);
+                when(registeredActivitiesMock.isEmpty()).thenReturn(true);
+                when(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(false);
+
+                debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity);
+
+                verify(registeredAndRunningActivitiesMock, times(1)).isEmpty();
+                verify(overlayView, never()).hide();
+                verify(runningActivitiesMock, times(1)).remove(activity);
+            }
+            reset(overlayView, registeredActivitiesMock, runningActivitiesMock, registeredAndRunningActivitiesMock);
+            {
+                when(registeredActivitiesMock.contains(activity)).thenReturn(false);
+                when(registeredActivitiesMock.isEmpty()).thenReturn(true);
+                when(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(true);
+
+                debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity);
+
+                verify(registeredAndRunningActivitiesMock, times(1)).isEmpty();
+                verify(overlayView, times(1)).hide();
+                verify(runningActivitiesMock, times(1)).remove(activity);
+            }
+            reset(overlayView, registeredActivitiesMock, runningActivitiesMock, registeredAndRunningActivitiesMock);
         }
     }
 
     @Test
     public void SimpleActivityLifecycleCallbacks_onActivityDestroyed() throws Exception {
         {
-            debugOverlayTree.registeredActivities = weakReferenceCache;
+            debugOverlayTree.registeredActivities = registeredActivitiesMock;
 
             debugOverlayTree.activityLifecycleCallbacks.onActivityDestroyed(activity);
 
-            verify(weakReferenceCache, times(1)).remove(activity);
+            verify(registeredActivitiesMock, times(1)).remove(activity);
         }
     }
 

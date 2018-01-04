@@ -65,6 +65,10 @@ public class DebugOverlayTree extends Timber.DebugTree {
     @VisibleForTesting
     WeakReferenceCache<Activity> registeredActivities;
     @VisibleForTesting
+    WeakReferenceCache<Activity> runningActivities;
+    @VisibleForTesting
+    WeakReferenceCache<Activity> registeredAndRunningActivities;
+    @VisibleForTesting
     int threshold;
     @VisibleForTesting
     int maxLines;
@@ -118,6 +122,8 @@ public class DebugOverlayTree extends Timber.DebugTree {
         overlayView.getView().setBackgroundColor(Color.BLACK);
 
         registeredActivities = new WeakReferenceCache<>();
+        runningActivities = new WeakReferenceCache<>();
+        registeredAndRunningActivities = new WeakReferenceCache<>();
         application.registerActivityLifecycleCallbacks(activityLifecycleCallbacks);
     }
 
@@ -146,6 +152,10 @@ public class DebugOverlayTree extends Timber.DebugTree {
      */
     public void register(Activity activity) {
         registeredActivities.add(activity);
+        if (runningActivities.contains(activity)) {
+            registeredAndRunningActivities.add(activity);
+            overlayView.show();
+        }
     }
 
     @Override
@@ -169,18 +179,14 @@ public class DebugOverlayTree extends Timber.DebugTree {
     }
 
     @VisibleForTesting
-    class MyActivityLifecycleCallbacks extends SimpleActivityLifecycleCallbacks {
-        int startedCount = 0;
-    }
-
-    @VisibleForTesting
-    MyActivityLifecycleCallbacks activityLifecycleCallbacks = new MyActivityLifecycleCallbacks() {
+    Application.ActivityLifecycleCallbacks activityLifecycleCallbacks = new SimpleActivityLifecycleCallbacks() {
 
         @Override
         public void onActivityStarted(Activity activity) {
             Logger.d("onActivityStarted %s", activity);
+            runningActivities.add(activity);
             if (registeredActivities.contains(activity)) {
-                startedCount++;
+                registeredAndRunningActivities.add(activity);
                 overlayView.show();
             }
         }
@@ -189,12 +195,12 @@ public class DebugOverlayTree extends Timber.DebugTree {
         public void onActivityStopped(Activity activity) {
             Logger.d("onActivityStopped %s", activity);
             if (registeredActivities.contains(activity) || registeredActivities.isEmpty()) {
-                startedCount--;
-                if (startedCount <= 0) {
-                    startedCount = 0;
+                registeredAndRunningActivities.remove(activity);
+                if (registeredAndRunningActivities.isEmpty()) {
                     overlayView.hide();
                 }
             }
+            runningActivities.remove(activity);
         }
 
         @Override
