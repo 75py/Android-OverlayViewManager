@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="overlayviewmanager_this_app_needs_permission">%sは「他のアプリの上に重ねて表示」の許可が必要です。</string>
+    <string name="overlayviewmanager_grant_permission">許可する</string>
+</resources>
