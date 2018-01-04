@@ -39,22 +39,6 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
 /**
  * [Option] Implementation of {@link Timber.Tree}.
- * Usage:
- * <pre><code>
- * public class SampleApplication extends Application {
- *
- *     &#64;Override
- *     public void onCreate() {
- *         super.onCreate();
- *
- *         OverlayViewManager.initApplicationInstance(this);
- *
- *         Timber.plant(new Timber.DebugTree());
- *         Timber.plant(DebugOverlayTree.initApplicationInstance(this));
- *     }
- *
- * }
- * </code></pre>
  */
 public class DebugOverlayTree extends Timber.DebugTree {
 
