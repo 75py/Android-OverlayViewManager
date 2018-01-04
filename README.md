@@ -62,7 +62,7 @@ overlayView.setDraggable(true)
 <img src="images/anime/setDraggable.gif" width="270" height="480" alt="">
 
 
-### OverlayView#setWidth(boolean)
+### OverlayView#setWidth(int)
 
 ```java
 OverlayView overlayView = overlayViewManager.newOverlayView(yourView)
@@ -78,6 +78,17 @@ overlayView.setWidth(400)
 
 <img src="images/anime/setWidth.gif" width="270" height="480" alt="">
 
+### Other functions
+
+* OverlayViewManager
+    * OverlayView<View> newOverlayView(View, Activity)
+    * int getDisplayWidth()
+    * int getDisplayHeight()
+* OverlayView
+    * setHeight(int)
+    * setGravity(int)
+    * setGravity(int)
+    * and more
 
 ## Installation
 
@@ -87,7 +98,7 @@ Latest version: 0.2.1
 
 ```groovy
 dependencies {
-    compile 'com.nagopy.android:overlayviewmanager:0.2.1'
+    implementation 'com.nagopy.android:overlayviewmanager:0.2.1'
 }
 ```
 
@@ -106,6 +117,53 @@ public class YourApplication extends Application {
 }
 ```
 
+## DebugOverlayTree
+
+An option for Timber users.  
+DebugOverlayTree shows debug logs by OverlayView.
+
+```groovy
+dependencies {
+    implementation 'com.nagopy.android:overlayviewmanager:0.2.1'
+    implementation 'com.jakewharton.timber:timber:4.6.0'
+}
+```
+
+```java
+public class SampleApplication extends Application {
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        OverlayViewManager.init(this);
+
+        if(BuildConfig.DEBUG) {
+            // Initialize and plant DebugOverlayTree instance
+            Timber.plant(DebugOverlayTree.init(this));
+        }
+    }
+
+}
+```
+
+```java
+public class SampleTimberActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Register this Activity
+        DebugOverlayTree.getInstance().register(this);
+
+        setContentView(R.layout.activity_sample_timber);
+
+        Timber.d("onCreate");
+    }
+
+}
+```
 
 ## License
 

@@ -148,7 +148,7 @@ public final class OverlayViewManager {
 
     /**
      * Create a new OverlayView instance. ViewScope = ACTIVITY
-     * if you want to show your view in Activity's lifecycle, use #newOverlayView(View, Activity).
+     * If you want to show your view in Activity's lifecycle, use #newOverlayView(View, Activity).
      * Otherwise(If you want to show your view regardless of whether Activity is alive), use #newOverlayView(View).
      * <p>
      * If you use OverlayView from Activity only, you don't have to get "Draw over other apps" permission.
