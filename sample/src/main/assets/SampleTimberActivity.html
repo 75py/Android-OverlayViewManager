@@ -26,12 +26,32 @@ pre {
     <li>Call DebugOverlayTree.getInstance().register(Activity). Timber's logs are displayed during the Activity is running.
 </ul>
 <pre class="prettyprint">
+public class SampleApplication extends Application {
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        OverlayViewManager.init(this);
+
+        if(BuildConfig.DEBUG) {
+            // Initialize and plant DebugOverlayTree instance
+            Timber.plant(DebugOverlayTree.init(this));
+        }
+    }
+
+}
+</pre>
+<pre class="prettyprint">
 public class SampleTimberActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Register this Activity
         DebugOverlayTree.getInstance().register(this);
+
         setContentView(R.layout.activity_sample_timber);
 
         Timber.d("onCreate");
