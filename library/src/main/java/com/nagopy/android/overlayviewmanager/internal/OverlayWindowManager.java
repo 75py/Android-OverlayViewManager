@@ -104,7 +104,7 @@ public class OverlayWindowManager {
             public void run() {
                 try {
                     Logger.v("Call WindowManager#removeView");
-                    windowManager.removeView(view);
+                    windowManager.removeViewImmediate(view);
                 } catch (Exception e) {
                     Logger.v(e, "Fail: WindowManager#removeView");
                 }
