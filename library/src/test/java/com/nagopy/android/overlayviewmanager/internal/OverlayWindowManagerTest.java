@@ -111,16 +111,16 @@ public class OverlayWindowManagerTest {
     public void hide() throws Exception {
         overlayWindowManager.hide(view);
 
-        verify(windowManager, times(1)).removeView(view);
+        verify(windowManager, times(1)).removeViewImmediate(view);
     }
 
     @Test
     public void hide_fail() throws Exception {
-        doThrow(RuntimeException.class).when(windowManager).removeView(view);
+        doThrow(RuntimeException.class).when(windowManager).removeViewImmediate(view);
 
         overlayWindowManager.hide(view);
 
-        verify(windowManager, times(1)).removeView(view);
+        verify(windowManager, times(1)).removeViewImmediate(view);
     }
 
 }
