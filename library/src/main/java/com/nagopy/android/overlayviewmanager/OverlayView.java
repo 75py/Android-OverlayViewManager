@@ -380,6 +380,19 @@ public class OverlayView<T extends View> {
         return this;
     }
 
+    /**
+     * Set the brightness of the screen.
+     *
+     * @param screenBrightness 0 to 1 adjusts the brightness from dark to full bright
+     * @return This object
+     * @see WindowManager.LayoutParams#screenBrightness
+     */
+    @NonNull
+    public OverlayView<T> setScreenBrightness(float screenBrightness) {
+        params.screenBrightness = screenBrightness;
+        return this;
+    }
+
     @VisibleForTesting
     void updateParams() {
         params.type = TYPE_APPLICATION;

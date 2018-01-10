@@ -50,6 +50,9 @@
         <activity
             android:name=".SampleTimberActivity"
             android:label="@string/title_sample3_timber_depends_on_activity" />
+        <activity
+            android:name=".SampleOverrideScreenBrightnessActivity"
+            android:label="@string/title_sample4_override_brightness" />
 
         <service android:name=".Sample2Activity$Sample2Service" />
     </application>

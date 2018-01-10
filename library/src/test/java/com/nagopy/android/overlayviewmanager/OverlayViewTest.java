@@ -17,6 +17,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import static android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
@@ -263,6 +264,14 @@ public class OverlayViewTest {
 
         overlayView.setY(200);
         assertThat(overlayView.params.y, is(200));
+    }
+
+    @Test
+    public void setScreenBrightness() throws Exception {
+        assertThat(overlayView.params.screenBrightness, is(BRIGHTNESS_OVERRIDE_NONE));
+
+        overlayView.setScreenBrightness(0.5f);
+        assertThat(overlayView.params.screenBrightness, is(0.5f));
     }
 
     @Config(sdk = Build.VERSION_CODES.N_MR1)

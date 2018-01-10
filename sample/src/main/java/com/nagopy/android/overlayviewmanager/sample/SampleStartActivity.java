@@ -71,6 +71,9 @@ public class SampleStartActivity extends AppCompatActivity {
             case R.id.btn_sample_timber:
                 startActivity(new Intent(this, SampleTimberActivity.class));
                 break;
+            case R.id.btn_sample_override_brightness:
+                startActivity(new Intent(this, SampleOverrideScreenBrightnessActivity.class));
+                break;
         }
     }
 
