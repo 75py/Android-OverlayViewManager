@@ -78,6 +78,13 @@
             android:onClick="onClick"
             android:text="@string/title_sample3_timber_depends_on_activity" />
 
+        <Button
+            android:id="@+id/btn_sample_override_brightness"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="onClick"
+            android:text="@string/title_sample4_override_brightness" />
+
 
     </LinearLayout>
 </layout>

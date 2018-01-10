@@ -25,4 +25,5 @@
     <string name="title_sample1_clickable_draggable">SAMPLE1(Clickable, Draggable)</string>
     <string name="title_sample2_depends_on_service">SAMPLE2(depends on Service)</string>
     <string name="title_sample3_timber_depends_on_activity">SAMPLE3(Timber, depends on Activity)</string>
+    <string name="title_sample4_override_brightness">SAMPLE4(Override screen brightness)</string>
 </resources>
