@@ -104,7 +104,7 @@ public class OverlayWindowManager {
             public void run() {
                 try {
                     Logger.v("Call WindowManager#removeView");
-                    windowManager.removeView(view);
+                    windowManager.removeViewImmediate(view);
                 } catch (Exception e) {
                     Logger.v(e, "Fail: WindowManager#removeView");
                 }
@@ -115,7 +115,7 @@ public class OverlayWindowManager {
     @VisibleForTesting
     void runOnUiThread(Runnable action) {
         Looper mainLooper = Looper.getMainLooper(); // Unit tests return null
-        if (mainLooper != null && Thread.currentThread().equals(mainLooper.getThread())) {
+        if (mainLooper != null && !Thread.currentThread().equals(mainLooper.getThread())) {
             handler.post(action);
         } else {
             action.run();
