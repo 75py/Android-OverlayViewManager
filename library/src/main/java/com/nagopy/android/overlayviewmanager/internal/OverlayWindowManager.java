@@ -115,7 +115,7 @@ public class OverlayWindowManager {
     @VisibleForTesting
     void runOnUiThread(Runnable action) {
         Looper mainLooper = Looper.getMainLooper(); // Unit tests return null
-        if (mainLooper != null && Thread.currentThread().equals(mainLooper.getThread())) {
+        if (mainLooper != null && !Thread.currentThread().equals(mainLooper.getThread())) {
             handler.post(action);
         } else {
             action.run();
