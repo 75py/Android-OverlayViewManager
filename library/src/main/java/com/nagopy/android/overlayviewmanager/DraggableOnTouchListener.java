@@ -35,7 +35,7 @@ public class DraggableOnTouchListener<T extends View> implements View.OnTouchLis
     private float mPosX;
     private float mPosY;
 
-    DraggableOnTouchListener(OverlayView<T> overlayView) {
+    public DraggableOnTouchListener(OverlayView<T> overlayView) {
         this.overlayView = overlayView;
         this.screenMonitor = ScreenMonitor.getInstance();
         backupAlpha = overlayView.params.alpha;

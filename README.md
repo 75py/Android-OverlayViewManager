@@ -94,11 +94,11 @@ overlayView.setWidth(400)
 
 ### Download
 
-Latest version: 1.1.0
+Latest version: 1.2.0
 
 ```groovy
 dependencies {
-    implementation 'com.nagopy.android:overlayviewmanager:1.1.0'
+    implementation 'com.nagopy.android:overlayviewmanager:1.2.0'
 }
 ```
 
@@ -124,8 +124,8 @@ DebugOverlayTree shows debug logs by OverlayView.
 
 ```groovy
 dependencies {
-    implementation 'com.nagopy.android:overlayviewmanager:1.1.0'
-    implementation 'com.jakewharton.timber:timber:4.6.0'
+    implementation 'com.nagopy.android:overlayviewmanager:1.2.0'
+    implementation 'com.jakewharton.timber:timber:4.7.1'
 }
 ```
 
