@@ -19,12 +19,6 @@ package com.nagopy.android.overlayviewmanager;
 import android.app.Activity;
 import android.graphics.PixelFormat;
 import android.os.Build;
-import androidx.annotation.FloatRange;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
-import androidx.core.view.GravityCompat;
-import androidx.core.view.ViewCompat;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +27,13 @@ import android.view.WindowManager;
 import com.nagopy.android.overlayviewmanager.internal.Logger;
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager;
 import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
+
+import androidx.annotation.FloatRange;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import androidx.core.view.GravityCompat;
+import androidx.core.view.ViewCompat;
 
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR;
@@ -260,9 +261,21 @@ public class OverlayView<T extends View> {
      */
     @NonNull
     public OverlayView<T> setDraggable(boolean draggable) {
+        return setDraggable(draggable, new DraggableOnTouchListener<>(this));
+    }
+
+    /**
+     * Enables or disables moving by drag.
+     *
+     * @param draggable true:draggable
+     * @param listener  DraggableOnTouchListener
+     * @return This object
+     */
+    @NonNull
+    public OverlayView<T> setDraggable(boolean draggable, DraggableOnTouchListener<T> listener) {
         this.isDraggable = draggable;
         if (draggable) {
-            view.setOnTouchListener(new DraggableOnTouchListener<>(this));
+            view.setOnTouchListener(listener);
         } else {
             view.setOnTouchListener(null);
         }
