@@ -19,9 +19,9 @@ package com.nagopy.android.overlayviewmanager.internal;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY;
 
 @RestrictTo(LIBRARY)
 public abstract class SimpleActivityLifecycleCallbacks implements Application.ActivityLifecycleCallbacks {

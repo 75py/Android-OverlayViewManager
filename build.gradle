@@ -41,7 +41,6 @@ task clean(type: Delete) {
 }
 
 ext {
-    SUPPORT_LIBRARY_VERSION = '27.1.1'
     publish_version_name = versionName()
     publish_version_code = versionCode()
 }
