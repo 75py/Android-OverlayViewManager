@@ -15,8 +15,9 @@
  */
 
 apply plugin: 'com.android.library'
-apply plugin: 'com.novoda.bintray-release'
 apply plugin: 'jacoco-android'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
 
 jacoco {
     toolVersion '0.7.1.201405082137'
@@ -69,9 +70,35 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0-alpha4'
 }
 
-publish {
-    groupId = 'com.nagopy.android'
-    artifactId = 'overlayviewmanager'
-    publishVersion = publish_version_name
-    desc = 'Simple API for displaying overlay your views'
+def libGroupId = 'com.nagopy.android'
+def libraryId = 'overlayviewmanager'
+
+bintray {
+    user = System.getenv('bintrayUser')
+    key = System.getenv('bintrayKey')
+//    dryRun = true
+
+    configurations = ['archives'] //When uploading configuration files
+
+    pkg {
+        repo = 'maven'
+        userOrg = '75py'
+        name = libraryId
+        version {
+            name = publish_version_name
+            desc = 'Simple API for displaying overlay your views'
+        }
+    }
+}
+
+install {
+    repositories.mavenInstaller {
+        pom.project {
+            name libraryId
+            packaging 'aar'
+            groupId libGroupId
+            artifactId libraryId
+            version publish_version_name
+        }
+    }
 }
