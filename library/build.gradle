@@ -74,8 +74,8 @@ def libGroupId = 'com.nagopy.android'
 def libraryId = 'overlayviewmanager'
 
 bintray {
-    user = System.getenv('bintrayUser')
-    key = System.getenv('bintrayKey')
+    user = hasProperty('bintrayUser') ? getProperty('bintrayUser') : ""
+    key = hasProperty('bintrayKey') ? getProperty('bintrayKey') : ""
 //    dryRun = true
 
     configurations = ['archives'] //When uploading configuration files
