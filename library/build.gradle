@@ -72,18 +72,26 @@ dependencies {
 
 def libGroupId = 'com.nagopy.android'
 def libraryId = 'overlayviewmanager'
+def siteUrl = 'https://github.com/75py/Android-OverlayViewManager'
 
+version = publish_version_name
+group = libGroupId
 bintray {
     user = project.hasProperty('bintrayUser') ? project.getProperty('bintrayUser') : ""
     key = project.hasProperty('bintrayKey') ? project.getProperty('bintrayKey') : ""
-//    dryRun = true
+    //dryRun = project.hasProperty('dryRun') ? project.getProperty('dryRun') : true
+    dryRun = false
+    publish = true
 
     configurations = ['archives'] //When uploading configuration files
 
     pkg {
         repo = 'maven'
-        userOrg = '75py'
         name = libraryId
+        userOrg = '75py'
+        vcsUrl = 'https://github.com/75py/Android-OverlayViewManager.git'
+        licenses = ['Apache-2.0']
+        websiteUrl = siteUrl
         version {
             name = publish_version_name
             desc = 'Simple API for displaying overlay your views'
@@ -94,7 +102,8 @@ bintray {
 install {
     repositories.mavenInstaller {
         pom.project {
-            name libraryId
+            //name libraryId
+            url siteUrl
             packaging 'aar'
             groupId libGroupId
             artifactId libraryId
