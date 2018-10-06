@@ -125,7 +125,7 @@ DebugOverlayTree shows debug logs by OverlayView.
 ```groovy
 dependencies {
     implementation 'com.nagopy.android:overlayviewmanager:%%version%%'
-    implementation 'com.jakewharton.timber:timber:4.6.0'
+    implementation 'com.jakewharton.timber:timber:4.7.1'
 }
 ```
 
