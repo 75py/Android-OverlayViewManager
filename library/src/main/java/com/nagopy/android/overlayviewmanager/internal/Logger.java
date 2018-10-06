@@ -16,12 +16,12 @@
 
 package com.nagopy.android.overlayviewmanager.internal;
 
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 import android.util.Log;
 
 import com.nagopy.android.overlayviewmanager.BuildConfig;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY;
 
 /**
  * Inner class for debug.

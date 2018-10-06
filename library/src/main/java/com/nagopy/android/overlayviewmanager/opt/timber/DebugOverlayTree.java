@@ -20,7 +20,7 @@ package com.nagopy.android.overlayviewmanager.opt.timber;
 import android.app.Activity;
 import android.app.Application;
 import android.graphics.Color;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
 import android.util.Log;
 import android.view.Gravity;
 import android.widget.TextView;

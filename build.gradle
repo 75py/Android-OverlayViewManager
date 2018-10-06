@@ -20,9 +20,12 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:3.2.0'
         classpath 'com.novoda:bintray-release:0.7.0'
-        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.2'
+        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.3'
+
+        // see https://github.com/magnusja/libaums/issues/138
+        classpath 'org.codehaus.groovy:groovy-all:2.4.15'
     }
 }
 
@@ -38,7 +41,6 @@ task clean(type: Delete) {
 }
 
 ext {
-    SUPPORT_LIBRARY_VERSION = '27.0.2'
     publish_version_name = versionName()
     publish_version_code = versionCode()
 }

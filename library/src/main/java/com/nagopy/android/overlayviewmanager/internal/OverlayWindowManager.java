@@ -19,15 +19,15 @@ package com.nagopy.android.overlayviewmanager.internal;
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.RestrictTo;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.RestrictTo;
+import androidx.annotation.VisibleForTesting;
 import android.view.View;
 import android.view.WindowManager;
 
 import java.util.WeakHashMap;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY;
-import static android.support.annotation.RestrictTo.Scope.TESTS;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY;
+import static androidx.annotation.RestrictTo.Scope.TESTS;
 
 @RestrictTo(LIBRARY)
 public class OverlayWindowManager {

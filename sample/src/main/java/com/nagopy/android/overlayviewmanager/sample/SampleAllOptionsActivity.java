@@ -17,13 +17,13 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 import android.annotation.SuppressLint;
-import android.databinding.DataBindingUtil;
-import android.databinding.adapters.SeekBarBindingAdapter;
+import androidx.databinding.DataBindingUtil;
+import androidx.databinding.adapters.SeekBarBindingAdapter;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.widget.TextViewCompat;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.Nullable;
+import androidx.core.widget.TextViewCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.CheckBox;

@@ -30,7 +30,7 @@
 
         <variable
             name="onProgressChanged"
-            type="android.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+            type="androidx.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
     </data>
 
     <RelativeLayout

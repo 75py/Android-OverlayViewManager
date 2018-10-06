@@ -24,9 +24,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.annotation.StringRes;
-import android.support.v4.app.FragmentManager;
+import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
+import androidx.fragment.app.FragmentManager;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.WindowManager;
@@ -98,7 +98,7 @@ public final class OverlayViewManager {
     /**
      * Show permission request dialog.
      *
-     * @param fragmentManager {@link android.support.v4.app.FragmentManager}
+     * @param fragmentManager {@link FragmentManager}
      * @param appNameId       String resource id of application name
      */
     @TargetApi(Build.VERSION_CODES.M)

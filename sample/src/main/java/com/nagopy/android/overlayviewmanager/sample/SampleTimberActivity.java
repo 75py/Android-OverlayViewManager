@@ -17,7 +17,7 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.view.View;
 
 import com.nagopy.android.overlayviewmanager.opt.timber.DebugOverlayTree;

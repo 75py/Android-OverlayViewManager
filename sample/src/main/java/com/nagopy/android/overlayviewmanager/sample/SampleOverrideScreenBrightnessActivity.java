@@ -16,10 +16,10 @@
 
 package com.nagopy.android.overlayviewmanager.sample;
 
-import android.databinding.DataBindingUtil;
-import android.databinding.adapters.SeekBarBindingAdapter;
+import androidx.databinding.DataBindingUtil;
+import androidx.databinding.adapters.SeekBarBindingAdapter;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.view.View;
 import android.widget.SeekBar;
 

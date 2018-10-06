@@ -17,7 +17,7 @@
 package com.nagopy.android.overlayviewmanager;
 
 import android.annotation.SuppressLint;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.VisibleForTesting;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
