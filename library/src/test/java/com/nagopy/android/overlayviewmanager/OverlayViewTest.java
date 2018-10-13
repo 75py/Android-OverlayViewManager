@@ -267,6 +267,22 @@ public class OverlayViewTest {
     }
 
     @Test
+    public void getX() throws Exception {
+        assertThat(overlayView.params.x, is(0));
+
+        overlayView.params.x = 100;
+        assertThat(overlayView.getX(), is(100));
+    }
+
+    @Test
+    public void getY() throws Exception {
+        assertThat(overlayView.params.y, is(0));
+
+        overlayView.params.y = 200;
+        assertThat(overlayView.getY(), is(200));
+    }
+
+    @Test
     public void setScreenBrightness() throws Exception {
         assertThat(overlayView.params.screenBrightness, is(BRIGHTNESS_OVERRIDE_NONE));
 

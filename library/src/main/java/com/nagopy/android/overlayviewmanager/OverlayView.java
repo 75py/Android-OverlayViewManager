@@ -381,6 +381,16 @@ public class OverlayView<T extends View> {
     }
 
     /**
+     * Get the X position.
+     *
+     * @return X position. The unit is pixels.
+     * @see WindowManager.LayoutParams#x
+     */
+    public int getX() {
+        return params.x;
+    }
+
+    /**
      * Set the Y position.
      *
      * @param y Y position. The unit is pixels.
@@ -391,6 +401,16 @@ public class OverlayView<T extends View> {
     public OverlayView<T> setY(int y) {
         params.y = y;
         return this;
+    }
+
+    /**
+     * Get the Y position.
+     *
+     * @return Y position. The unit is pixels.
+     * @see WindowManager.LayoutParams#y
+     */
+    public int getY() {
+        return params.y;
     }
 
     /**
