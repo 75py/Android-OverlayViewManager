@@ -26,8 +26,8 @@ android {
         applicationId 'com.nagopy.android.overlayviewmanager.sample'
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 9
-        versionName '1.4.0'
+        versionCode publish_version_code
+        versionName publish_version_name
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
