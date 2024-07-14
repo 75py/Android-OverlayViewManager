@@ -17,6 +17,8 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+
+    id 'maven-publish'
 }
 
 android {
@@ -51,6 +53,12 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
 }
 
 dependencies {
@@ -69,4 +77,28 @@ dependencies {
     androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
     androidTestImplementation 'androidx.test:runner:1.6.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+}
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId "com.nagopy.android"
+            artifactId "overlayviewmanager"
+            version publish_version_name
+
+            afterEvaluate {
+                from components.release
+            }
+
+            pom {
+                url = 'https://github.com/75py/Android-OverlayViewManager'
+
+                licenses {
+                    license {
+                        name = 'Apache License Version 2.0'
+                    }
+                }
+            }
+        }
+    }
 }
