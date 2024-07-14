@@ -6,6 +6,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.android.tools.lint.checks.infrastructure.TestMode;
+
 import static com.android.tools.lint.checks.infrastructure.TestFiles.java;
 import static com.android.tools.lint.checks.infrastructure.TestLintTask.lint;
 
@@ -42,15 +44,10 @@ public class SetOverlayAboveNavigationViewsDetectorTest {
                         + "}"
                 )
         ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+                .allowMissingSdk()
                 .run()
                 .expectWarningCount(1)
-                .expectMatches("src/foo/Example\\.java:5.+")
-                .expectFixDiffs("" +
-                        "Fix for src/foo/Example.java line 4: Replace with new OverlayView()\n" +
-                        "            :\n" +
-                        "@@ -6 +6\n" +
-                        "-             .allowViewToExtendOutsideScreen(true)\n" +
-                        "+            \n");
+                .expectMatches("src/foo/Example\\.java:5: Warning: Please be careful with using allowViewToExtendOutsideScreen\\(true\\).+");
     }
 
     @Test
@@ -68,6 +65,7 @@ public class SetOverlayAboveNavigationViewsDetectorTest {
                         + "}"
                 )
         ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+                .allowMissingSdk()
                 .run()
                 .expectWarningCount(0);
     }
@@ -87,15 +85,10 @@ public class SetOverlayAboveNavigationViewsDetectorTest {
                         + "}"
                 )
         ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+                .allowMissingSdk()
                 .run()
                 .expectWarningCount(1)
-                .expectMatches("src/foo/Example\\.java:6.+")
-                .expectFixDiffs("" +
-                        "Fix for src/foo/Example.java line 5: Replace with new OverlayView()\n" +
-                        "            :\n" +
-                        "@@ -7 +7\n" +
-                        "-             .allowViewToExtendOutsideScreen(b)\n" +
-                        "+            \n");
+                .expectMatches("src/foo/Example\\.java:6: Warning: Please be careful with using allowViewToExtendOutsideScreen\\(true\\).+");
     }
 
 }

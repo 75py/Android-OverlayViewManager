@@ -17,101 +17,18 @@
 buildscript {
     repositories {
         google()
-        jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.0'
-        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.3'
-
-        // see https://github.com/magnusja/libaums/issues/138
-        classpath 'org.codehaus.groovy:groovy-all:2.4.15'
-
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
+        classpath 'com.android.tools.build:gradle:3.2.1'
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        jcenter()
-    }
+plugins {
+    id 'com.android.application' version '8.5.1' apply false
+    id 'com.android.library' version '8.5.1' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.20' apply false
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
-}
-
-ext {
-    publish_version_name = versionName()
-    publish_version_code = versionCode()
-}
-
-task bumpMajor {
-    doLast {
-        ant.propertyfile(file: 'version.properties') {
-            entry(key: 'major', type: 'int', operation: '+', value: 1)
-            entry(key: 'minor', type: 'int', operation: '=', value: 0)
-            entry(key: 'patch', type: 'int', operation: '=', value: 0)
-            entry(key: 'id', type: 'int', operation: '+', value: 1)
-        }
-    }
-}
-
-task bumpMinor {
-    doLast {
-        ant.propertyfile(file: 'version.properties') {
-            entry(key: 'minor', type: 'int', operation: '+', value: 1)
-            entry(key: 'patch', type: 'int', operation: '=', value: 0)
-            entry(key: 'id', type: 'int', operation: '+', value: 1)
-        }
-    }
-}
-
-task bumpPatch {
-    doLast {
-        ant.propertyfile(file: 'version.properties') {
-            entry(key: 'patch', type: 'int', operation: '+', value: 1)
-            entry(key: 'id', type: 'int', operation: '+', value: 1)
-        }
-    }
-}
-
-task updateReadme {
-    doLast {
-        def template = file('README.template.md').text
-        def result = template
-                .replaceAll("%%version%%", versionName())
-        file("README.md").withWriter { it << result }
-    }
-}
-
-task printVersion {
-    doLast {
-        println "Version name : " + versionName()
-        println "Version code : " + versionCode()
-    }
-}
-
-String versionName() {
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('version.properties').newDataInputStream())
-    return properties['major'] + "." + properties['minor'] + "." + properties['patch']
-}
-
-int versionCode() {
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('version.properties').newDataInputStream())
-    return Integer.parseInt(properties['id'].toString())
-}
-
-tasks.withType(JavaCompile) {
-    options.fork = true
-    options.incremental = true
-}
-
-tasks.withType(Test) {
-    def maxCount = gradle.startParameter.maxWorkerCount
-    maxParallelForks = (maxCount < 2) ? 1 : maxCount / 2
-    forkEvery = 100
 }

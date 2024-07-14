@@ -66,7 +66,7 @@ public class Sample1Activity extends BaseSampleWithCodeActivity {
     TextView createTextView() {
         TextView textView = new TextView(this);
         textView.setId(R.id.sample_text_view);
-        TextViewCompat.setTextAppearance(textView, R.style.TextAppearance_AppCompat_Large);
+        TextViewCompat.setTextAppearance(textView, androidx.appcompat.R.style.TextAppearance_AppCompat_Large);
         textView.setText("click:" + clickCounter);
         textView.setTextColor(Color.WHITE);
         textView.setBackgroundColor(Color.RED);

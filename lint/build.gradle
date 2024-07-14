@@ -17,15 +17,16 @@
 apply plugin: 'java-library'
 
 dependencies {
-    compileOnly 'com.android.tools.lint:lint-api:26.2.0'
-    compileOnly 'com.android.tools.lint:lint-checks:26.2.0'
+    compileOnly 'com.android.tools.lint:lint-api:31.5.1'
+    compileOnly 'com.android.tools.lint:lint-checks:31.5.1'
 
-    testImplementation 'com.android.tools.lint:lint:26.2.0'
-    testImplementation 'com.android.tools.lint:lint-tests:26.2.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.android.tools.lint:lint:31.5.1'
+    testImplementation 'com.android.tools.lint:lint-tests:31.5.1'
 }
 
-sourceCompatibility = "1.7"
-targetCompatibility = "1.7"
+sourceCompatibility = "17"
+targetCompatibility = "17"
 
 jar {
     manifest {

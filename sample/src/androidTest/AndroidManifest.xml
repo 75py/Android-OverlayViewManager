@@ -14,8 +14,7 @@
   ~ limitations under the License.
   -->
 
-<manifest xmlns:tools="http://schemas.android.com/tools"
-    package="com.nagopy.android.overlayviewmanager.sample">
+<manifest xmlns:tools="http://schemas.android.com/tools">
 
     <uses-sdk tools:overrideLibrary="android.support.test.uiautomator.v18" />
 

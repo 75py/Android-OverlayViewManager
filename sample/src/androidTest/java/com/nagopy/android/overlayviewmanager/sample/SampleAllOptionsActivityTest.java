@@ -32,7 +32,6 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.rule.GrantPermissionRule;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.cardview.widget.CardView;
-import android.test.suitebuilder.annotation.LargeTest;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
@@ -51,7 +50,6 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 
-@LargeTest
 @RunWith(AndroidJUnit4.class)
 public class SampleAllOptionsActivityTest {
 
