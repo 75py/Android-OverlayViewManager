@@ -8,7 +8,6 @@ import androidx.test.espresso.ViewInteraction;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.rule.GrantPermissionRule;
 import androidx.test.runner.AndroidJUnit4;
-import android.test.suitebuilder.annotation.LargeTest;
 
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 
@@ -23,7 +22,6 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 
-@LargeTest
 @RunWith(AndroidJUnit4.class)
 public class SampleStartActivityTest {
 

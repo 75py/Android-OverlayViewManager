@@ -7,7 +7,6 @@ import android.os.Build;
 import android.view.View;
 import android.view.WindowManager;
 
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,8 +18,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -28,9 +28,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
+
 @RunWith(RobolectricTestRunner.class)
-@Config(constants = BuildConfig.class
-        , sdk = Build.VERSION_CODES.LOLLIPOP
+@Config(sdk = Build.VERSION_CODES.LOLLIPOP
         , manifest = Config.NONE
 )
 public class OverlayViewManagerTest {
@@ -46,11 +47,16 @@ public class OverlayViewManagerTest {
     @Mock
     View view2;
 
+    @Mock
+    ScreenMonitor screenMonitor;
+
     OverlayViewManager overlayViewManager;
 
     @Before
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
+
+        ScreenMonitor.setInstance(screenMonitor);
 
         application = Mockito.spy(RuntimeEnvironment.application);
         when(application.getSystemService(Context.WINDOW_SERVICE)).thenReturn(windowManager);
@@ -91,8 +97,8 @@ public class OverlayViewManagerTest {
     public void initialize() throws Exception {
         overlayViewManager.initialize(application);
 
-        assertThat(overlayViewManager.applicationContext, Matchers.is(equalTo(application.getApplicationContext())));
-        assertThat(overlayViewManager.windowManager, Matchers.is(Matchers.notNullValue()));
+        assertThat(overlayViewManager.applicationContext, is(equalTo(application.getApplicationContext())));
+        assertThat(overlayViewManager.windowManager, is(notNullValue()));
     }
 
     @Config(sdk = Build.VERSION_CODES.LOLLIPOP_MR1)

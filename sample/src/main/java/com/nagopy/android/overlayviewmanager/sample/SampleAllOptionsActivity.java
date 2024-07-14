@@ -114,7 +114,7 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
     TextView createTextView() {
         TextView textView = new TextView(this);
         textView.setId(R.id.sample_text_view);
-        TextViewCompat.setTextAppearance(textView, R.style.TextAppearance_AppCompat_Medium);
+        TextViewCompat.setTextAppearance(textView, androidx.appcompat.R.style.TextAppearance_AppCompat_Medium);
         textView.setText("SAMPLE TEXT");
         textView.setTextColor(Color.WHITE);
         textView.setBackgroundColor(Color.RED);

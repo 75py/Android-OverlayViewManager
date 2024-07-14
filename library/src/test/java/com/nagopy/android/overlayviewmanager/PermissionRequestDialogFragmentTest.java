@@ -14,13 +14,12 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowDialog;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(constants = BuildConfig.class
-        , sdk = Build.VERSION_CODES.LOLLIPOP
+@Config(sdk = Build.VERSION_CODES.LOLLIPOP
 )
 public class PermissionRequestDialogFragmentTest {
 

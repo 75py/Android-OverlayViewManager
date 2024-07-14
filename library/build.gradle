@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-apply plugin: 'com.android.library'
-apply plugin: 'jacoco-android'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.jfrog.bintray'
-
-jacoco {
-    toolVersion '0.7.1.201405082137'
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
 }
+
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    namespace 'com.nagopy.android.overlayviewmanager'
+    compileSdk 34
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 27
+        minSdkVersion 21
+        targetSdkVersion 34
         versionCode publish_version_code
         versionName publish_version_name
 
@@ -48,91 +45,28 @@ android {
         unitTests.includeAndroidResources = true
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        buildConfig = true
     }
 }
 
 dependencies {
-    implementation 'androidx.annotation:annotation:1.0.0'
-    implementation 'androidx.fragment:fragment:1.0.0'
+    implementation 'androidx.annotation:annotation:1.8.0'
+    implementation 'androidx.fragment:fragment-ktx:1.8.1'
 
     compileOnly 'com.jakewharton.timber:timber:4.7.1'
     lintChecks project(':lint')
 
-    testImplementation 'junit:junit:4.12'
-    testImplementation "org.mockito:mockito-core:2.13.0"
-    testImplementation "org.robolectric:robolectric:3.6.1"
+    testImplementation 'junit:junit:4.13.2'
+//    testImplementation "org.mockito:mockito-core:2.28.2"
+    testImplementation "org.mockito:mockito-core:5.12.0"
+    testImplementation "org.robolectric:robolectric:4.13"
     testImplementation 'com.jakewharton.timber:timber:4.7.1'
 
-    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.2.0-beta01'
-    androidTestImplementation 'androidx.test:runner:1.1.0-alpha4'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0-alpha4'
-}
-
-def libGroupId = 'com.nagopy.android'
-def libraryId = 'overlayviewmanager'
-def siteUrl = 'https://github.com/75py/Android-OverlayViewManager'
-
-version = publish_version_name
-group = libGroupId
-bintray {
-    user = project.hasProperty('bintrayUser') ? project.getProperty('bintrayUser') : ""
-    key = project.hasProperty('bintrayKey') ? project.getProperty('bintrayKey') : ""
-    //dryRun = project.hasProperty('dryRun') ? project.getProperty('dryRun') : true
-    dryRun = false
-    publish = true
-
-    configurations = ['archives'] //When uploading configuration files
-
-    pkg {
-        repo = 'maven'
-        name = libraryId
-        userOrg = '75py'
-        vcsUrl = 'https://github.com/75py/Android-OverlayViewManager.git'
-        licenses = ['Apache-2.0']
-        websiteUrl = siteUrl
-        version {
-            name = publish_version_name
-            desc = 'Simple API for displaying overlay your views'
-        }
-    }
-}
-
-install {
-    repositories.mavenInstaller {
-        pom.project {
-            //name libraryId
-            url siteUrl
-            packaging 'aar'
-            groupId libGroupId
-            artifactId libraryId
-            version publish_version_name
-        }
-    }
-}
-
-task sourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    classifier = 'sources'
-}
-
-task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-}
-
-afterEvaluate {
-    javadoc.classpath += files(android.libraryVariants.collect { variant ->
-        variant.javaCompile.classpath.files
-    })
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-artifacts {
-    archives javadocJar
-    archives sourcesJar
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
+    androidTestImplementation 'androidx.test:runner:1.6.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }

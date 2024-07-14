@@ -3,7 +3,6 @@ package com.nagopy.android.overlayviewmanager.internal;
 import android.os.Build;
 import android.view.WindowManager;
 
-import com.nagopy.android.overlayviewmanager.BuildConfig;
 import com.nagopy.android.overlayviewmanager.OverlayView;
 
 import org.junit.Before;
@@ -18,8 +17,8 @@ import org.robolectric.annotation.Config;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -29,8 +28,7 @@ import static org.mockito.Mockito.when;
 
 
 @RunWith(RobolectricTestRunner.class)
-@Config(constants = BuildConfig.class
-        , sdk = Build.VERSION_CODES.LOLLIPOP
+@Config(sdk = Build.VERSION_CODES.LOLLIPOP
         , manifest = Config.NONE
 )
 public class ScreenMonitorTest {
