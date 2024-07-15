@@ -1,4 +1,4 @@
-# Android OverlayViewManager [![Build Status](https://travis-ci.org/75py/Android-OverlayViewManager.svg?branch=master)](https://travis-ci.org/75py/Android-OverlayViewManager/) [![Download](https://api.bintray.com/packages/75py/maven/overlayviewmanager/images/download.svg)](https://bintray.com/75py/maven/overlayviewmanager/) [![codecov](https://codecov.io/gh/75py/Android-OverlayViewManager/branch/master/graph/badge.svg)](https://codecov.io/gh/75py/Android-OverlayViewManager) [![codebeat badge](https://codebeat.co/badges/41006b87-ccb5-4eba-bfc5-57b35cf8335f)](https://codebeat.co/projects/github-com-75py-android-overlayviewmanager-master)
+# Android OverlayViewManager [![](https://jitpack.io/v/75py/Android-OverlayViewManager.svg)](https://jitpack.io/#75py/Android-OverlayViewManager) [![codebeat badge](https://codebeat.co/badges/41006b87-ccb5-4eba-bfc5-57b35cf8335f)](https://codebeat.co/projects/github-com-75py-android-overlayviewmanager-master)
 
 OverlayViewManager provides simple API for displaying overlay your views.
 
@@ -94,11 +94,23 @@ overlayView.setWidth(400)
 
 ### Download
 
-Latest version: 2.0.0
+Latest version: [![](https://jitpack.io/v/75py/Android-OverlayViewManager.svg)](https://jitpack.io/#75py/Android-OverlayViewManager)
 
+Step 1. Add the JitPack repository to your build file
+```groovy
+	dependencyResolutionManagement {
+		repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+		repositories {
+			mavenCentral()
+			maven { url 'https://jitpack.io' }
+		}
+	}
+```
+
+Step 2. Add the dependency
 ```groovy
 dependencies {
-    implementation 'com.nagopy.android:overlayviewmanager:2.0.0'
+    implementation 'com.github.75py.Android-OverlayViewManager:overlayviewmanager:{version}'
 }
 ```
 
@@ -124,7 +136,7 @@ DebugOverlayTree shows debug logs by OverlayView.
 
 ```groovy
 dependencies {
-    implementation 'com.nagopy.android:overlayviewmanager:2.0.0'
+    implementation 'com.github.75py.Android-OverlayViewManager:overlayviewmanager-opt-timber:2.0.0-alpha2'
     implementation 'com.jakewharton.timber:timber:4.7.1'
 }
 ```

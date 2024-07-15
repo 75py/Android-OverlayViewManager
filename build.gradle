@@ -68,15 +68,6 @@ task bumpPatch {
     }
 }
 
-task updateReadme {
-    doLast {
-        def template = file('README.template.md').text
-        def result = template
-                .replaceAll("%%version%%", versionName())
-        file("README.md").withWriter { it << result }
-    }
-}
-
 task printVersion {
     doLast {
         println "Version name : " + versionName()
