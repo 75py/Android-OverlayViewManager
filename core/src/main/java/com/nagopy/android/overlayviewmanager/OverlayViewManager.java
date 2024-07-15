@@ -24,9 +24,11 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.fragment.app.FragmentManager;
+
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.WindowManager;
@@ -37,6 +39,7 @@ import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
 
 /**
  * Overlay your views!
+ * This class manages the overlay views and their configurations.
  */
 public final class OverlayViewManager {
 
@@ -46,7 +49,8 @@ public final class OverlayViewManager {
     static OverlayViewManager INSTANCE = new OverlayViewManager();
 
     /**
-     * Initialize.
+     * Initialize the OverlayViewManager.
+     * This method must be called before using any other methods of this class.
      *
      * @param application Your {@link Application} instance
      */
@@ -55,9 +59,11 @@ public final class OverlayViewManager {
     }
 
     /**
-     * Return the {@link OverlayViewManager} instance. The instance is singleton.
+     * Return the singleton instance of {@link OverlayViewManager}.
+     * This instance is initialized through the {@link #init(Application)} method.
      *
-     * @return instance
+     * @return the singleton instance of {@link OverlayViewManager}
+     * @throws IllegalStateException if the manager is not initialized
      */
     public static OverlayViewManager getInstance() {
         if (INSTANCE.applicationContext == null) {
@@ -82,9 +88,12 @@ public final class OverlayViewManager {
     }
 
     /**
-     * Wrapper of {@link Settings#canDrawOverlays(Context)}.
+     * Checks if the application has permission to draw overlays on top of other apps.
+     * <p>
+     * This method is a wrapper for {@link Settings#canDrawOverlays(Context)}.
+     * </p>
      *
-     * @return true: This app context is allowed display over other apps
+     * @return true if the application is allowed to display over other apps, false otherwise
      */
     public boolean canDrawOverlays() {
         //noinspection SimplifiableIfStatement
@@ -114,8 +123,7 @@ public final class OverlayViewManager {
     public void requestOverlayPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!canDrawOverlays()) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION
-                        , Uri.parse("package:" + applicationContext.getPackageName()));
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + applicationContext.getPackageName()));
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 applicationContext.startActivity(intent);
             }

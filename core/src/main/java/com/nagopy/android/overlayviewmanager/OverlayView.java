@@ -50,8 +50,9 @@ import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
 
 /**
  * The wrapper class of the view to overlay.
+ * This class allows a view to be displayed as an overlay on top of other content.
  *
- * @param <T> View
+ * @param <T> The type of the view to be overlaid.
  */
 public class OverlayView<T extends View> {
 
@@ -84,11 +85,12 @@ public class OverlayView<T extends View> {
     ViewScope viewScope;
 
     /**
-     * Create a new instance. ViewScope = APPLICATION
+     * Create a new instance with ViewScope set to APPLICATION.
+     * This is used when the overlay is to be displayed regardless of the activity lifecycle.
      *
-     * @param view The view that you want to overlay
-     * @param <T>  View
-     * @return A new instance
+     * @param view The view to overlay.
+     * @param <T>  The type of the view.
+     * @return A new instance of OverlayView.
      */
     @NonNull
     static <T extends View> OverlayView<T> create(@NonNull T view) {
@@ -99,12 +101,13 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Create a new instance. ViewScope = ACTIVITY
+     * Create a new instance with ViewScope set to ACTIVITY.
+     * This is used when the overlay should be managed within an activity's lifecycle.
      *
-     * @param view     The view that you want to overlay
-     * @param <T>      View
-     * @param activity Parent activity
-     * @return A new instance
+     * @param view     The view to overlay.
+     * @param <T>      The type of the view.
+     * @param activity The parent activity.
+     * @return A new instance of OverlayView.
      */
     @NonNull
     static <T extends View> OverlayView<T> create(@NonNull T view, Activity activity) {
@@ -116,9 +119,9 @@ public class OverlayView<T extends View> {
 
     /**
      * Private constructor.
-     * You can get the instance by {@link OverlayView#create(View)} method.
+     * Use {@link OverlayView#create(View)} or {@link OverlayView#create(View, Activity)} to get an instance.
      *
-     * @param view The view that you want to overlay
+     * @param view The view to overlay.
      */
     private OverlayView(@NonNull T view) {
         this.view = view;
@@ -135,10 +138,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Start overlay.
-     * If the view is already shown, it will do anything.
+     * Starts overlaying the view.
+     * If the view is already shown, this method does nothing.
      *
-     * @return This object
+     * @return This object for method chaining.
      */
     @NonNull
     public synchronized OverlayView<T> show() {
@@ -157,7 +160,7 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Request updating window parameters.
+     * Requests updating the window parameters.
      * If the view is shown, it will call {@link WindowManager#updateViewLayout(View, ViewGroup.LayoutParams)}.
      */
     public synchronized void update() {
@@ -182,8 +185,8 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Stop overlay.
-     * If the view is already hidden, it will do anything.
+     * Stops overlaying the view.
+     * If the view is already hidden, this method does nothing.
      */
     public synchronized void hide() {
         if (isVisible()) {
@@ -197,9 +200,9 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Return the managed view.
+     * Returns the managed view.
      *
-     * @return view
+     * @return The overlaid view.
      */
     @NonNull
     public T getView() {
@@ -207,19 +210,19 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Return view's visibility.
+     * Returns the visibility status of the view.
      *
-     * @return true: The view is visible.
+     * @return true if the view is visible, false otherwise.
      */
     public boolean isVisible() {
         return isVisible;
     }
 
     /**
-     * Register a callback to click events.
+     * Registers a callback to click events.
      *
-     * @param onClickListener the callback
-     * @return This object
+     * @param onClickListener The callback to be invoked on click events.
+     * @return This object for method chaining.
      */
     @NonNull
     public OverlayView<T> setOnClickListener(@Nullable View.OnClickListener onClickListener) {
@@ -230,8 +233,8 @@ public class OverlayView<T extends View> {
     /**
      * Enables or disables touch events for this view.
      *
-     * @param touchable true:touchable
-     * @return This object
+     * @param touchable true to enable touch events, false to disable.
+     * @return This object for method chaining.
      */
     @NonNull
     public OverlayView<T> setTouchable(boolean touchable) {
@@ -240,12 +243,12 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Allow the view to extend outside the screen or not.
+     * Allows or disallows the view to extend outside the screen.
      * If true, the view can overlay on a navigation bar or a status bar.
-     * If you use this method and show a wrong size view, you cannot do anything. Please be careful.
+     * Note: Using this option may cause unexpected behavior.
      *
-     * @param allowViewToExtendOutsideScreen true: allow the view to extend outside the screen
-     * @return This object
+     * @param allowViewToExtendOutsideScreen true to allow extending, false otherwise.
+     * @return This object for method chaining.
      */
     @NonNull
     public OverlayView<T> allowViewToExtendOutsideScreen(boolean allowViewToExtendOutsideScreen) {
@@ -254,10 +257,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Enables or disables moving by drag.
+     * Enables or disables moving the view by dragging.
      *
-     * @param draggable true:draggable
-     * @return This object
+     * @param draggable true to enable dragging, false to disable.
+     * @return This object for method chaining.
      */
     @NonNull
     public OverlayView<T> setDraggable(boolean draggable) {
@@ -265,11 +268,11 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Enables or disables moving by drag.
+     * Enables or disables moving the view by dragging with a custom listener.
      *
-     * @param draggable true:draggable
-     * @param listener  DraggableOnTouchListener
-     * @return This object
+     * @param draggable true to enable dragging, false to disable.
+     * @param listener  The custom touch listener for handling drag events.
+     * @return This object for method chaining.
      */
     @NonNull
     public OverlayView<T> setDraggable(boolean draggable, DraggableOnTouchListener<T> listener) {
@@ -283,13 +286,11 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the width parameter of the view.
+     * Sets the width parameter of the view.
      *
-     * @param width Specify width in pixels,
-     *              otherwise use {@link android.view.ViewGroup.LayoutParams#WRAP_CONTENT}
+     * @param width The width in pixels, or use {@link android.view.ViewGroup.LayoutParams#WRAP_CONTENT}
      *              or {@link android.view.ViewGroup.LayoutParams#MATCH_PARENT}.
-     * @return This object
-     * @see android.view.ViewGroup.LayoutParams#width
+     * @return This object for method chaining.
      */
     @NonNull
     public OverlayView<T> setWidth(int width) {
@@ -298,13 +299,11 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the height parameter of the view.
+     * Sets the height parameter of the view.
      *
-     * @param height Specify height in pixels,
-     *               otherwise use {@link android.view.ViewGroup.LayoutParams#WRAP_CONTENT}
+     * @param height The height in pixels, or use {@link android.view.ViewGroup.LayoutParams#WRAP_CONTENT}
      *               or {@link android.view.ViewGroup.LayoutParams#MATCH_PARENT}.
-     * @return This object
-     * @see android.view.ViewGroup.LayoutParams#height
+     * @return This object for method chaining.
      */
     @NonNull
     public OverlayView<T> setHeight(int height) {
@@ -312,12 +311,11 @@ public class OverlayView<T extends View> {
         return this;
     }
 
-
     /**
-     * Placement of window within the screen as per Gravity.
+     * Sets the placement of the window within the screen as per Gravity.
      *
-     * @param gravity The constants in {@link Gravity} class
-     * @return This object
+     * @param gravity The gravity constants from {@link Gravity}.
+     * @return This object for method chaining.
      * @see Gravity
      * @see WindowManager.LayoutParams#gravity
      */
@@ -329,10 +327,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the horizontal margin.
+     * Sets the horizontal margin.
      *
-     * @param margin The horizontal margin(0 to 1)
-     * @return This object
+     * @param margin The horizontal margin (0 to 1).
+     * @return This object for method chaining.
      * @see WindowManager.LayoutParams#horizontalMargin
      */
     @NonNull
@@ -342,10 +340,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the vertical margin.
+     * Sets the vertical margin.
      *
-     * @param margin The vertical margin(0 to 1)
-     * @return This object
+     * @param margin The vertical margin (0 to 1).
+     * @return This object for method chaining.
      * @see WindowManager.LayoutParams#verticalMargin
      */
     @NonNull
@@ -355,10 +353,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the opacity of the view. 0 means completely translucent.
+     * Sets the opacity of the view. 0 means completely translucent.
      *
-     * @param alpha opacity(0 to 1)
-     * @return This object
+     * @param alpha The opacity value (0 to 1).
+     * @return This object for method chaining.
      * @see WindowManager.LayoutParams#alpha
      */
     @NonNull
@@ -368,10 +366,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the X position.
+     * Sets the X position of the view.
      *
-     * @param x X position. The unit is pixels.
-     * @return This object
+     * @param x The X position in pixels.
+     * @return This object for method chaining.
      * @see WindowManager.LayoutParams#x
      */
     @NonNull
@@ -381,9 +379,9 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Get the X position.
+     * Gets the X position of the view.
      *
-     * @return X position. The unit is pixels.
+     * @return The X position in pixels.
      * @see WindowManager.LayoutParams#x
      */
     public int getX() {
@@ -391,10 +389,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the Y position.
+     * Sets the Y position of the view.
      *
-     * @param y Y position. The unit is pixels.
-     * @return This object
+     * @param y The Y position in pixels.
+     * @return This object for method chaining.
      * @see WindowManager.LayoutParams#y
      */
     @NonNull
@@ -404,9 +402,9 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Get the Y position.
+     * Gets the Y position of the view.
      *
-     * @return Y position. The unit is pixels.
+     * @return The Y position in pixels.
      * @see WindowManager.LayoutParams#y
      */
     public int getY() {
@@ -414,10 +412,10 @@ public class OverlayView<T extends View> {
     }
 
     /**
-     * Set the brightness of the screen.
+     * Sets the brightness of the screen.
      *
-     * @param screenBrightness 0 to 1 adjusts the brightness from dark to full bright
-     * @return This object
+     * @param screenBrightness The brightness value (0 to 1).
+     * @return This object for method chaining.
      * @see WindowManager.LayoutParams#screenBrightness
      */
     @NonNull
