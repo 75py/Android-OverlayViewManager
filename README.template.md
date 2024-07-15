@@ -1,4 +1,5 @@
-# Android OverlayViewManager [![Build Status](https://travis-ci.org/75py/Android-OverlayViewManager.svg?branch=master)](https://travis-ci.org/75py/Android-OverlayViewManager/) [![Download](https://api.bintray.com/packages/75py/maven/overlayviewmanager/images/download.svg)](https://bintray.com/75py/maven/overlayviewmanager/) [![codecov](https://codecov.io/gh/75py/Android-OverlayViewManager/branch/master/graph/badge.svg)](https://codecov.io/gh/75py/Android-OverlayViewManager) [![codebeat badge](https://codebeat.co/badges/41006b87-ccb5-4eba-bfc5-57b35cf8335f)](https://codebeat.co/projects/github-com-75py-android-overlayviewmanager-master)
+
+# Android OverlayViewManager [![codebeat badge](https://codebeat.co/badges/af0c721e-0c7f-42d2-bb9c-c72af128f30d)](https://codebeat.co/projects/github-com-75py-android-overlayviewmanager-main)
 
 OverlayViewManager provides simple API for displaying overlay your views.
 
