@@ -1,98 +1,18 @@
-# Android OverlayViewManager [![](https://jitpack.io/v/75py/Android-OverlayViewManager.svg)](https://jitpack.io/#75py/Android-OverlayViewManager) [![codebeat badge](https://codebeat.co/badges/41006b87-ccb5-4eba-bfc5-57b35cf8335f)](https://codebeat.co/projects/github-com-75py-android-overlayviewmanager-master)
+# OverlayViewManager [![](https://jitpack.io/v/75py/Android-OverlayViewManager.svg)](https://jitpack.io/#75py/Android-OverlayViewManager) [![codebeat badge](https://codebeat.co/badges/41006b87-ccb5-4eba-bfc5-57b35cf8335f)](https://codebeat.co/projects/github-com-75py-android-overlayviewmanager-master)
 
-OverlayViewManager provides simple API for displaying overlay your views.
+OverlayViewManager is a lightweight Android library that allows you to overlay views on top of other apps, providing a simple interface to manage and customize these overlays. This library is particularly useful for creating floating widgets or overlays that need to be displayed across the entire system, regardless of the activity or app in the foreground.
 
 Try out [the sample application on Google Play](https://play.google.com/store/apps/details?id=com.nagopy.android.overlayviewmanager.sample).
 
-## Usage
+## Features
 
-### Check permissions and request if needed
-
-```java
-OverlayViewManager overlayViewManager = OverlayViewManager.getInstance();
-if (!overlayViewManager.canDrawOverlays()) {
-    overlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
-}
-```
-
-### Create OverlayView instance
-
-```java
-OverlayView overlayView = overlayViewManager.newOverlayView(yourView);
-```
-
-### Start and stop overlay
-
-```java
-// Start overlay
-overlayView.show();
-
-// Stop overlay
-overlayView.hide();
-```
-
-<img src="images/anime/show_hide.gif" width="270" height="480" alt="">
-
-
-### OverlayView#setTouchable(boolean)
-
-```java
-OverlayView overlayView = overlayViewManager.newOverlayView(yourView)
-    // .setTouchable(false) default
-    .show();
-
-overlayView.setTouchable(true)
-    .update();
-```
-
-<img src="images/anime/setTouchable.gif" width="270" height="480" alt="">
-
-
-### OverlayView#setDraggable(boolean)
-
-```java
-OverlayView overlayView = overlayViewManager.newOverlayView(yourView)
-    // .setDraggable(false) default
-    .show();
-
-overlayView.setDraggable(true)
-    .update();
-```
-
-<img src="images/anime/setDraggable.gif" width="270" height="480" alt="">
-
-
-### OverlayView#setWidth(int)
-
-```java
-OverlayView overlayView = overlayViewManager.newOverlayView(yourView)
-    // .setWidth(WRAP_CONTENT) default
-    .show();
-
-overlayView.setWidth(MATCH_PARENT)
-    .update();
-
-overlayView.setWidth(400)
-    .update();
-```
-
-<img src="images/anime/setWidth.gif" width="270" height="480" alt="">
-
-### Other functions
-
-* OverlayViewManager
-    * OverlayView<View> newOverlayView(View, Activity)
-    * int getDisplayWidth()
-    * int getDisplayHeight()
-* OverlayView
-    * setHeight(int)
-    * setGravity(int)
-    * setGravity(int)
-    * and more
+- **Easy to Use**: Simple API to create and manage overlay views.
+- **Customizable**: Supports various customization options like touchable, draggable, and view positioning.
+- **Lifecycle Management**: Manages the overlay view lifecycle based on activity or application context.
+- **Permission Handling**: Provides methods to check and request overlay permissions.
 
 ## Installation
 
-### Download
 
 Latest version: [![](https://jitpack.io/v/75py/Android-OverlayViewManager.svg)](https://jitpack.io/#75py/Android-OverlayViewManager)
 
@@ -114,66 +34,125 @@ dependencies {
 }
 ```
 
-### Setup
+## Usage
 
-Call OverlayViewManager.init() in the onCreate() of your Application class.
+### Initialization
+
+Initialize the `OverlayViewManager` in your `Application` class:
+
 ```java
-public class YourApplication extends Application {
-
+public class MyApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
         OverlayViewManager.init(this);
     }
-
 }
 ```
 
-## DebugOverlayTree
+### Creating an Overlay View
 
-An option for Timber users.  
-DebugOverlayTree shows debug logs by OverlayView.
-
-```groovy
-dependencies {
-    implementation 'com.github.75py.Android-OverlayViewManager:overlayviewmanager-opt-timber:2.0.0-alpha2'
-    implementation 'com.jakewharton.timber:timber:4.7.1'
-}
-```
+To create an overlay view, use the `OverlayViewManager` to get an instance of `OverlayView`:
 
 ```java
-public class SampleApplication extends Application {
+OverlayViewManager overlayViewManager = OverlayViewManager.getInstance();
+TextView overlayTextView = new TextView(this);
+overlayTextView.setText("Hello, World!");
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
+OverlayView<TextView> overlayView = overlayViewManager.newOverlayView(overlayTextView);
+```
 
-        OverlayViewManager.init(this);
+### Displaying the Overlay View
 
-        if(BuildConfig.DEBUG) {
-            // Initialize and plant DebugOverlayTree instance
-            Timber.plant(DebugOverlayTree.init(this));
-        }
-    }
+To display the overlay view, call the `show` method:
 
+```java
+overlayView.show();
+```
+
+### Hiding the Overlay View
+
+To hide the overlay view, call the `hide` method:
+
+```java
+overlayView.hide();
+```
+
+<img src="images/anime/show_hide.gif" width="270" height="480" alt="">
+
+### Customizing the Overlay View
+
+You can customize various properties of the overlay view, such as its position, size, and touch behavior:
+
+```java
+overlayView
+    .setWidth(ViewGroup.LayoutParams.WRAP_CONTENT)
+    .setHeight(ViewGroup.LayoutParams.WRAP_CONTENT)
+    .setTouchable(true)
+    .setDraggable(true)
+    .setGravity(Gravity.TOP | Gravity.START)
+    .setX(100)
+    .setY(100)
+    .setAlpha(0.8f);
+```
+
+<img src="images/anime/setTouchable.gif" width="270" height="480" alt="">
+
+<img src="images/anime/setDraggable.gif" width="270" height="480" alt="">
+
+<img src="images/anime/setWidth.gif" width="270" height="480" alt="">
+
+### Handling Permissions
+
+To check if the app has overlay permissions, use the `canDrawOverlays` method:
+
+```java
+if (!overlayViewManager.canDrawOverlays()) {
+    // Request permission
+    overlayViewManager.requestOverlayPermission();
 }
 ```
 
+To show a permission request dialog:
+
 ```java
-public class SampleTimberActivity extends AppCompatActivity {
+overlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
+```
+
+## Example
+
+Here is a complete example of how to use the `OverlayViewManager`:
+
+```java
+public class MainActivity extends AppCompatActivity {
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Register this Activity
-        DebugOverlayTree.getInstance().register(this);
+        // Initialize OverlayViewManager
+        OverlayViewManager.init(getApplication());
 
-        setContentView(R.layout.activity_sample_timber);
+        // Create a new overlay view
+        TextView overlayTextView = new TextView(this);
+        overlayTextView.setText("Hello, Overlay!");
 
-        Timber.d("onCreate");
+        OverlayView<TextView> overlayView = OverlayViewManager.getInstance().newOverlayView(overlayTextView);
+
+        // Set properties
+        overlayView
+            .setWidth(ViewGroup.LayoutParams.WRAP_CONTENT)
+            .setHeight(ViewGroup.LayoutParams.WRAP_CONTENT)
+            .setTouchable(true)
+            .setDraggable(true)
+            .setGravity(Gravity.TOP | Gravity.START)
+            .setX(100)
+            .setY(100)
+            .setAlpha(0.8f);
+
+        // Show the overlay view
+        overlayView.show();
     }
-
 }
 ```
 
