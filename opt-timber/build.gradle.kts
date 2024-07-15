@@ -43,7 +43,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":library"))
+    implementation(project(":core"))
     implementation("androidx.annotation:annotation:1.8.0")
     compileOnly("com.jakewharton.timber:timber:4.7.1")
     testImplementation("com.jakewharton.timber:timber:4.7.1")

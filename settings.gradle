@@ -29,5 +29,5 @@ dependencyResolutionManagement {
     }
 }
 
-include ':sample', ':library', ':lint'
+include ':sample', ':core', ':lint'
 include ':opt-timber'
