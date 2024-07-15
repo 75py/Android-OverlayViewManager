@@ -15,13 +15,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -62,7 +62,7 @@ public class DebugOverlayTreeTest {
 
     @Before
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
 
         when(application.getApplicationContext()).thenReturn(application);
         OverlayViewManager.init(application);
@@ -167,7 +167,7 @@ public class DebugOverlayTreeTest {
 
         debugOverlayTree.log(Log.VERBOSE, "tag", "message", null);
 
-        verify(textView, never()).setText(Mockito.anyString());
+        verify(textView, never()).setText(anyString());
     }
 
     @Test

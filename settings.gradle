@@ -30,3 +30,4 @@ dependencyResolutionManagement {
 }
 
 include ':sample', ':library', ':lint'
+include ':opt-timber'
