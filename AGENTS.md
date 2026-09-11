@@ -2,8 +2,8 @@
 
 ## 3.0.0 Preparation and Coordination
 
-- Read `V3_0_0_PLAN.md` before working on 3.0.0. Implementation is paused until the user explicitly starts it; reading the plan is not authorization to start.
-- Preparation-only commits of these instructions, the plan, coordination logs, and shared Serena configuration are authorized. Do not start agents, implement changes, push, or create PRs during this preparation phase.
+- Read `V3_0_0_PLAN.md` before working on 3.0.0. The user explicitly started coordinated work on 2026-09-12 JST; follow its ownership, review, and validation gates.
+- Preparation commit `1646b3b` is shared on `work/3.0.0`. Subsequent changes must use task branches and reciprocal reviewed PRs; the final scope ends at the release PR to main.
 - Coordinators: Codex uses Astra (`gpt-6-astra`) / medium; Claude uses Fable 5.1 / high. Verify actual launcher identifiers before starting agents.
 - Coordinators choose subagent models and effort for each task from Luna (`gpt-5.6-luna`), Terra (`gpt-5.6-terra`), or Sonnet 5. This supersedes earlier subagent selection guidance for this work. GPT-5.5 and Haiku are not used by default; do not silently substitute other models when an allowed model is unavailable.
 - After work starts, each coordinator delegates implementation, investigation, validation, and independent review to subagents. Record model, effort, scope, and role in the task record.
