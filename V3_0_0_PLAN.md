@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **開始指示受領・T00のClaude実行環境復旧待ち**（2026-09-12 JST）。
+- 状態: **共同作業再開・T01設計中**（2026-09-12 JST）。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -106,8 +106,8 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | ID | 作業 | 初期担当案 | 依存 | 状態 |
 | --- | --- | --- | --- | --- |
 | T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示受領済み | 作業中 |
-| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 未着手 |
-| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 未着手 |
+| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00所有範囲合意済み | 作業中 |
+| T02 | CI導入・既存lintエラー解消 | Claude | T00所有範囲合意済み | 合意済み |
 | T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 未着手 |
 | T04 | 表示状態とスレッド処理の修正 | Codex | T01 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04 | 未着手 |
@@ -271,3 +271,11 @@ PR URL / head SHA:
 - 記録用ブランチ: `codex/3.0.0/t00-coordination`。統合先と別worktreeで文書を編集する。
 - 提案中: T01の設計文書はCodex、T02のCI/sample既存lintはClaude。実装着手は双方の所有範囲合意後。
 - 未解決: ClaudeがCLI実行不能を最終報告。worker_done送信も不能なため当該試行をabandonし既存端末を保持。ユーザーによる実行環境の復旧後、同一Taskを新Dispatchで再開する。双方の分担合意、各側の子起動、相互レビューは未実施。
+
+### 00:32 JST以降の再開
+
+- ユーザーがClaude復旧済みと再開を指示。ClaudeからOrca経由で復旧・分担提案を受信（msg_ce45742087c4）、Codexが同意（msg_0ffb232045e4）。
+- T01とT02の所有範囲合意により最初の並列作業を開始。T00のレビュー通信/GitHub側確認は継続する。
+- T01: Terra / high（launch.effective確認）、Task task_5c129e6aca40 / Dispatch ctx_f585ff543e5e。隔離worktree codex-3.0.0-t01-design。編集対象docs/design/3.0.0-api.mdのみ。実装・Gradle実行はなし。
+- T02: Claude所有の.github/workflows、sampleの既存RestrictedApi修正のみ。ビルド設定・core・opt-timber・lint・version.propertiesの編集禁止。Gradle共有資源はT02側で使用。
+- PR #21: 開始記録の文書PR。復旧・合意・子起動記録を追記し、最新headでClaudeの承認を受ける。
