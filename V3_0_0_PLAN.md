@@ -105,9 +105,9 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 
 | ID | 作業 | 初期担当案 | 依存 | 状態 |
 | --- | --- | --- | --- | --- |
-| T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示受領済み | 作業中 |
-| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00所有範囲合意済み | 作業中 |
-| T02 | CI導入・既存lintエラー解消 | Claude | T00所有範囲合意済み | 合意済み |
+| T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
+| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 相互レビュー中（PR #22） |
+| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 作業中 |
 | T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 未着手 |
 | T04 | 表示状態とスレッド処理の修正 | Codex | T01 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04 | 未着手 |
@@ -279,3 +279,11 @@ PR URL / head SHA:
 - T01: Terra / high（launch.effective確認）、Task task_5c129e6aca40 / Dispatch ctx_f585ff543e5e。隔離worktree codex-3.0.0-t01-design。編集対象docs/design/3.0.0-api.mdのみ。実装・Gradle実行はなし。
 - T02: Claude所有の.github/workflows、sampleの既存RestrictedApi修正のみ。ビルド設定・core・opt-timber・lint・version.propertiesの編集禁止。Gradle共有資源はT02側で使用。
 - PR #21: 開始記録の文書PR。復旧・合意・子起動記録を追記し、最新headでClaudeの承認を受ける。
+
+### 第1波の台帳（2026-09-12 00:49 JST）
+
+- T00: PR [#21](https://github.com/75py/Android-OverlayViewManager/pull/21)、head cdcd6003559db84aa64b7434bb72a3a5db658b5c、Claude承認 [5636971646](https://github.com/75py/Android-OverlayViewManager/pull/21#issuecomment-5636971646)、統合SHA d67f2e7212fe6b4757b316afae15e384056cfee6。文書差分検査成功、必須CIなし。
+- Claudeはユーザーによる復旧後、独立司令塔Run run_3ae778449744を作成。Codex Run run_18f7185e91aaとの対等な相互連絡へ移行。旧T00試行を再Dispatchしない。
+- T02: Sonnet 5 / high（Claudeからlaunch.effective報告）、Task task_336fecdad101 / Dispatch ctx_bebb1ab66ddc。worktree claude-3.0.0-t02-ci-lint、base 1646b3b。CIとsampleの指定2 Activity・関連layout/assetsのみ。Codex側の独立レビュー待ち、実装中で未承認。
+- T01: 初稿ebccbc8をCodexが確認し、仕様矛盾をTerra highへ差し戻し。後続Task task_5eec657e9b5e / Dispatch ctx_68f179dceb5c、head b374eeeca3403de0c080faecf96b1dec232063c0、[PR #22](https://github.com/75py/Android-OverlayViewManager/pull/22)。文書差分検査成功、Gradle未実行。Claude側レビュー依頼済み、API決定は未承認。子端末はworker_done後に解放済み、worktreeと成果は保持。
+- 詳細: [第1波の判断ログ](docs/coordination/3.0.0/2026-09-12-wave1.md)。
