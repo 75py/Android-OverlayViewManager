@@ -31,3 +31,9 @@ T05/T10の準備として2026-09-12に確認した。実装や新しい公開契
 - ACTION_MANAGE_OVERLAY_PERMISSIONのpackage URIによる個別設定画面指定はpre-R向けとして説明されている。承認済みIntent形状は保てるが、Android30+で必ず個別画面へ直行するとは文書に書かない。存在しないActivityへの起動対応はhost側の責務。[Settings reference](https://developer.android.com/reference/android/provider/Settings#ACTION_MANAGE_OVERLAY_PERMISSION)
 
 準備メモ /private/tmp/overlay-t05-platform-preparation.md とmsg_411ef57d6e14でClaudeへ共有。View.getRootWindowInsetsの資料取得はtool internal errorだったため、同資料を検証済みと扱っていない。
+
+## 起動可否の確認完了（18:29 JST）
+
+Luna/medium（launch.effective確認）task_f3e3e9e37422 / ctx_ee636a75e7a4が専用AVD4台をport5580で順次起動し、API23/26/35/36それぞれのSDK値とsys.boot_completed=1を確認。worker_done msg_b43e6993ca64を受領・release。各owned emulatorを終了し、既存emulator-5554のみ残存を確認した。報告は/private/tmp/overlay-emulator-readiness.md、起動ログは/private/tmp/overlay-emulator-API23.log等。
+
+利用制限に伴う縮小指示を送信した時点でprobeは既に完了しており、dispatch_inactiveで拒否された。新dispatchは作らず完了証拠を受領・解放した。起動確認はアプリ動作・instrumentation・cross-UID透過の検証ではなく、T12は未完了。
