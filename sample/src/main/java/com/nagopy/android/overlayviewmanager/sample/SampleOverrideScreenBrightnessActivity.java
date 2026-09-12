@@ -17,7 +17,6 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 import androidx.databinding.DataBindingUtil;
-import androidx.databinding.adapters.SeekBarBindingAdapter;
 import android.os.Bundle;
 import androidx.annotation.Nullable;
 import android.view.View;
@@ -27,7 +26,7 @@ import com.nagopy.android.overlayviewmanager.OverlayView;
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 import com.nagopy.android.overlayviewmanager.sample.databinding.ActivitySampleOverrideScreenBrightnessBinding;
 
-public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBarBindingAdapter.OnProgressChanged {
+public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBar.OnSeekBarChangeListener {
 
     OverlayView<View> overlayView;
     ActivitySampleOverrideScreenBrightnessBinding binding;
@@ -66,5 +65,13 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         overlayView.setScreenBrightness(progress / 255f).update();
         binding.setBrightness(progress);
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
     }
 }
