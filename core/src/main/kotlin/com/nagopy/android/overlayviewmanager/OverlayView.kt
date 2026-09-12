@@ -23,7 +23,9 @@ import android.view.WindowManager
 import androidx.annotation.MainThread
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
+import com.nagopy.android.overlayviewmanager.internal.MaximumObscuringOpacity
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
+import com.nagopy.android.overlayviewmanager.internal.PassThroughOpacityRegistry
 
 /** A synchronous, main-thread-owned overlay handle. */
 public class OverlayView<T : View> internal constructor(
@@ -92,11 +94,13 @@ public class OverlayView<T : View> internal constructor(
         if (scope == OverlayScope.APPLICATION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !permission.isGranted(managedView.context)) {
             return failure(OverlayFailure.PERMISSION_DENIED, null)
         }
+        admitPassThroughOpacity(candidate, managedView)?.let { return failure(it, null) }
         try {
             backendOrThrow().show(managedView, layoutParams(candidate))
         } catch (exception: Exception) {
             return failure(classify(exception), exception)
         }
+        updatePassThroughOpacityRegistration(candidate)
         accept(candidate, nextDragListener(candidate, pendingDragListener, pendingDragListenerChange))
         currentState = OverlayState.ATTACHED
         installDetachListener(managedView)
@@ -135,6 +139,7 @@ public class OverlayView<T : View> internal constructor(
         }
         if (spec == effectiveSpec && !listenerChanged) return success(changed = false)
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
+        admitPassThroughOpacity(spec, managedView)?.let { return failure(it, null) }
         try {
             backendOrThrow().update(managedView, layoutParams(spec))
         } catch (exception: Exception) {
@@ -144,6 +149,7 @@ public class OverlayView<T : View> internal constructor(
             }
             return failure(classify(exception), exception)
         }
+        updatePassThroughOpacityRegistration(spec)
         accept(spec, nextDragListener)
         return success(changed = true)
     }
@@ -169,6 +175,7 @@ public class OverlayView<T : View> internal constructor(
         libraryRemovalInProgress = false
         currentState = OverlayState.CONFIGURED
         removeDetachListener(managedView)
+        PassThroughOpacityRegistry.unregister(this)
         return success(changed = true)
     }
 
@@ -284,6 +291,7 @@ public class OverlayView<T : View> internal constructor(
         currentState = OverlayState.CONFIGURED
         currentFailure = OverlayFailure.NOT_ATTACHED
         ownedView?.let(::removeDetachListener)
+        PassThroughOpacityRegistry.unregister(this)
     }
 
     private fun release(managedView: T) {
@@ -296,6 +304,7 @@ public class OverlayView<T : View> internal constructor(
         ownedView = null
         backend = null
         currentState = OverlayState.DISPOSED
+        PassThroughOpacityRegistry.unregister(this)
     }
 
     private fun accept(spec: OverlaySpec, drag: DragListenerState<T>) {
@@ -372,6 +381,38 @@ public class OverlayView<T : View> internal constructor(
     )
 
     private fun backendOrThrow(): OverlayWindowManager = checkNotNull(backend) { "OverlayView is disposed." }
+
+    /**
+     * The Android 12+ (API 31+) opacity-budget admission check. Applicable only to an
+     * application-scope [OverlayTouchMode.PASS_THROUGH] candidate that opts into
+     * [CrossUidPassThrough.WHEN_SYSTEM_ALLOWS]. Runs on every [show]/[update] that reaches this
+     * point -- callers already skip a true no-op spec before calling here -- including an x/y,
+     * size, gravity, or margin-only change: the platform maximum can change between operations, so
+     * it is queried fresh every time rather than cached or skipped for a non-alpha change. Returns
+     * the failure to report, or `null` to proceed with the platform call.
+     */
+    private fun admitPassThroughOpacity(candidate: OverlaySpec, managedView: T): OverlayFailure? {
+        if (scope != OverlayScope.APPLICATION) return null
+        if (candidate.touchMode != OverlayTouchMode.PASS_THROUGH) return null
+        if (candidate.crossUidPassThrough != CrossUidPassThrough.WHEN_SYSTEM_ALLOWS) return null
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
+        val maximum = try {
+            MaximumObscuringOpacity.get().maximumObscuringOpacityForTouch(managedView.context)
+        } catch (exception: Exception) {
+            null
+        } ?: return OverlayFailure.PASS_THROUGH_UNSUPPORTED
+        val combined = PassThroughOpacityRegistry.combinedOpacityExcluding(this, candidate.alpha)
+        return if (combined > maximum) OverlayFailure.PASS_THROUGH_OPACITY_EXCEEDED else null
+    }
+
+    /** Registers or drops this handle's alpha in [PassThroughOpacityRegistry] after a successful backend call. */
+    private fun updatePassThroughOpacityRegistration(spec: OverlaySpec) {
+        if (scope == OverlayScope.APPLICATION && spec.touchMode == OverlayTouchMode.PASS_THROUGH) {
+            PassThroughOpacityRegistry.register(this, spec.alpha)
+        } else {
+            PassThroughOpacityRegistry.unregister(this)
+        }
+    }
 
     private fun requireApplicationBrightnessIsAbsent(spec: OverlaySpec) {
         require(scope != OverlayScope.APPLICATION || spec.screenBrightness == null) {

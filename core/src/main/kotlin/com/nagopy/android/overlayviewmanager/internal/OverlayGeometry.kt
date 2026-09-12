@@ -17,7 +17,7 @@ import androidx.annotation.RestrictTo
  * ## Coordinate model (drag path only)
  *
  * The drag gesture always applies an absolute `TOP|LEFT` gravity with zero margins (see
- * [com.nagopy.android.overlayviewmanager.DraggableOnTouchListener.onTouchDown]); this is a
+ * [com.nagopy.android.overlayviewmanager.DraggableOnTouchListener.onActionMove]); this is a
  * property of the drag path specifically, not a library-wide invariant --
  * [com.nagopy.android.overlayviewmanager.OverlaySpec.gravity] otherwise accepts any gravity,
  * including `START`/`END`, which [com.nagopy.android.overlayviewmanager.OverlayView] resolves via
