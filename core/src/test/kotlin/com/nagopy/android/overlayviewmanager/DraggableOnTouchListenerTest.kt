@@ -48,6 +48,35 @@ class DraggableOnTouchListenerTest {
         assertEquals(3, backend.updateCalls)
     }
 
+    @Test fun downMove_windowRelativeCoordinatesAccountForNonZeroLeftAndTopFrameOrigin() {
+        // The view's screen location is (300, 500); the target window's visible frame starts at
+        // (120, 60) (e.g. a multi-window/freeform window), so the layout-space origin is (120, 60)
+        // rather than the display's (0, 0).
+        val view = PositionedView(screenX = 300, screenY = 500, visibleFrameLeft = 120, visibleFrameTop = 60)
+        val backend = RecordingBackend()
+        val overlay = OverlayView(
+            view,
+            OverlayScope.ACTIVITY,
+            backend,
+            OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE),
+        )
+        overlay.show()
+
+        dispatch(view, MotionEvent.ACTION_DOWN, 310f, 520f)
+        assertEquals(180, overlay.spec.x)
+        assertEquals(440, overlay.spec.y)
+        // Goes through the real WindowManager.LayoutParams built by OverlayView.layoutParams(),
+        // not just the immutable OverlaySpec snapshot.
+        assertEquals(180, backend.lastParams!!.x)
+        assertEquals(440, backend.lastParams!!.y)
+
+        dispatch(view, MotionEvent.ACTION_MOVE, 330f, 545f)
+        assertEquals(200, overlay.spec.x)
+        assertEquals(465, overlay.spec.y)
+        assertEquals(200, backend.lastParams!!.x)
+        assertEquals(465, backend.lastParams!!.y)
+    }
+
     @Test fun downMoveCancelRestoresOriginalAlphaWithoutResettingCoordinates() {
         val view = PositionedView(50, 160, 20)
         val overlay = OverlayView(
@@ -109,6 +138,7 @@ class DraggableOnTouchListenerTest {
         private val screenX: Int,
         private val screenY: Int,
         private val visibleFrameTop: Int,
+        private val visibleFrameLeft: Int = 0,
     ) : View(RuntimeEnvironment.getApplication()) {
         override fun getLocationOnScreen(outLocation: IntArray) {
             outLocation[0] = screenX
@@ -116,7 +146,7 @@ class DraggableOnTouchListenerTest {
         }
 
         override fun getWindowVisibleDisplayFrame(outRect: Rect) {
-            outRect.set(0, visibleFrameTop, 1080, 1920)
+            outRect.set(visibleFrameLeft, visibleFrameTop, 1080, 1920)
         }
     }
 
@@ -124,8 +154,9 @@ class DraggableOnTouchListenerTest {
         var showCalls = 0
         var updateCalls = 0
         var hideCalls = 0
-        override fun show(view: View, params: WindowManager.LayoutParams) { showCalls++ }
-        override fun update(view: View, params: WindowManager.LayoutParams) { updateCalls++ }
+        var lastParams: WindowManager.LayoutParams? = null
+        override fun show(view: View, params: WindowManager.LayoutParams) { showCalls++; lastParams = WindowManager.LayoutParams().also { it.copyFrom(params) } }
+        override fun update(view: View, params: WindowManager.LayoutParams) { updateCalls++; lastParams = WindowManager.LayoutParams().also { it.copyFrom(params) } }
         override fun hide(view: View) { hideCalls++ }
     }
 }
