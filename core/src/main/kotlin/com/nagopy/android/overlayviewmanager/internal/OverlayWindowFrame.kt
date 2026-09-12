@@ -13,9 +13,12 @@ import androidx.annotation.RestrictTo
  *
  * ## What is and is not verified by this module's unit tests
  *
- * The unit test suite runs entirely under Robolectric on a single SDK (28) with the frame value
- * *overridden* by the test fixture (a fake `View.getWindowVisibleDisplayFrame`), not the real
- * platform implementation. That proves the drag-path arithmetic (`OverlayGeometry`) and the
+ * Coverage is not one uniform setup: the frame-adapter and drag-path fixture tests
+ * (`OverlayWindowFrameTest`, `DraggableOnTouchListenerTest`) run under Robolectric SDK 28 with a
+ * supplied frame value (a fake `View.getWindowVisibleDisplayFrame`), not the real platform
+ * implementation; `OverlayGeometryTest` is plain JUnit over `Int`s, with no Android type involved
+ * at all; and `OverlayPermissionPreflightTest`, plus one `DraggableOnTouchListenerTest` case, run
+ * under Robolectric SDK 23. That proves the drag-path arithmetic (`OverlayGeometry`) and the
  * listener/layout path correctly consume whatever frame this adapter returns; it does not prove
  * that the real framework's `getWindowVisibleDisplayFrame` is itself equivalent across API 23,
  * 26, 35, 36, multi-window/freeform, RTL, or edge-to-edge configurations. That real-framework
@@ -26,16 +29,13 @@ import androidx.annotation.RestrictTo
  * `getCurrentWindowMetrics()` returns the *current window's own* bounds and
  * [android.view.WindowInsets] -- not the display's -- so it is not inherently wrong as a source.
  * It is deliberately not used here, even as an API 30+ cross-check, because it is obtained from a
- * `WindowManager`, and which window that describes depends on which `Context` supplied it -- a
- * distinction that varies by this library's scope: for
- * [com.nagopy.android.overlayviewmanager.OverlayScope.ACTIVITY], `view.context`'s `WindowManager`
- * is the hosting Activity's own; for
- * [com.nagopy.android.overlayviewmanager.OverlayScope.APPLICATION], the overlay view's context has
- * no windowed Activity backing it, so the `WindowManager` obtained from it describes the
- * *default-display* window rather than the overlay's own window. A second derivation whose own
- * correctness would need to vary by scope is not a safe cross-check to add without the same
- * device/instrumentation validation noted above, so [View.getWindowVisibleDisplayFrame] remains
- * the only source.
+ * `WindowManager`, and which window that describes depends on which `Context` supplied it. This
+ * library's scope ([com.nagopy.android.overlayviewmanager.OverlayScope.ACTIVITY] vs
+ * [com.nagopy.android.overlayviewmanager.OverlayScope.APPLICATION]) does not constrain the
+ * concrete type of `view.context`, so which window `currentWindowMetrics` would describe is not
+ * something this library can verify from scope alone. A second derivation whose correctness would
+ * depend on unverified context identity is not a safe cross-check to add, so
+ * [View.getWindowVisibleDisplayFrame] remains the only source.
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 internal object OverlayWindowFrame {
