@@ -490,3 +490,15 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - API30+ cross-checkの代替案msg_c04af62e6d73は未合意。端末検証へ繰り延べる案とscope別fallbackの妥当性を再開時に協議し、T05を完了扱いしない。
 - 再開順: Claude担当の保存済みSHA/差分を確認 → 3テスト修正と座標モデル合意 → 独立レビューと必要なGradle再検証 → 実装PR・現SHA対向承認・CI → 通常merge。T06以降にはまだ着手しない。
 - 記録: docs/coordination/3.0.0/2026-09-12-t05b-validation.md。中断ログはcoordination-wave12に保存し、この中断中にレビュー依頼・統合を進めない。
+
+### 2026-09-12 21:31 JST: 再開
+
+- ユーザーの再開指示で既存Claude担当を復帰。中断中に新しい検証・PR・承認は行っていない。
+- T05bは3テスト修正と独立レビューを再開。Codexは指定Gradle検証と対向承認・統合を担当する。
+- T12に繰り延べるT05端末検証はreleaseを妨げる未完了項目として維持する。両scope、非ゼロ原点、RTL、edge-to-edge、allowOutsideBoundsの各条件で、ACTION_DOWN時に飛ばず、実際のscreen上の移動量がgestureに一致することを確認する。同じ原点減算式の再assertionだけでは受け入れない。
+- 失敗時の修正方式をActivity限定fallbackへ先に固定せず、実際の結果で協議する。T05完了とはまだ扱わない。
+
+### 2026-09-12 21:38 JST: T05b再検証成功
+
+- draft PR46 head867d85c: core75 tests全成功、lintエラー0/警告13、core assemble成功。独立レビュー・最終SHA承認・CIは未完了。
+- T05端末検証はrelease-blockingとしてT12へ持ち越す合意を維持。未完了事項と初回失敗は検証ログに保存した。
