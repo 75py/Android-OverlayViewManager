@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示により2026-09-13 02:30 JSTに再開**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06実装PR49はb105885へ統合済み、T08はPR51で統合済み（core111 tests・lint・build成功）。T07寿命管理は既存担当の途中差分から再開し、検証・レビュー・PR・統合は未完了。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
+- 状態: **2026-09-13 02:30 JST再開後、T07はOrca authority blockerで保全**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06実装PR49はb105885へ統合済み、T08はPR51で統合済み（core111 tests・lint・build成功）。T07寿命管理はWIP `6e243c3`まで保存したが、Dispatch `ctx_72258eaf9359` が停止処理でabandoned/failedとなり、外部terminalがliveのためreplacement workerを起動できない。検証・レビュー・PR・統合は未完了。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -117,7 +117,7 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命L1〜L7作業中（task_2db547061e3f / ctx_72258eaf9359、02:30 JST再開） |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命L1〜L7はWIP `6e243c3`で保全。Dispatch `ctx_72258eaf9359`はabandoned/failed、外部terminal liveのため再開blocked |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
 | T10 | sample・README・3.0移行ガイド | Claude（sample/docs分離所有） | T07寿命統合、T08、T09 stage 1 | 合意済み（C1/K1〜K7、T07統合後開始） |
@@ -545,3 +545,9 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - ユーザーの再開指示を受け、Orca runtimeを復旧して既存のTask `task_2db547061e3f`／Dispatch `ctx_72258eaf9359`／Terminal `term_b4d72bee-a9a2-447b-99b6-b125837cf663`／worktree `t07-lifecycle` を再確認した。新規worker・worktree・Dispatchは作成していない。
 - 再開送信 `requestId 72e6aca0-8864-4248-8902-32209a1fa595` は `input_accepted` と `turn_started` を確認し、協調メッセージ `msg_3336a2f54803` はDispatch宛てにdurable enqueueされた。active worktreeコメントも再開状態へ更新した。
 - 再開時点で作業ツリーは `DebugOverlayTree.kt` の未コミット変更（+192/-37）のみ（`.claude/`はユーザー所有として触れない）。担当はセッション制限前の差分・3件の未解決指摘・回帰テストから継続する。候補SHA、PR、検証、独立レビュー、相手のexact-head承認、CI、統合は未完了であり、完了扱いしない。
+
+### 2026-09-13 02:49 JST: T07再開のauthority blocker
+
+- 再開後、担当はWIP `4c080f8` → `8aa29f5` → `6e243c3` と進み、世代別render回帰テスト、初期化の同期、dispose入口のmain-thread検査を含む変更を保存した。最終worktreeは `codex/t07-lifecycle` の `6e243c3`、tracked差分なし、`.claude/`のみ未追跡でユーザー所有のため触れていない。
+- 古い停止操作により、既存Dispatch `ctx_72258eaf9359` は capability revoked 後に `stop_unknown` を経て `abandoned/failed`（completed `2026-09-13 02:49:24 JST`相当）となった。Orcaのworker authorityは再開中に失われ、terminal `term_b4d72bee-a9a2-447b-99b6-b125837cf663` は外部管理のまま `live`。停止・終了は確認できない。
+- Orca recovery規約により、live terminalを残したまま同じT07のreplacement worker／retryを起動しない。T07はWIPを保持したblocked状態とし、端末停止または新しい担当への安全なauthority移管が確認できるまで、検証・PR・レビュー・統合を行わない。
