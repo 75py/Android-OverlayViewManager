@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **再開して作業継続中**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06候補eb8e9f1はcore101 tests・lint・build成功、PR49の最終レビュー・CI確認中。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
+- 状態: **再開して作業継続中**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06実装PR49はb105885へ統合済み、T08はPR51で相互レビュー中（core111 tests・lint・build成功）。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -114,9 +114,9 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
-| T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 相互レビュー中（PR49 eb8e9f1、101 tests成功、端末検証はT12） |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命統合は後続 |
-| T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 合意済み（F1〜F6、実装はT06統合後） |
+| T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命L1〜L7合意済み・T08統合待ち |
+| T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 相互レビュー中（PR51 59ef303、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
 | T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
@@ -522,3 +522,13 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 - 候補eb8e9f1のgesture限定試験とcore全101 tests成功。lintエラー0/警告13、core assemble成功。レビュー用ブランチへpushしdraft PRへ進む。CI・最終SHA承認は未完了。
 - T08はF1〜F6を明示合意。Activity破棄時の1回のremove、失敗分類維持、参照・cache・listenerの決定的解放検証が対象。実装はT06統合後。詳細と議論は2026-09-12-t06-start.md。
+
+### 2026-09-12 23:14 JST: T06統合・T08開始
+
+- PR49をb105885、文書PR50をcd41b81へ、個別の相互承認・CI成功確認後に通常merge。
+- T08はSonnet5/high、task_572d2116f4c5 / ctx_70332de7736c、t08-lifecycleで実装開始。候補・検証・承認は未完了。詳細はdocs/coordination/3.0.0/2026-09-12-t08-lifecycle.md。
+
+### 2026-09-12 23:36 JST: T08検証成功
+
+- PR51 head59ef303: core111 tests全成功、lintエラー0/警告13、assemble成功。独立レビュー・CI34699740974・最終承認は未完了。
+- T07寿命L1〜L7は明示合意済みでT08統合後に開始。削除失敗の結果を返しretry可能な状態を保ち、成功時だけ参照・callback・bufferを解放する。
