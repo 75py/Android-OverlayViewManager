@@ -113,11 +113,11 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
-| T05 | 監視・座標・権限境界の見直し | Claude（T05a途中成果をCodexから移管） | T04b | 作業中（Claudeへ未コミット途中成果を引き継ぎ済み） |
+| T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a PR43統合済み40c45dc、T05b未着手） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05 | 未着手 |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 相互レビュー中（PR37、寿命統合は後続） |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命統合は後続 |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05 | 未着手 |
-| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 未着手 |
+| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
 | T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
 | T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
@@ -453,3 +453,23 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - T09 stage 1（registry/vendor/lintPublish/現detector堅牢化）はClaude先行着手を合意。最終APIへの合わせ込みはT06/T04c後。
 - T04c最終API整理もClaude Code担当を優先し、Codexが対向承認・統合する。
 - 専用API23/26/35/36 AVDの起動確認はLuna/mediumが完了して解放済み。アプリの端末テストは未実行。
+
+### 2026-09-12 19:25 JST: 集約検証・PR作成とT05aテスト修正
+
+- T09a PR42 head5e9c142c17c2a0baf28e91891c2ce205d3dc18cd: lint9 tests、core lintエラー0/警告14、release AAR内lint.jarを確認。CI34688032126成功。
+- T05a PR43は初期65d35f4でテストコンパイル失敗。ユーザーの明示依頼によりCodex司令塔が型引数誤用と不要importだけを修正し4a92b95d9ab24582bc34dacfaadea6cd196ae8d7をpush。core65/Timber25 tests成功、core lintエラー0/警告13、指定3 assemble成功。
+- 更新SHAのCI34688283404はSUCCESS。独立レビュー根拠・対向司令塔承認を確認するまでdraft維持。製品コードとテストassertionは修正していない。
+- このside conversationではサブエージェントを起動・操作していない。実行結果とレビュー依頼をClaudeへ通知済み。詳細はdocs/coordination/3.0.0/2026-09-12-batched-validation.md。
+
+### T09a / T05a SHA固定承認の確認（2026-09-12）
+
+- PR43 head `4a92b95d9ab24582bc34dacfaadea6cd196ae8d7`: [CI34688283404](https://github.com/75py/Android-OverlayViewManager/actions/runs/34688283404) SUCCESS（19:24:49 JST）。[Claude承認5645326671](https://github.com/75py/Android-OverlayViewManager/pull/43#issuecomment-5645326671)と[Codex承認5645345329](https://github.com/75py/Android-OverlayViewManager/pull/43#issuecomment-5645345329)が同じ完全SHAを明記。
+- PR42 head `5e9c142c17c2a0baf28e91891c2ce205d3dc18cd`: [CI34688032126](https://github.com/75py/Android-OverlayViewManager/actions/runs/34688032126) SUCCESS（19:20:59 JST）。[Claude承認5645326598](https://github.com/75py/Android-OverlayViewManager/pull/42#issuecomment-5645326598)と[Codex承認5645344873](https://github.com/75py/Android-OverlayViewManager/pull/42#issuecomment-5645344873)が同じ完全SHAを明記。headは変更していない。
+- Claude msg_ead5f3f29cc2の独立Sonnet 5/highレビュー報告を確認。実装担当とは別のレビューでblockingなし。T05aのテストだけの修正差分はClaude司令塔が確認済み。自己承認で相手の承認を代用していない。
+- [ ] T05b/T04c: showの権限確認をhelperへ集約し、grant→revoke→失敗のshow/update検証とupdate事前権限確認の設計判断を補う。
+- [ ] T09 stage 2: vendor値の厳密assertion、getApiの同一定数比較の見直し、Kotlin宣言のOverlayView fixtureを補う。
+- 両実装PRはdraft・未マージ。統合時にはhead・CI・相手承認と保護ルールを再確認する。今回の文書更新はPR41を基点とする別ブランチcodex/3.0.0/validation-batch-logに分離し、PR41のheadは変更しない。
+
+### T09a / T05a統合結果（2026-09-12 19:36 JST）
+
+文書PR44を先に作成後、両実装PRをreadyへ変更し、base work/3.0.0・完全head・CI SUCCESS・相互承認・MERGEABLE/CLEANを再確認。--match-head-commit付きの通常mergeでPR42を65c7e956d18bbd4bb72ffa073bf6fe73f02f98c7（19:35:52 JST）、PR43を40c45dcee6916cd1991ccc3db73a34a0eeafb9ac（19:36:18 JST）へ統合した。保護ルール迂回なし。main/releaseへのマージ・公開なし。先の未統合記載は各checkpoint時点の履歴。T05b・T09 stage 2と文書PR44のClaudeレビューは未完了。
