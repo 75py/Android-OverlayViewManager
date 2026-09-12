@@ -2,6 +2,8 @@ package com.nagopy.android.overlayviewmanager.opt.timber
 
 import android.app.Activity
 import android.app.Application
+import android.os.Build
+import android.os.Looper
 import android.util.Log
 import android.view.WindowManager
 import android.widget.TextView
@@ -18,10 +20,9 @@ import org.junit.Assert.assertThat
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import org.mockito.ArgumentMatchers.any
+import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
-import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.never
 import org.mockito.Mockito.reset
 import org.mockito.Mockito.spy
@@ -29,6 +30,10 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when` as whenever
 import org.mockito.MockitoAnnotations
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 import java.lang.reflect.Field
 import java.util.ArrayDeque
 import java.util.ArrayList
@@ -132,18 +137,18 @@ private fun DebugOverlayTree.callLog(priority: Int, tag: String?, message: Strin
     method.invoke(this, priority, tag, message, t)
 }
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.M], manifest = Config.NONE)
 class DebugOverlayTreeTest {
 
     private lateinit var debugOverlayTree: DebugOverlayTree
+    private lateinit var application: Application
 
     @Mock
     private lateinit var overlayWindowManager: OverlayWindowManager
 
     @Mock
     private lateinit var windowManager: WindowManager
-
-    @Mock
-    private lateinit var application: Application
 
     @Mock
     private lateinit var activity: Activity
@@ -163,14 +168,38 @@ class DebugOverlayTreeTest {
     @Mock
     private lateinit var textView: TextView
 
+    /**
+     * Concentrates core setup in one place so this suite keeps passing once
+     * T04b's Kotlin `OverlayViewManager` starts rejecting a null main
+     * looper and re-initialization with a different `Application`:
+     * Robolectric supplies a real main looper, and probing for a
+     * `resetForTesting()` hook -- absent from today's Java core, in which
+     * case this just falls through to a normal `init()` as before --
+     * lets a future core reset its singleton between tests that each run
+     * with a fresh Robolectric `Application`.
+     */
+    private fun initCoreForTest(): Application {
+        try {
+            val reset = OverlayViewManager::class.java.getDeclaredMethod("resetForTesting")
+            reset.isAccessible = true
+            reset.invoke(null)
+        } catch (expected: NoSuchMethodException) {
+            // Today's Java core has no reset hook; init() below runs as before.
+        }
+
+        val app = spy(RuntimeEnvironment.getApplication())
+        whenever(app.getApplicationContext()).thenReturn(app)
+        OverlayViewManager.init(app)
+        OverlayWindowManager.setApplicationInstance(overlayWindowManager)
+        OverlayWindowManager.initApplicationInstance(windowManager)
+        return app
+    }
+
     @Before
     fun setUp() {
         MockitoAnnotations.openMocks(this)
 
-        whenever(application.getApplicationContext()).thenReturn(application)
-        OverlayViewManager.init(application)
-        OverlayWindowManager.setApplicationInstance(overlayWindowManager)
-        OverlayWindowManager.initApplicationInstance(windowManager)
+        application = initCoreForTest()
 
         debugOverlayTree = newDebugOverlayTree()
         assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(nullValue()))
@@ -499,19 +528,20 @@ class DebugOverlayTreeTest {
     fun log_rendersOnlyThroughMainThreadPost_neverDirectly() {
         debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
-        val spied = spy(debugOverlayTree)
-        val posted: MutableList<Runnable> = Collections.synchronizedList(ArrayList())
-        doAnswer { invocation ->
-            posted.add(invocation.getArgument<Runnable>(0))
-            null
-        }.`when`(spied).postToMainThread(any(Runnable::class.java))
 
-        spied.callLog(Log.DEBUG, "tag", "message", null)
+        // Robolectric provides a real main looper; calling log() from a
+        // background thread takes postToMainThread's posting branch
+        // instead of running synchronously, so the render is genuinely
+        // pending until the shadow looper is drained below.
+        val loggingThread = Thread {
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "message", null)
+        }
+        loggingThread.start()
+        loggingThread.join(10_000)
 
         verify(textView, never()).setText(anyString())
-        assertThat(posted.size, isEqualTo(1))
 
-        posted.get(0).run()
+        shadowOf(Looper.getMainLooper()).idle()
 
         verify(textView, times(1)).setText("tag: message")
     }
@@ -520,21 +550,23 @@ class DebugOverlayTreeTest {
     fun log_highFrequencyLogging_coalescesToSinglePendingRender() {
         debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
-        val spied = spy(debugOverlayTree)
-        val posted: MutableList<Runnable> = Collections.synchronizedList(ArrayList())
-        doAnswer { invocation ->
-            posted.add(invocation.getArgument<Runnable>(0))
-            null
-        }.`when`(spied).postToMainThread(any(Runnable::class.java))
 
-        for (i in 0 until 500) {
-            spied.callLog(Log.DEBUG, "tag", "message$i", null)
+        // All 500 calls run on one background thread before the shadow
+        // looper is drained, so only the first can win the renderPending
+        // gate in scheduleRender(); the rest coalesce onto it. If
+        // coalescing failed, draining below would call setText more than
+        // once and fail the times(1) verification.
+        val loggingThread = Thread {
+            for (i in 0 until 500) {
+                debugOverlayTree.callLog(Log.DEBUG, "tag", "message$i", null)
+            }
         }
+        loggingThread.start()
+        loggingThread.join(10_000)
 
-        assertThat("logging must coalesce onto a single pending render", posted.size, isEqualTo(1))
         verify(textView, never()).setText(anyString())
 
-        posted.get(0).run()
+        shadowOf(Looper.getMainLooper()).idle()
 
         verify(textView, times(1)).setText(
             "tag: message495\ntag: message496\ntag: message497\ntag: message498\ntag: message499",
@@ -616,6 +648,9 @@ class DebugOverlayTreeTest {
         loggerThread.join(10_000)
 
         assertThat(errors.isEmpty(), isEqualTo(true))
+
+        shadowOf(Looper.getMainLooper()).idle()
+
         verify(textView, times(1)).setText("tag: passes threshold")
     }
 
