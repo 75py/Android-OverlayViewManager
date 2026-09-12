@@ -17,18 +17,17 @@
 package com.nagopy.android.overlayviewmanager;
 
 import android.annotation.SuppressLint;
+import android.graphics.Rect;
 import androidx.annotation.VisibleForTesting;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 
 import com.nagopy.android.overlayviewmanager.internal.Logger;
-import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
 
 public class DraggableOnTouchListener<T extends View> implements View.OnTouchListener {
 
     OverlayView<T> overlayView;
-    ScreenMonitor screenMonitor;
     float backupAlpha;
     private float mLastTouchX;
     private float mLastTouchY;
@@ -37,8 +36,7 @@ public class DraggableOnTouchListener<T extends View> implements View.OnTouchLis
 
     public DraggableOnTouchListener(OverlayView<T> overlayView) {
         this.overlayView = overlayView;
-        this.screenMonitor = ScreenMonitor.getInstance();
-        backupAlpha = overlayView.params.alpha;
+        backupAlpha = overlayView.getSpec().getAlpha();
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -107,23 +105,25 @@ public class DraggableOnTouchListener<T extends View> implements View.OnTouchLis
         mLastTouchY = y;
         Logger.d("mLastTouchX:%f, mLastTouchY:%f", mLastTouchX, mLastTouchY);
 
-        backupAlpha = overlayView.params.alpha;
-        overlayView.params.alpha *= 0.6;
+        backupAlpha = overlayView.getSpec().getAlpha();
 
-        int statusBarHeight = screenMonitor.getStatusBarHeight();
-
-        // Disable verticalMargin/horizontalMargin and set current position to XY.
-        overlayView.params.verticalMargin = 0;
-        overlayView.params.horizontalMargin = 0;
+        // Use the view's current visible frame rather than a separate monitor window. A zero top
+        // value is a measured edge-to-edge frame, not an uninitialized status-bar fallback.
         int[] location = new int[2];
-        overlayView.view.getLocationOnScreen(location);
-        overlayView.params.x = location[0];
-        overlayView.params.y = location[1] - statusBarHeight;
-        overlayView.params.gravity = Gravity.TOP | Gravity.LEFT;
-        overlayView.update();
+        overlayView.getView().getLocationOnScreen(location);
+        Rect visibleFrame = new Rect();
+        overlayView.getView().getWindowVisibleDisplayFrame(visibleFrame);
+        overlayView.update(overlayView.getSpec().toBuilder()
+                .setAlpha(backupAlpha * 0.6f)
+                .setVerticalMargin(0)
+                .setHorizontalMargin(0)
+                .setX(location[0])
+                .setY(location[1] - visibleFrame.top)
+                .setGravity(Gravity.TOP | Gravity.LEFT)
+                .build());
 
         mPosX = location[0];
-        mPosY = location[1] - statusBarHeight;
+        mPosY = location[1] - visibleFrame.top;
         Logger.d("mPosX:%f, mPosY:%f", mPosX, mPosY);
     }
 
