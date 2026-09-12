@@ -20,6 +20,8 @@ package com.nagopy.android.overlayviewmanager.opt.timber;
 import android.app.Activity;
 import android.app.Application;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.VisibleForTesting;
 import android.util.Log;
 import android.view.Gravity;
@@ -31,7 +33,8 @@ import com.nagopy.android.overlayviewmanager.internal.Logger;
 import com.nagopy.android.overlayviewmanager.internal.SimpleActivityLifecycleCallbacks;
 import com.nagopy.android.overlayviewmanager.internal.WeakReferenceCache;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import timber.log.Timber;
 
@@ -43,7 +46,28 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 public class DebugOverlayTree extends Timber.DebugTree {
 
     @VisibleForTesting
-    ArrayList<String> messages;
+    static final int DEFAULT_MAX_LINES = 5;
+
+    /**
+     * Guards {@link #messages} and {@link #maxLines} so that {@link #log}
+     * (called from arbitrary threads) and {@link #setMaxLines} never observe
+     * or produce a torn buffer.
+     */
+    private final Object bufferLock = new Object();
+
+    /**
+     * Set once a render {@link Runnable} has been posted to the main thread
+     * and not yet executed, so that bursts of {@link #log} calls coalesce
+     * into a single pending UI update instead of posting once per log line.
+     */
+    @VisibleForTesting
+    final AtomicBoolean renderPending = new AtomicBoolean(false);
+
+    @VisibleForTesting
+    Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    @VisibleForTesting
+    ArrayDeque<String> messages;
     @VisibleForTesting
     OverlayView<TextView> overlayView;
     @VisibleForTesting
@@ -95,9 +119,9 @@ public class DebugOverlayTree extends Timber.DebugTree {
      * @param application Application
      */
     void initialize(Application application) {
-        messages = new ArrayList<>();
+        messages = new ArrayDeque<>();
         threshold = Log.DEBUG;
-        maxLines = 5;
+        maxLines = DEFAULT_MAX_LINES;
         overlayView = OverlayViewManager.getInstance().newOverlayView(new TextView(application))
                 .setAlpha(0.4f)
                 .setGravity(Gravity.BOTTOM)
@@ -121,12 +145,27 @@ public class DebugOverlayTree extends Timber.DebugTree {
     }
 
     /**
-     * Set max line number.
+     * Set the maximum number of retained log lines shown in the overlay.
+     * <p>
+     * Shrinking below the current retained line count trims the oldest lines
+     * immediately and re-renders the overlay; growing takes effect for
+     * subsequent log lines without touching the current buffer.
      *
-     * @param maxLines Max line number
+     * @param maxLines Max line number, must be 1 or greater
+     * @throws IllegalArgumentException if {@code maxLines} is less than 1
      */
     public void setMaxLines(int maxLines) {
-        this.maxLines = maxLines;
+        if (maxLines < 1) {
+            throw new IllegalArgumentException("maxLines must be >= 1, but was " + maxLines);
+        }
+        boolean trimmed;
+        synchronized (bufferLock) {
+            this.maxLines = maxLines;
+            trimmed = trimLocked();
+        }
+        if (trimmed) {
+            scheduleRender();
+        }
     }
 
     /**
@@ -148,18 +187,85 @@ public class DebugOverlayTree extends Timber.DebugTree {
             return;
         }
 
-        messages.add(tag + ": " + message);
-        while (messages.size() > maxLines) {
-            messages.remove(0);
+        synchronized (bufferLock) {
+            messages.addLast(tag + ": " + message);
+            trimLocked();
         }
+        scheduleRender();
+    }
 
-        StringBuilder out = new StringBuilder();
-        for (String msg : messages) {
-            out.append(msg);
-            out.append('\n');
+    /**
+     * Drop the oldest lines until {@link #messages} fits within {@link #maxLines}.
+     * Callers must hold {@link #bufferLock}.
+     *
+     * @return true if at least one line was dropped
+     */
+    private boolean trimLocked() {
+        boolean removed = false;
+        while (messages.size() > maxLines) {
+            messages.removeFirst();
+            removed = true;
         }
-        out.setLength(out.length() - 1);
-        overlayView.getView().setText(out.toString());
+        return removed;
+    }
+
+    /**
+     * Ensure exactly one render {@link Runnable} is pending on the main
+     * thread. Concurrent callers coalesce onto that single pending render
+     * instead of each posting their own.
+     */
+    private void scheduleRender() {
+        if (renderPending.compareAndSet(false, true)) {
+            postToMainThread(renderRunnable);
+        }
+    }
+
+    @VisibleForTesting
+    final Runnable renderRunnable = new Runnable() {
+        @Override
+        public void run() {
+            renderPending.set(false);
+            render();
+        }
+    };
+
+    /**
+     * Build the text for the current buffer and apply it to the TextView.
+     * Only ever invoked on the main thread via {@link #renderRunnable}.
+     */
+    private void render() {
+        String text;
+        synchronized (bufferLock) {
+            StringBuilder out = new StringBuilder();
+            boolean first = true;
+            for (String msg : messages) {
+                if (!first) {
+                    out.append('\n');
+                }
+                out.append(msg);
+                first = false;
+            }
+            text = out.toString();
+        }
+        overlayView.getView().setText(text);
+    }
+
+    /**
+     * Run {@code action} on the main thread, posting it if called from
+     * another thread. Unit tests run without a real {@link Looper}, so
+     * {@link Looper#getMainLooper()} returns null and the action runs
+     * synchronously on the calling thread.
+     *
+     * @param action Action to run on the main thread
+     */
+    @VisibleForTesting
+    void postToMainThread(Runnable action) {
+        Looper mainLooper = Looper.getMainLooper(); // Unit tests return null
+        if (mainLooper != null && !Thread.currentThread().equals(mainLooper.getThread())) {
+            mainHandler.post(action);
+        } else {
+            action.run();
+        }
     }
 
     @VisibleForTesting

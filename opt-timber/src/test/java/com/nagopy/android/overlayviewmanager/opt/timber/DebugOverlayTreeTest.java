@@ -17,14 +17,25 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -123,10 +134,89 @@ public class DebugOverlayTreeTest {
 
     @Test
     public void setMaxLines() throws Exception {
-        debugOverlayTree.maxLines = 0;
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
 
         debugOverlayTree.setMaxLines(1);
+
         assertThat(debugOverlayTree.maxLines, is(1));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void setMaxLines_zero_throws() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+
+        debugOverlayTree.setMaxLines(0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void setMaxLines_negative_throws() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+
+        debugOverlayTree.setMaxLines(-1);
+    }
+
+    @Test
+    public void setMaxLines_invalid_doesNotChangeState() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+
+        try {
+            debugOverlayTree.setMaxLines(0);
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // no-op
+        }
+
+        assertThat(debugOverlayTree.maxLines, is(DebugOverlayTree.DEFAULT_MAX_LINES));
+    }
+
+    @Test
+    public void setMaxLines_shrink_trimsBufferAndRerenders() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+        for (int i = 1; i <= 5; i++) {
+            debugOverlayTree.log(Log.DEBUG, "tag", "message" + i, null);
+        }
+        reset(textView);
+
+        debugOverlayTree.setMaxLines(2);
+
+        assertThat(debugOverlayTree.messages.size(), is(2));
+        verify(textView, times(1)).setText("tag: message4\ntag: message5");
+    }
+
+    @Test
+    public void setMaxLines_equal_doesNotTrimOrRerender() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+        for (int i = 1; i <= 5; i++) {
+            debugOverlayTree.log(Log.DEBUG, "tag", "message" + i, null);
+        }
+        reset(textView);
+
+        debugOverlayTree.setMaxLines(5);
+
+        assertThat(debugOverlayTree.messages.size(), is(5));
+        verify(textView, never()).setText(anyString());
+    }
+
+    @Test
+    public void setMaxLines_grow_doesNotTrimExistingBuffer() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+        for (int i = 1; i <= 5; i++) {
+            debugOverlayTree.log(Log.DEBUG, "tag", "message" + i, null);
+        }
+        reset(textView);
+
+        debugOverlayTree.setMaxLines(10);
+
+        assertThat(debugOverlayTree.maxLines, is(10));
+        assertThat(debugOverlayTree.messages.size(), is(5));
+        verify(textView, never()).setText(anyString());
     }
 
     @Test
@@ -301,6 +391,90 @@ public class DebugOverlayTreeTest {
                 verify(runningActivitiesMock, times(1)).remove(activity);
             }
             reset(overlayView, registeredActivitiesMock, runningActivitiesMock, registeredAndRunningActivitiesMock);
+        }
+    }
+
+    @Test
+    public void log_rendersOnlyThroughMainThreadPost_neverDirectly() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+        DebugOverlayTree spied = spy(debugOverlayTree);
+        final List<Runnable> posted = Collections.synchronizedList(new ArrayList<Runnable>());
+        doAnswer(invocation -> {
+            posted.add(invocation.getArgument(0));
+            return null;
+        }).when(spied).postToMainThread(any(Runnable.class));
+
+        spied.log(Log.DEBUG, "tag", "message", null);
+
+        verify(textView, never()).setText(anyString());
+        assertThat(posted.size(), is(1));
+
+        posted.get(0).run();
+
+        verify(textView, times(1)).setText("tag: message");
+    }
+
+    @Test
+    public void log_highFrequencyLogging_coalescesToSinglePendingRender() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+        DebugOverlayTree spied = spy(debugOverlayTree);
+        final List<Runnable> posted = Collections.synchronizedList(new ArrayList<Runnable>());
+        doAnswer(invocation -> {
+            posted.add(invocation.getArgument(0));
+            return null;
+        }).when(spied).postToMainThread(any(Runnable.class));
+
+        for (int i = 0; i < 500; i++) {
+            spied.log(Log.DEBUG, "tag", "message" + i, null);
+        }
+
+        assertThat("logging must coalesce onto a single pending render", posted.size(), is(1));
+        verify(textView, never()).setText(anyString());
+
+        posted.get(0).run();
+
+        verify(textView, times(1)).setText(
+                "tag: message495\ntag: message496\ntag: message497\ntag: message498\ntag: message499");
+    }
+
+    @Test
+    public void log_concurrentThreads_doesNotCorruptBufferOrThrow() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+
+        final int threadCount = 8;
+        final int perThread = 200;
+        final CountDownLatch startLatch = new CountDownLatch(1);
+        final CountDownLatch doneLatch = new CountDownLatch(threadCount);
+        final List<Throwable> errors = Collections.synchronizedList(new ArrayList<Throwable>());
+
+        for (int t = 0; t < threadCount; t++) {
+            final int threadIndex = t;
+            Thread thread = new Thread(() -> {
+                try {
+                    startLatch.await();
+                    for (int i = 0; i < perThread; i++) {
+                        debugOverlayTree.log(Log.DEBUG, "t" + threadIndex, "m" + i, null);
+                    }
+                } catch (Throwable e) {
+                    errors.add(e);
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+            thread.start();
+        }
+        startLatch.countDown();
+
+        assertThat(doneLatch.await(10, TimeUnit.SECONDS), is(true));
+        assertThat(errors.isEmpty(), is(true));
+        assertThat(debugOverlayTree.messages.size(), is(debugOverlayTree.maxLines));
+
+        Pattern linePattern = Pattern.compile("^t\\d+: m\\d+$");
+        for (String line : debugOverlayTree.messages) {
+            assertThat(linePattern.matcher(line).matches(), is(true));
         }
     }
 
