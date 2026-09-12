@@ -21,6 +21,14 @@ public open class OverlayWindowManager @JvmOverloads constructor(private var win
         @JvmStatic public fun getApplicationInstance(): OverlayWindowManager = applicationInstance
         @JvmStatic public fun initApplicationInstance(windowManager: WindowManager) { applicationInstance = OverlayWindowManager(windowManager) }
         @JvmStatic public fun getActivityInstance(activity: Activity): OverlayWindowManager = synchronized(activityInstances) { activityInstances.getOrPut(activity) { OverlayWindowManager(activity.windowManager) } }
+
+        /**
+         * Removes [activity]'s entry, called from `onActivityDestroyed`. The entry's value holds
+         * the Activity's [WindowManager], which strongly references the Activity, so the weak key
+         * alone is not sufficient to release it.
+         */
+        internal fun removeActivityInstance(activity: Activity) { synchronized(activityInstances) { activityInstances.remove(activity) } }
+
         @JvmStatic @RestrictTo(RestrictTo.Scope.TESTS) public fun setApplicationInstance(instance: OverlayWindowManager) { applicationInstance = instance }
         @JvmStatic @RestrictTo(RestrictTo.Scope.TESTS) public fun setActivityInstance(activity: Activity, instance: OverlayWindowManager) { synchronized(activityInstances) { activityInstances[activity] = instance } }
     }
