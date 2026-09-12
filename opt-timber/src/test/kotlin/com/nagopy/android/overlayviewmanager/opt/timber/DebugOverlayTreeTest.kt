@@ -169,23 +169,54 @@ class DebugOverlayTreeTest {
     private lateinit var textView: TextView
 
     /**
+     * Resets core's `OverlayViewManager` singleton by reflection, purely a
+     * test concern (no reset API is added to production code). Today's
+     * Java core declares a package-private, eagerly-created static field
+     * named `INSTANCE` that `init(app)` re-configures in place -- nulling
+     * it would NPE inside `init()`, so it is left alone and `init(app)`
+     * just re-initializes it. T04b's Kotlin core is expected to instead
+     * hold a nullable singleton in a field named `instance`, which this
+     * nulls before `init(app)` so each test starts from a clean singleton
+     * with its own fresh Robolectric `Application`. If neither field
+     * exists, the class shape changed in a way this helper does not
+     * understand, so it fails loudly instead of silently no-op'ing.
+     */
+    private fun resetOverlayViewManagerSingletonForTest() {
+        val clazz = OverlayViewManager::class.java
+        val lowerField = try {
+            clazz.getDeclaredField("instance")
+        } catch (expected: NoSuchFieldException) {
+            null
+        }
+        if (lowerField != null) {
+            lowerField.isAccessible = true
+            lowerField.set(null, null)
+            return
+        }
+
+        val upperField = try {
+            clazz.getDeclaredField("INSTANCE")
+        } catch (expected: NoSuchFieldException) {
+            null
+        }
+        if (upperField != null) {
+            // Current Java core: re-initialization in place is allowed, no reset needed.
+            return
+        }
+
+        throw AssertionError("Expected a static 'instance' or 'INSTANCE' field on ${clazz.name}")
+    }
+
+    /**
      * Concentrates core setup in one place so this suite keeps passing once
      * T04b's Kotlin `OverlayViewManager` starts rejecting a null main
      * looper and re-initialization with a different `Application`:
-     * Robolectric supplies a real main looper, and probing for a
-     * `resetForTesting()` hook -- absent from today's Java core, in which
-     * case this just falls through to a normal `init()` as before --
-     * lets a future core reset its singleton between tests that each run
-     * with a fresh Robolectric `Application`.
+     * Robolectric supplies a real main looper, and resetting the singleton
+     * above lets each test start from a clean state with its own fresh
+     * Robolectric `Application`.
      */
     private fun initCoreForTest(): Application {
-        try {
-            val reset = OverlayViewManager::class.java.getDeclaredMethod("resetForTesting")
-            reset.isAccessible = true
-            reset.invoke(null)
-        } catch (expected: NoSuchMethodException) {
-            // Today's Java core has no reset hook; init() below runs as before.
-        }
+        resetOverlayViewManagerSingletonForTest()
 
         val app = spy(RuntimeEnvironment.getApplication())
         whenever(app.getApplicationContext()).thenReturn(app)
