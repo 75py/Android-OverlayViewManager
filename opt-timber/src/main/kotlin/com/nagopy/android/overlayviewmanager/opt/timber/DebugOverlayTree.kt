@@ -39,8 +39,11 @@ import timber.log.Timber
  * [Option] Implementation of [Timber.Tree].
  */
 open class DebugOverlayTree
+/**
+ * Internal test seam; not supported API.
+ */
 @VisibleForTesting
-constructor() : Timber.DebugTree() {
+internal constructor() : Timber.DebugTree() {
 
     /**
      * Guards [messages] and [maxLines] so that [log] (called from arbitrary
@@ -53,53 +56,63 @@ constructor() : Timber.DebugTree() {
      * not yet executed, so that bursts of [log] calls coalesce into a
      * single pending UI update instead of posting once per log line.
      */
-    @VisibleForTesting
-    @JvmField
-    val renderPending: AtomicBoolean = AtomicBoolean(false)
+    private val renderPending = AtomicBoolean(false)
 
     /**
      * Read from the logging thread by [postToMainThread]. Safe without
-     * `volatile`/locking because it is assigned only once, in this field
-     * initializer, which runs while [INSTANCE] is created by the class's
-     * static initializer; the JLS guarantees that write is visible to
-     * every thread that subsequently observes an initialized
-     * [DebugOverlayTree] class (JLS 12.4.2). It must not be reassigned
-     * outside of tests, or this safe-publication argument no longer holds.
+     * additional locking because it is assigned only once, in this private,
+     * never-reassigned field initializer, which runs while [INSTANCE] is
+     * created by the class's static initializer; the JLS guarantees that
+     * write is visible to every thread that subsequently observes an
+     * initialized [DebugOverlayTree] class (JLS 12.4.2).
      */
-    @VisibleForTesting
-    @JvmField
-    var mainHandler: Handler = Handler(Looper.getMainLooper())
-
-    @VisibleForTesting
-    @JvmField
-    var messages: ArrayDeque<String>? = null
+    private val mainHandler: Handler = Handler(Looper.getMainLooper())
 
     /**
-     * Touched only by [initialize], [register], [render], and the
-     * main-thread-only [Application.ActivityLifecycleCallbacks] methods
-     * registered as [activityLifecycleCallbacks] (`onActivityStarted` /
-     * `onActivityStopped`). [render] runs on the main thread only because
-     * it is always invoked through [postToMainThread]; the other methods
-     * are Android main-thread entry points. [log], which runs on whatever
-     * thread Timber is logging from, never reads or writes this field, so
-     * it needs no additional synchronization for the thread-safety gap
-     * this class addresses.
+     * Internal test seam; not supported API.
      */
     @VisibleForTesting
-    @JvmField
-    var overlayView: OverlayView<TextView>? = null
+    internal var messages: ArrayDeque<String>? = null
 
+    /**
+     * Written by [initialize] (called once from [init], on whichever thread
+     * the caller's `Application.onCreate` runs on) and read by
+     * [getInstance], [register], [render], and the
+     * [activityLifecycleCallbacks] methods (`onActivityStarted` /
+     * `onActivityStopped`, invoked by the platform on the main thread).
+     * [render] itself only ever runs on the main thread because it is
+     * always invoked through [postToMainThread]. [initialize], [register],
+     * and [getInstance] are ordinary methods, not Android-enforced
+     * main-thread entry points; the documented usage calls them from
+     * application/main-thread code (`Application.onCreate`,
+     * `Activity.onCreate`), and this class does not defend against calling
+     * them concurrently with each other. What this field genuinely needs
+     * protecting from is [log], which runs on whatever thread Timber is
+     * logging from: [log] never reads or writes this field, so the logging
+     * thread can never observe a torn or stale reference here.
+     *
+     * Internal test seam; not supported API.
+     */
     @VisibleForTesting
-    @JvmField
-    var registeredActivities: WeakReferenceCache<Activity>? = null
+    internal var overlayView: OverlayView<TextView>? = null
 
+    /**
+     * Internal test seam; not supported API.
+     */
     @VisibleForTesting
-    @JvmField
-    var runningActivities: WeakReferenceCache<Activity>? = null
+    internal var registeredActivities: WeakReferenceCache<Activity>? = null
 
+    /**
+     * Internal test seam; not supported API.
+     */
     @VisibleForTesting
-    @JvmField
-    var registeredAndRunningActivities: WeakReferenceCache<Activity>? = null
+    internal var runningActivities: WeakReferenceCache<Activity>? = null
+
+    /**
+     * Internal test seam; not supported API.
+     */
+    @VisibleForTesting
+    internal var registeredAndRunningActivities: WeakReferenceCache<Activity>? = null
 
     /**
      * Minimum log priority accepted by [log]. [setThreshold] is typically
@@ -109,24 +122,32 @@ constructor() : Timber.DebugTree() {
      * than guarded by [bufferLock] so the threshold check in [log] stays
      * lock-free on its fast path (the common case where a line is
      * filtered out before the buffer is ever touched).
+     *
+     * Internal test seam; not supported API.
      */
     @Volatile
     @VisibleForTesting
-    @JvmField
-    var threshold: Int = 0
+    internal var threshold: Int = 0
 
+    /**
+     * Internal test seam; not supported API.
+     */
     @VisibleForTesting
-    @JvmField
-    var maxLines: Int = 0
+    internal var maxLines: Int = 0
 
     companion object {
 
+        /**
+         * Internal test seam; not supported API.
+         */
         @VisibleForTesting
-        const val DEFAULT_MAX_LINES: Int = 5
+        internal const val DEFAULT_MAX_LINES: Int = 5
 
+        /**
+         * Internal test seam; not supported API.
+         */
         @VisibleForTesting
-        @JvmField
-        var INSTANCE: DebugOverlayTree = DebugOverlayTree()
+        internal var INSTANCE: DebugOverlayTree = DebugOverlayTree()
 
         /**
          * Initialize and return the [Timber.Tree] implementation.
@@ -164,10 +185,12 @@ constructor() : Timber.DebugTree() {
     /**
      * Inner method. Initialize members.
      *
+     * Internal test seam; not supported API.
+     *
      * @param application Application
      */
     @VisibleForTesting
-    open fun initialize(application: Application) {
+    internal open fun initialize(application: Application) {
         messages = ArrayDeque()
         threshold = Log.DEBUG
         maxLines = DEFAULT_MAX_LINES
@@ -243,6 +266,19 @@ constructor() : Timber.DebugTree() {
     }
 
     /**
+     * Forwards to the protected [log] override. Kotlin's `protected` does
+     * not grant same-package access the way Java's did, so unlike the
+     * previous Java test (same package as this class), the Kotlin test
+     * cannot call [log] directly; this seam bridges that gap.
+     *
+     * Internal test seam; not supported API.
+     */
+    @VisibleForTesting
+    internal fun logForTest(priority: Int, tag: String?, message: String, t: Throwable?) {
+        log(priority, tag, message, t)
+    }
+
+    /**
      * Drop the oldest lines until [messages] fits within [maxLines].
      * Callers must hold [bufferLock].
      *
@@ -268,9 +304,7 @@ constructor() : Timber.DebugTree() {
         }
     }
 
-    @VisibleForTesting
-    @JvmField
-    val renderRunnable: Runnable = Runnable {
+    private val renderRunnable: Runnable = Runnable {
         renderPending.set(false)
         render()
     }
@@ -302,10 +336,12 @@ constructor() : Timber.DebugTree() {
      * [Looper.getMainLooper] returns null and the action runs
      * synchronously on the calling thread.
      *
+     * Internal test seam; not supported API.
+     *
      * @param action Action to run on the main thread
      */
     @VisibleForTesting
-    open fun postToMainThread(action: Runnable) {
+    internal open fun postToMainThread(action: Runnable) {
         val mainLooper = Looper.getMainLooper() // Unit tests return null
         if (mainLooper != null && Thread.currentThread() != mainLooper.thread) {
             mainHandler.post(action)
@@ -314,9 +350,11 @@ constructor() : Timber.DebugTree() {
         }
     }
 
+    /**
+     * Internal test seam; not supported API.
+     */
     @VisibleForTesting
-    @JvmField
-    val activityLifecycleCallbacks: Application.ActivityLifecycleCallbacks = object : SimpleActivityLifecycleCallbacks() {
+    internal val activityLifecycleCallbacks: Application.ActivityLifecycleCallbacks = object : SimpleActivityLifecycleCallbacks() {
 
         override fun onActivityStarted(activity: Activity) {
             Logger.d("onActivityStarted %s", activity)
