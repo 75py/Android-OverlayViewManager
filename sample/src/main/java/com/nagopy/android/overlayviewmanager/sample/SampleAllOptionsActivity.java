@@ -95,18 +95,14 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
     }
 
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.sample_text_view:
-                overlayView.getView()
-                        .setText("Clicked: " + SimpleDateFormat.getTimeInstance().format(new Date()));
-                break;
-            case R.id.btn_show:
-                overlayView.getView().setText("overlayView.show()");
-                overlayView.show();
-                break;
-            case R.id.btn_hide:
-                overlayView.hide();
-                break;
+        if (view.getId() == R.id.sample_text_view) {
+            overlayView.getView()
+                    .setText("Clicked: " + SimpleDateFormat.getTimeInstance().format(new Date()));
+        } else if (view.getId() == R.id.btn_show) {
+            overlayView.getView().setText("overlayView.show()");
+            overlayView.show();
+        } else if (view.getId() == R.id.btn_hide) {
+            overlayView.hide();
         }
     }
 
@@ -129,73 +125,61 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         Timber.d("onCheckedChanged id:%d, isChecked:%s", buttonView.getId(), isChecked);
-        switch (buttonView.getId()) {
-            case R.id.chk_touchable:
-                binding.flags.setIsTouchable(isChecked);
-                overlayView.setTouchable(isChecked).update();
-                updateText("overlayView\n  .setTouchable(%s)\n  .update();", isChecked);
-                break;
-            case R.id.chk_draggable:
-                binding.flags.setIsDraggable(isChecked);
-                overlayView.setDraggable(isChecked).update();
-                updateText("overlayView\n  .setDraggable(%s)\n  .update();", isChecked);
-                break;
-            case R.id.chk_allowViewToExtendOutsideScreen:
-                binding.flags.setAllowViewToExtendOutsideScreen(isChecked);
-                overlayView.allowViewToExtendOutsideScreen(isChecked).update();
-                updateText("overlayView\n  .allowViewToExtendOutsideScreen(%s)\n  .update();", isChecked);
-                break;
+        if (buttonView.getId() == R.id.chk_touchable) {
+            binding.flags.setIsTouchable(isChecked);
+            overlayView.setTouchable(isChecked).update();
+            updateText("overlayView\n  .setTouchable(%s)\n  .update();", isChecked);
+        } else if (buttonView.getId() == R.id.chk_draggable) {
+            binding.flags.setIsDraggable(isChecked);
+            overlayView.setDraggable(isChecked).update();
+            updateText("overlayView\n  .setDraggable(%s)\n  .update();", isChecked);
+        } else if (buttonView.getId() == R.id.chk_allowViewToExtendOutsideScreen) {
+            binding.flags.setAllowViewToExtendOutsideScreen(isChecked);
+            overlayView.allowViewToExtendOutsideScreen(isChecked).update();
+            updateText("overlayView\n  .allowViewToExtendOutsideScreen(%s)\n  .update();", isChecked);
         }
     }
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         Timber.d("onProgressChanged seekBarId:%d, progress:%d", seekBar.getId(), progress);
-        switch (seekBar.getId()) {
-            case R.id.seek_alpha:
-                binding.alpha.setAlphaPercentage(progress);
-                float alpha = progress / 100f;
-                overlayView.setAlpha(alpha).update();
-                updateText("overlayView\n  .setAlpha(%.2f)\n  .update();", alpha);
-                break;
-            case R.id.seek_x:
-                binding.xy.setXSeek(progress);
-                int x = progress - binding.getDisplayWidth();
-                overlayView.setX(x).update();
-                updateText("overlayView\n  .setX(%d)\n  .update()", x);
-                break;
-            case R.id.seek_y:
-                binding.xy.setYSeek(progress);
-                int y = progress - binding.getDisplayHeight();
-                overlayView.setY(y).update();
-                updateText("overlayView\n  .setY(%d)\n  .update()", y);
-                break;
-            case R.id.seek_width_px:
-                binding.width.setWidthPixels(progress);
-                if (binding.width.getWidthCheckId() == R.id.rbtn_width_px) {
-                    overlayView.setWidth(progress).update();
-                    updateText("overlayView\n  .setWidth(%d)\n  .update()", progress);
-                }
-                break;
-            case R.id.seek_height_px:
-                binding.height.setHeightPixels(progress);
-                if (binding.height.getHeightCheckId() == R.id.rbtn_height_px) {
-                    overlayView.setHeight(progress).update();
-                    updateText("overlayView\n  .setHeight(%d)\n  .update()", progress);
-                }
-                break;
-            case R.id.seek_margin_vertical:
-                binding.margins.setVerticalMarginPercentage(progress);
-                float verticalMargin = progress / 100f;
-                overlayView.setVerticalMargin(verticalMargin).update();
-                updateText("overlayView\n  .setVerticalMargin(%.2f)\n  .update()", verticalMargin);
-                break;
-            case R.id.seek_margin_horizontal:
-                binding.margins.setHorizontalMarginPercentage(progress);
-                float horizontalMargin = progress / 100f;
-                overlayView.setHorizontalMargin(horizontalMargin).update();
-                updateText("overlayView\n  .setHorizontalMargin(%.2f)\n  .update()", horizontalMargin);
-                break;
+        if (seekBar.getId() == R.id.seek_alpha) {
+            binding.alpha.setAlphaPercentage(progress);
+            float alpha = progress / 100f;
+            overlayView.setAlpha(alpha).update();
+            updateText("overlayView\n  .setAlpha(%.2f)\n  .update();", alpha);
+        } else if (seekBar.getId() == R.id.seek_x) {
+            binding.xy.setXSeek(progress);
+            int x = progress - binding.getDisplayWidth();
+            overlayView.setX(x).update();
+            updateText("overlayView\n  .setX(%d)\n  .update()", x);
+        } else if (seekBar.getId() == R.id.seek_y) {
+            binding.xy.setYSeek(progress);
+            int y = progress - binding.getDisplayHeight();
+            overlayView.setY(y).update();
+            updateText("overlayView\n  .setY(%d)\n  .update()", y);
+        } else if (seekBar.getId() == R.id.seek_width_px) {
+            binding.width.setWidthPixels(progress);
+            if (binding.width.getWidthCheckId() == R.id.rbtn_width_px) {
+                overlayView.setWidth(progress).update();
+                updateText("overlayView\n  .setWidth(%d)\n  .update()", progress);
+            }
+        } else if (seekBar.getId() == R.id.seek_height_px) {
+            binding.height.setHeightPixels(progress);
+            if (binding.height.getHeightCheckId() == R.id.rbtn_height_px) {
+                overlayView.setHeight(progress).update();
+                updateText("overlayView\n  .setHeight(%d)\n  .update()", progress);
+            }
+        } else if (seekBar.getId() == R.id.seek_margin_vertical) {
+            binding.margins.setVerticalMarginPercentage(progress);
+            float verticalMargin = progress / 100f;
+            overlayView.setVerticalMargin(verticalMargin).update();
+            updateText("overlayView\n  .setVerticalMargin(%.2f)\n  .update()", verticalMargin);
+        } else if (seekBar.getId() == R.id.seek_margin_horizontal) {
+            binding.margins.setHorizontalMarginPercentage(progress);
+            float horizontalMargin = progress / 100f;
+            overlayView.setHorizontalMargin(horizontalMargin).update();
+            updateText("overlayView\n  .setHorizontalMargin(%.2f)\n  .update()", horizontalMargin);
         }
     }
 
@@ -210,48 +194,36 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
         Timber.d("onCheckedChanged groupId:%d, checkedId:%d", group.getId(), checkedId);
-        switch (group.getId()) {
-            case R.id.rgrp_gravity:
-                binding.gravity.setGravityCheckId(checkedId);
-                overlayView.setGravity(getGravityValue(checkedId)).update();
-                updateText("overlayView\n  .setGravity(%s)\n  .update()", getGravityValueString(checkedId));
-                break;
-            case R.id.rgrp_width:
-                binding.width.setWidthCheckId(checkedId);
-                switch (checkedId) {
-                    case R.id.rbtn_width_wc:
-                        overlayView.setWidth(WRAP_CONTENT).update();
-                        updateText("overlayView\n  .setWidth(WRAP_CONTENT)\n  .update()");
-                        break;
-                    case R.id.rbtn_width_mp:
-                        overlayView.setWidth(MATCH_PARENT).update();
-                        updateText("overlayView\n  .setWidth(MATCH_PARENT)\n  .update()");
-                        break;
-                    case R.id.rbtn_width_px:
-                        overlayView.setWidth(binding.width.getWidthPixels()).update();
-                        binding.width.setWidthPixels(binding.width.getWidthPixels());
-                        updateText("overlayView\n  .setWidth(%d)\n  .update()", binding.width.getWidthPixels());
-                        break;
-                }
-                break;
-            case R.id.rgrp_height:
-                binding.height.setHeightCheckId(checkedId);
-                switch (checkedId) {
-                    case R.id.rbtn_height_wc:
-                        overlayView.setHeight(WRAP_CONTENT).update();
-                        updateText("overlayView\n  .setHeight(WRAP_CONTENT)\n  .update()");
-                        break;
-                    case R.id.rbtn_height_mp:
-                        overlayView.setHeight(MATCH_PARENT).update();
-                        updateText("overlayView\n  .setHeight(MATCH_PARENT)\n  .update()");
-                        break;
-                    case R.id.rbtn_height_px:
-                        overlayView.setHeight(binding.height.getHeightPixels()).update();
-                        binding.height.setHeightPixels(binding.height.getHeightPixels());
-                        updateText("overlayView\n  .setHeight(%d)\n  .update()", binding.height.getHeightPixels());
-                        break;
-                }
-                break;
+        if (group.getId() == R.id.rgrp_gravity) {
+            binding.gravity.setGravityCheckId(checkedId);
+            overlayView.setGravity(getGravityValue(checkedId)).update();
+            updateText("overlayView\n  .setGravity(%s)\n  .update()", getGravityValueString(checkedId));
+        } else if (group.getId() == R.id.rgrp_width) {
+            binding.width.setWidthCheckId(checkedId);
+            if (checkedId == R.id.rbtn_width_wc) {
+                overlayView.setWidth(WRAP_CONTENT).update();
+                updateText("overlayView\n  .setWidth(WRAP_CONTENT)\n  .update()");
+            } else if (checkedId == R.id.rbtn_width_mp) {
+                overlayView.setWidth(MATCH_PARENT).update();
+                updateText("overlayView\n  .setWidth(MATCH_PARENT)\n  .update()");
+            } else if (checkedId == R.id.rbtn_width_px) {
+                overlayView.setWidth(binding.width.getWidthPixels()).update();
+                binding.width.setWidthPixels(binding.width.getWidthPixels());
+                updateText("overlayView\n  .setWidth(%d)\n  .update()", binding.width.getWidthPixels());
+            }
+        } else if (group.getId() == R.id.rgrp_height) {
+            binding.height.setHeightCheckId(checkedId);
+            if (checkedId == R.id.rbtn_height_wc) {
+                overlayView.setHeight(WRAP_CONTENT).update();
+                updateText("overlayView\n  .setHeight(WRAP_CONTENT)\n  .update()");
+            } else if (checkedId == R.id.rbtn_height_mp) {
+                overlayView.setHeight(MATCH_PARENT).update();
+                updateText("overlayView\n  .setHeight(MATCH_PARENT)\n  .update()");
+            } else if (checkedId == R.id.rbtn_height_px) {
+                overlayView.setHeight(binding.height.getHeightPixels()).update();
+                binding.height.setHeightPixels(binding.height.getHeightPixels());
+                updateText("overlayView\n  .setHeight(%d)\n  .update()", binding.height.getHeightPixels());
+            }
         }
     }
 
@@ -346,49 +318,47 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
     }
 
     int getGravityValue(int gravityCheckId) {
-        switch (gravityCheckId) {
-            case R.id.rbtn_top_start:
-                return Gravity.TOP | Gravity.START;
-            case R.id.rbtn_top_center_vertical:
-                return Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            case R.id.rbtn_top_end:
-                return Gravity.TOP | Gravity.END;
-            case R.id.rbtn_center_start:
-                return Gravity.CENTER_VERTICAL | Gravity.START;
-            case R.id.rbtn_center:
-                return Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL;
-            case R.id.rbtn_center_end:
-                return Gravity.CENTER_VERTICAL | Gravity.END;
-            case R.id.rbtn_bottom_start:
-                return Gravity.BOTTOM | Gravity.START;
-            case R.id.rbtn_bottom_center_vertical:
-                return Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-            case R.id.rbtn_bottom_end:
-                return Gravity.BOTTOM | Gravity.END;
+        if (gravityCheckId == R.id.rbtn_top_start) {
+            return Gravity.TOP | Gravity.START;
+        } else if (gravityCheckId == R.id.rbtn_top_center_vertical) {
+            return Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        } else if (gravityCheckId == R.id.rbtn_top_end) {
+            return Gravity.TOP | Gravity.END;
+        } else if (gravityCheckId == R.id.rbtn_center_start) {
+            return Gravity.CENTER_VERTICAL | Gravity.START;
+        } else if (gravityCheckId == R.id.rbtn_center) {
+            return Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL;
+        } else if (gravityCheckId == R.id.rbtn_center_end) {
+            return Gravity.CENTER_VERTICAL | Gravity.END;
+        } else if (gravityCheckId == R.id.rbtn_bottom_start) {
+            return Gravity.BOTTOM | Gravity.START;
+        } else if (gravityCheckId == R.id.rbtn_bottom_center_vertical) {
+            return Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        } else if (gravityCheckId == R.id.rbtn_bottom_end) {
+            return Gravity.BOTTOM | Gravity.END;
         }
         return Gravity.NO_GRAVITY;
     }
 
     String getGravityValueString(int gravityCheckId) {
-        switch (gravityCheckId) {
-            case R.id.rbtn_top_start:
-                return "TOP | START";
-            case R.id.rbtn_top_center_vertical:
-                return "TOP\n    | CENTER_HORIZONTAL";
-            case R.id.rbtn_top_end:
-                return "TOP | END";
-            case R.id.rbtn_center_start:
-                return "\n    CENTER_VERTICAL\n    | START";
-            case R.id.rbtn_center:
-                return "CENTER";
-            case R.id.rbtn_center_end:
-                return "\n    CENTER_VERTICAL\n    | END";
-            case R.id.rbtn_bottom_start:
-                return "BOTTOM | START";
-            case R.id.rbtn_bottom_center_vertical:
-                return "BOTTOM\n    | CENTER_HORIZONTAL";
-            case R.id.rbtn_bottom_end:
-                return "BOTTOM | END";
+        if (gravityCheckId == R.id.rbtn_top_start) {
+            return "TOP | START";
+        } else if (gravityCheckId == R.id.rbtn_top_center_vertical) {
+            return "TOP\n    | CENTER_HORIZONTAL";
+        } else if (gravityCheckId == R.id.rbtn_top_end) {
+            return "TOP | END";
+        } else if (gravityCheckId == R.id.rbtn_center_start) {
+            return "\n    CENTER_VERTICAL\n    | START";
+        } else if (gravityCheckId == R.id.rbtn_center) {
+            return "CENTER";
+        } else if (gravityCheckId == R.id.rbtn_center_end) {
+            return "\n    CENTER_VERTICAL\n    | END";
+        } else if (gravityCheckId == R.id.rbtn_bottom_start) {
+            return "BOTTOM | START";
+        } else if (gravityCheckId == R.id.rbtn_bottom_center_vertical) {
+            return "BOTTOM\n    | CENTER_HORIZONTAL";
+        } else if (gravityCheckId == R.id.rbtn_bottom_end) {
+            return "BOTTOM | END";
         }
         return "NO_GRAVITY";
     }

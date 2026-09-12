@@ -17,11 +17,13 @@ import org.mockito.MockitoAnnotations;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowSettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -31,7 +33,7 @@ import static org.mockito.Mockito.when;
 import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = Build.VERSION_CODES.LOLLIPOP
+@Config(sdk = Build.VERSION_CODES.M
         , manifest = Config.NONE
 )
 public class OverlayViewManagerTest {
@@ -101,12 +103,22 @@ public class OverlayViewManagerTest {
         assertThat(overlayViewManager.windowManager, is(notNullValue()));
     }
 
-    @Config(sdk = Build.VERSION_CODES.LOLLIPOP_MR1)
+    @Config(sdk = Build.VERSION_CODES.M)
     @Test
-    public void canDrawOverlays_22() throws Exception {
+    public void canDrawOverlays_23_permissionGranted() throws Exception {
+        ShadowSettings.setCanDrawOverlays(true);
         OverlayViewManager.init(application);
 
         assertTrue(OverlayViewManager.getInstance().canDrawOverlays());
+    }
+
+    @Config(sdk = Build.VERSION_CODES.M)
+    @Test
+    public void canDrawOverlays_23_permissionDenied() throws Exception {
+        ShadowSettings.setCanDrawOverlays(false);
+        OverlayViewManager.init(application);
+
+        assertFalse(OverlayViewManager.getInstance().canDrawOverlays());
     }
 
     /*

@@ -55,25 +55,18 @@ public class SampleStartActivity extends AppCompatActivity {
     }
 
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.btn_requestPermission:
-                overlayViewManager.requestOverlayPermission();
-                break;
-            case R.id.btn_sample_all_options:
-                startActivity(new Intent(this, SampleAllOptionsActivity.class));
-                break;
-            case R.id.btn_sample1:
-                startActivity(new Intent(this, Sample1Activity.class));
-                break;
-            case R.id.btn_sample2:
-                startActivity(new Intent(this, Sample2Activity.class));
-                break;
-            case R.id.btn_sample_timber:
-                startActivity(new Intent(this, SampleTimberActivity.class));
-                break;
-            case R.id.btn_sample_override_brightness:
-                startActivity(new Intent(this, SampleOverrideScreenBrightnessActivity.class));
-                break;
+        if (view.getId() == R.id.btn_requestPermission) {
+            overlayViewManager.requestOverlayPermission();
+        } else if (view.getId() == R.id.btn_sample_all_options) {
+            startActivity(new Intent(this, SampleAllOptionsActivity.class));
+        } else if (view.getId() == R.id.btn_sample1) {
+            startActivity(new Intent(this, Sample1Activity.class));
+        } else if (view.getId() == R.id.btn_sample2) {
+            startActivity(new Intent(this, Sample2Activity.class));
+        } else if (view.getId() == R.id.btn_sample_timber) {
+            startActivity(new Intent(this, SampleTimberActivity.class));
+        } else if (view.getId() == R.id.btn_sample_override_brightness) {
+            startActivity(new Intent(this, SampleOverrideScreenBrightnessActivity.class));
         }
     }
 
