@@ -50,3 +50,7 @@ Local tests use JUnit 4, Mockito, and Robolectric; lint tests use Android lint's
 ## Commit & Pull Request Guidelines
 
 Recent commits use short imperative subjects, such as `Update JavaDocs` and `Remove redundant timber dependency in tests`. Follow that style and keep commits focused. In pull requests, describe the problem, affected modules, and validation performed; link relevant issues. Include screenshots or recordings for visible sample or overlay changes. Update usage documentation when public APIs change.
+
+## 3.0.0 Resource Allocation Override (2026-09-12)
+
+The user requested a larger Claude Code share because Codex usage is constrained. Prefer Claude Code / Sonnet 5 for new implementation, validation, and independent review work. Keep reviewers separate from implementers. Codex coordinates ownership, performs focused approval synthesis, and serializes integration; do not start new Codex workers by default. If Claude cannot run a required local check, Codex may execute the supplied minimal commands directly without spawning a validation worker. Exact-head approval by the opposite coordinator and successful CI remain required before merging. Record handoffs and decisions in V3_0_0_PLAN.md and docs/coordination/3.0.0/.

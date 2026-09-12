@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **再開して作業継続中**。T01設計・T02 CI・T03ツールチェーン更新・T04a不変設定・結果型・T07 Java段階2まで統合済み。T04bの同期状態管理を実装中、T07 Kotlin段階はClaude担当。
+- 状態: **再開して作業継続中**。T01設計・T02 CI・T03ツールチェーン更新・T04a不変設定・結果型・T07 Java段階2まで統合済み。T04b（PR40）・T07 Kotlin段階（PR37）は統合済み。利用制限への対応で以後の実装・検証をClaude Code中心へ移管中。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -111,12 +111,12 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 統合済み |
 | T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 作業中 |
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
-| T04b | 同期表示状態機械の段階移行 | Codex | T04a | 作業中 |
-| T04c | 一時互換APIの最終除去 | Codex | T07, T10 | 未着手 |
-| T05 | 監視・座標・権限境界の見直し | Codex | T04b | 未着手 |
-| T06 | タッチ透過・ドラッグの互換性改善 | Codex | T05 | 未着手 |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 作業中 |
-| T08 | 初期化・Activity寿命・リソース解放 | Codex | T05 | 未着手 |
+| T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
+| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
+| T05 | 監視・座標・権限境界の見直し | Claude（T05a途中成果をCodexから移管） | T04b | 作業中（Claudeへ未コミット途中成果を引き継ぎ済み） |
+| T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05 | 未着手 |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 相互レビュー中（PR37、寿命統合は後続） |
+| T08 | 初期化・Activity寿命・リソース解放 | Claude | T05 | 未着手 |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 未着手 |
 | T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
@@ -432,3 +432,24 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - T04b候補2ea8c02: core 59 testsと3 module assemble成功。Timberは既知fixtureで25件失敗、統合は保留。
 - 両司令塔がproduction reset APIを追加しない方針に合意。Terra/high継続担当が既存test hookを除去し、Claude側はtest-only reflectionでfixtureを適応する。
 - 次の受け入れ条件: 修正候補の独立レビュー、core/Timberの組み合わせ検証、CI成功、相手司令塔の候補SHA承認。
+
+### 2026-09-12 18:18 JST checkpoint
+
+- PR39統合: 3f7ceb5。T04b候補20ae42aは63 core tests・3 module assemble成功、PR40 draftでClaude独立レビュー中。
+- PR37はc0d27e1の3件のtest reflection失敗を9eb38b7で修正。独立Terra/highが候補単体・T04b組み合わせを検証中、承認・統合は未実施。
+- T05a/T05b分割をClaudeへ提案中。core同一ファイルの編集はPR40受け入れ後に直列化する。
+
+### T04c / T06 follow-ups from PR40
+
+- [ ] constructorのJava公開可視性を最終API監査で閉じる（RestrictToだけをaccess controlと扱わない）。
+- [ ] 暫定public DraggableOnTouchListener/custom listener setterをT06/T04cで除去・内部化する。
+- [ ] DISPOSED show/updateのdiagnostic保持KDocを補足し、合意済みnullability方針を適用する。
+
+### 2026-09-12 18:32 JST: 利用制限に伴う分担変更
+
+ユーザーの最新指示により、以後の実装・検証・独立レビューはClaude Code / Sonnet 5を優先する。Codex子の新規起動は既定で行わず、Codex司令塔は調整・焦点を絞った承認・統合を担当する。独立レビュアーを実装担当と分離し、対向司令塔のSHA固定承認とCI成功の条件を維持する。Claudeが必要なローカル検証を実行できない場合だけ、Codex司令塔が指定コマンドを直接実行する。
+
+- T05aのCodex途中成果を安全な区切りでClaudeへ移管し、以後T05b/T06/T08/T07寿命/T10/T11の実装・検証をClaudeが担当する。
+- T09 stage 1（registry/vendor/lintPublish/現detector堅牢化）はClaude先行着手を合意。最終APIへの合わせ込みはT06/T04c後。
+- T04c最終API整理もClaude Code担当を優先し、Codexが対向承認・統合する。
+- 専用API23/26/35/36 AVDの起動確認はLuna/mediumが完了して解放済み。アプリの端末テストは未実行。
