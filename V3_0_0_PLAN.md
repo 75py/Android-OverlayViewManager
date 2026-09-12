@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03は再試行でAGP/Gradle/SDK更新を実装し、依存更新を継続中。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03のJava/Kotlin相互コンパイルを実証済み。全体検証はsampleの旧ProGuard設定で停止し、修正中。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -110,6 +110,8 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
 | T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 作業中 |
 | T04 | 表示状態とスレッド処理の修正 | Codex | T01, T03 | 未着手 |
+| T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 未着手 |
+| T04b | 同期表示状態機械の段階移行 | Codex | T04a | 未着手 |
 | T04c | 一時互換APIの最終除去 | Codex | T07, T10 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04b | 未着手 |
 | T06 | タッチ透過・ドラッグの互換性改善 | Codex | T05 | 未着手 |
@@ -360,3 +362,16 @@ PR URL / head SHA:
 - 提案msg_58204d3d71a0（14:29:50 JST）、Claude同意msg_31c3ba95b7b4（14:32:18 JST）。API設計自体の変更はない。
 
 T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の3コミットまで進行、依存更新中。ここではビルド検証済み・採用確定とは扱わず、候補SHAと公式根拠・検証を次に確認する。
+
+### T03構成判断と基準検証（14:50 JST）
+
+- AGP9の組み込みKotlinと新DSLを採用し、無効化フラグ・明示的kotlin.android適用を除去する方針に双方合意（msg_f61c1953e946 / msg_1a1846f89349）。新DSLへの設定移行をT03内で完了する。
+- Terra/high task_5fa509223d3f / ctx_d750aaf55990が86eb4f8を実検証。Gradle9.4.1の設定フェーズでlint/build.gradleのProject直下sourceCompatibilityが未知プロパティとなり停止。ビルド・テスト・lintは未実行。wrapper bootstrap/checksumは成功、選定した直接依存の公式POMは実在を確認した。
+- CodexはこれをP1の候補ビルド阻害として修正必須と判断。初期の「coreにKotlin pluginがない可能性」という仮説は実コード確認で訂正（既に適用済み）。JVM target不整合はこの時点で再現されておらず、修正版でJava/Kotlin17の実コンパイルを確認する。
+- Claude報告msg_0efbd3db7da6: 新DSL移行c914d43782ef284bc4739c277166f9425eaf1e0e完成、lint DSL修正中。AGP9.2.1 POM上のKotlin2.2.10・lint32.2.1を確認。担当自己申告はclaude-sonnet-5/high（手動起動のlaunch.effectiveは空のまま）。
+- PR28は承認・CI成功後に1af6dfb6b23202eca18a3e4f42f8a084061440acへ統合。非ブロッキング指摘のT04a/b台帳行を本更新で追加。
+- 詳細: docs/coordination/3.0.0/2026-09-12-toolchain.md。
+
+- T03修正版24fc1f2faacedf088eb7dbefd6d2bf961562af6bをpushし、Terra/high task_74810ea07694 / ctx_d88e20a3160aで再検証開始（msg_be74df233e72 / msg_15ff4dbb7933）。組み込みKotlinのjvmTargetがcompileOptionsを継承する公式既定を採用し、一時Java/Kotlinコードで実証する。前回未実行だった全チェックをこのSHAで行う。
+
+- 24fc1f2のCI run34676815383とTerra再検証はsample/build.gradle36の旧proguard-android.txtで設定失敗（msg_30d961482558）。core/Timberは個別構成でJava/Kotlin双方向コンパイル・class major61を実証。全98テストとlintは未実行のまま。次の設定修正後に必須全チェックを再実行する（msg_4c4ceee43442 / msg_8e7f857cf73f / msg_5b1b01e48d25）。
