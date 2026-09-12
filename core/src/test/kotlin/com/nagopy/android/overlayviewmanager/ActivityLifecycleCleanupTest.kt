@@ -54,11 +54,13 @@ class ActivityLifecycleCleanupTest {
         PassThroughOpacityRegistry.resetForTests()
     }
 
-    @Test fun forcedDisposalOfAttachedHandleRemovesOnceAndClearsEveryReference() {
+    @Test fun forcedDisposalOfAttachedHandleRemovesExactlyOnceAndClearsEveryReference() {
         val application = RuntimeEnvironment.getApplication()
         OverlayViewManager.init(application)
         val controller = Robolectric.buildActivity(Activity::class.java).create().start().resume()
         val activity = controller.get()
+        val backend = RecordingBackend()
+        OverlayWindowManager.setActivityInstance(activity, backend)
         val handle = OverlayViewManager.getInstance().newOverlayView(View(activity), activity)
 
         assertTrue(handle.show().isSuccess)
@@ -68,6 +70,7 @@ class ActivityLifecycleCleanupTest {
 
         controller.pause().stop().destroy()
 
+        assertEquals(1, backend.hideCalls)
         assertEquals(OverlayState.DISPOSED, handle.state)
         assertNull(handle.lastFailure)
         assertFalse(activityOverlayRegistryContains(activity))
@@ -77,6 +80,13 @@ class ActivityLifecycleCleanupTest {
         assertNull(privateField(handle, "detachListener"))
         assertNull(privateField(handle, "onActivityRelease"))
         assertThrows(IllegalStateException::class.java) { handle.view }
+
+        // A repeated forced-disposal callback, a later show(), and a later dispose() are all no-ops
+        // that must not call the backend again.
+        handle.disposeForActivityDestruction()
+        handle.show()
+        handle.dispose()
+        assertEquals(1, backend.hideCalls)
     }
 
     @Test fun forcedDisposalOfConfiguredHandleDisposesWithoutABackendCall() {
@@ -84,42 +94,59 @@ class ActivityLifecycleCleanupTest {
         OverlayViewManager.init(application)
         val controller = Robolectric.buildActivity(Activity::class.java).create().start().resume()
         val activity = controller.get()
+        val backend = RecordingBackend()
+        OverlayWindowManager.setActivityInstance(activity, backend)
         val handle = OverlayViewManager.getInstance().newOverlayView(View(activity), activity)
         assertEquals(OverlayState.CONFIGURED, handle.state)
 
         controller.pause().stop().destroy()
 
+        assertEquals(0, backend.hideCalls)
         assertEquals(OverlayState.DISPOSED, handle.state)
         assertNull(handle.lastFailure)
         assertFalse(activityOverlayRegistryContains(activity))
     }
 
-    @Test fun forcedDisposalClassifiesAFailedRemovalAndDoesNotRetainTheException() {
+    @Test fun forcedDisposalClassifiesAFailedRemovalReleasesEveryReferenceAndDoesNotRetainTheException() {
         val application = RuntimeEnvironment.getApplication()
         OverlayViewManager.init(application)
         val controller = Robolectric.buildActivity(Activity::class.java).create().start().resume()
         val activity = controller.get()
-        OverlayWindowManager.setActivityInstance(activity, RemoveThrowingBackend(WindowManager.BadTokenException("bad token")))
+        val backend = RecordingBackend(hideFailure = WindowManager.BadTokenException("bad token"))
+        OverlayWindowManager.setActivityInstance(activity, backend)
         val handle = OverlayViewManager.getInstance().newOverlayView(View(activity), activity)
         assertTrue(handle.show().isSuccess)
 
         controller.pause().stop().destroy()
 
+        assertEquals(1, backend.hideCalls)
         assertEquals(OverlayState.DISPOSED, handle.state)
         assertEquals(OverlayFailure.INVALID_WINDOW_TOKEN, handle.lastFailure)
+        // Same structural release as the success path: every reference cleared, both registries
+        // dropped, and no field on the handle retains the caught Throwable.
+        assertFalse(activityOverlayRegistryContains(activity))
+        assertFalse(activityInstancesContains(activity))
+        assertNull(privateField(handle, "ownedView"))
+        assertNull(privateField(handle, "backend"))
+        assertNull(privateField(handle, "detachListener"))
+        assertNull(privateField(handle, "onActivityRelease"))
+        assertThrows(IllegalStateException::class.java) { handle.view }
+        assertNoThrowableFieldRetained(handle)
     }
 
-    @Test fun afterForcedDisposalShowAndRepeatedDisposePreserveTheDiagnostic() {
+    @Test fun afterForcedDisposalShowAndRepeatedDisposePreserveTheDiagnosticWithoutAFurtherBackendCall() {
         val application = RuntimeEnvironment.getApplication()
         OverlayViewManager.init(application)
         val controller = Robolectric.buildActivity(Activity::class.java).create().start().resume()
         val activity = controller.get()
-        OverlayWindowManager.setActivityInstance(activity, RemoveThrowingBackend(IllegalStateException("busy")))
+        val backend = RecordingBackend(hideFailure = IllegalStateException("busy"))
+        OverlayWindowManager.setActivityInstance(activity, backend)
         val handle = OverlayViewManager.getInstance().newOverlayView(View(activity), activity)
         handle.show()
 
         controller.pause().stop().destroy()
 
+        assertEquals(1, backend.hideCalls)
         assertEquals(OverlayFailure.WINDOW_MANAGER_REJECTED, handle.lastFailure)
 
         val showAfterDisposal = handle.show()
@@ -138,6 +165,9 @@ class ActivityLifecycleCleanupTest {
         assertTrue(repeatedDispose.isSuccess)
         assertFalse(repeatedDispose.changed)
         assertEquals(OverlayFailure.WINDOW_MANAGER_REJECTED, handle.lastFailure)
+
+        // None of show/update/hide/dispose after forced disposal may call the backend again.
+        assertEquals(1, backend.hideCalls)
     }
 
     @Test fun everyLiveHandleOfTheDestroyedActivityIsDisposed() {
@@ -210,18 +240,36 @@ class ActivityLifecycleCleanupTest {
 
     private fun clearActivityOverlayRegistry() = activityOverlayRegistryMap().clear()
 
-    /** Reflects into `OverlayWindowManager.Companion`'s private `activityInstances` map (no test accessor exists). */
+    /**
+     * Reflects into the companion property `activityInstances` (no test accessor exists). Its
+     * backing field lives on the outer class [OverlayWindowManager], not on
+     * `OverlayWindowManager.Companion`, so it is read as a static field (`get(null)`).
+     */
     private fun activityInstancesContains(activity: Activity): Boolean {
-        val field = OverlayWindowManager.Companion::class.java.getDeclaredField("activityInstances")
+        val field = OverlayWindowManager::class.java.getDeclaredField("activityInstances")
         field.isAccessible = true
         @Suppress("UNCHECKED_CAST")
-        val map = field.get(OverlayWindowManager.Companion) as Map<Activity, *>
+        val map = field.get(null) as Map<Activity, *>
         return map.containsKey(activity)
     }
 
-    private class RemoveThrowingBackend(private val failure: Throwable) : OverlayWindowManager() {
-        override fun show(view: View, params: WindowManager.LayoutParams) = Unit
+    private fun assertNoThrowableFieldRetained(instance: Any) {
+        val retained = instance.javaClass.declaredFields.filter { field ->
+            field.isAccessible = true
+            field.get(instance) is Throwable
+        }
+        assertTrue("Expected no field to retain a Throwable, but found: $retained", retained.isEmpty())
+    }
+
+    /** Records `hide`/`removeViewImmediate` invocation counts so forced disposal's "exactly once" contract is verifiable. */
+    private class RecordingBackend(private val hideFailure: Throwable? = null) : OverlayWindowManager() {
+        var showCalls = 0
+        var hideCalls = 0
+        override fun show(view: View, params: WindowManager.LayoutParams) { showCalls++ }
         override fun update(view: View, params: WindowManager.LayoutParams) = Unit
-        override fun hide(view: View) { throw failure }
+        override fun hide(view: View) {
+            hideCalls++
+            hideFailure?.let { throw it }
+        }
     }
 }
