@@ -479,6 +479,46 @@ public class DebugOverlayTreeTest {
     }
 
     @Test
+    public void setThreshold_onOtherThread_isVisibleWhenLoggingFromAnotherThread() throws Exception {
+        debugOverlayTree.initialize(application);
+        debugOverlayTree.overlayView = overlayView;
+
+        final List<Throwable> errors = Collections.synchronizedList(new ArrayList<Throwable>());
+        final CountDownLatch thresholdSetLatch = new CountDownLatch(1);
+
+        Thread writerThread = new Thread(() -> {
+            try {
+                debugOverlayTree.setThreshold(Log.ERROR);
+            } catch (Throwable e) {
+                errors.add(e);
+            } finally {
+                thresholdSetLatch.countDown();
+            }
+        });
+        writerThread.start();
+        assertThat(thresholdSetLatch.await(10, TimeUnit.SECONDS), is(true));
+        writerThread.join(10_000);
+
+        final CountDownLatch loggingDoneLatch = new CountDownLatch(1);
+        Thread loggerThread = new Thread(() -> {
+            try {
+                debugOverlayTree.log(Log.DEBUG, "tag", "filtered out", null);
+                debugOverlayTree.log(Log.ERROR, "tag", "passes threshold", null);
+            } catch (Throwable e) {
+                errors.add(e);
+            } finally {
+                loggingDoneLatch.countDown();
+            }
+        });
+        loggerThread.start();
+        assertThat(loggingDoneLatch.await(10, TimeUnit.SECONDS), is(true));
+        loggerThread.join(10_000);
+
+        assertThat(errors.isEmpty(), is(true));
+        verify(textView, times(1)).setText("tag: passes threshold");
+    }
+
+    @Test
     public void SimpleActivityLifecycleCallbacks_onActivityDestroyed() throws Exception {
         {
             debugOverlayTree.registeredActivities = registeredActivitiesMock;
