@@ -75,7 +75,8 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
                         public void onClick(View view) {
                             startActivity(new Intent(getApplicationContext(), Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                         }
-                    }).show();
+                    });
+            overlayView.show();
         }
 
         @Override
