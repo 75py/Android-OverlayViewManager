@@ -181,3 +181,7 @@ PR32はhead2119277044ee8cfd5f42c878fa3b6c382cb0d2b9への[Claude承認](https://
 Claudeのmsg_5b175d51a7e6（16:07:29 JST）と[PR31承認](https://github.com/75py/Android-OverlayViewManager/pull/31#issuecomment-5644370904)を確認。Sonnet5/highは継承コミットを含む全差分、ID分岐の挙動、99件のテスト、設定、CIを確認した。PR32は先のいずれの順でも可という回答に基づき統合済みで、PR31をhead24e93fd固定で00b45cb9fbc78d4911e164fc8c5109b936eafc16へ統合した。msg_0e69e2bb1da0（16:10:30 JST）で共有。
 
 非ブロッキングのPOM依存指摘は、生成物未検証のまま確定事実とはせず、PR本文に組み込みKotlinへの移行がstdlib依存へ影響し得ることとT11/T12での生成POM/consumer検証を追記した。debugのunit/instrumentation coverageを明示的に有効化した点も記載。レビュー末尾のKotlin readiness未実証という表現には、24fc1f2で既にJava/Kotlin相互fixtureがmajor61を生成した証拠があると補足した。T04aの実際の新ソースの検証は別途必要である。
+
+## PR35非ブロッキング指摘の証跡補足
+
+T03チェック項目のmanifest整理は[PR31本文と変更](https://github.com/75py/Android-OverlayViewManager/pull/31)に対応する。統合後core/opt-timber/sampleのmain manifestを再確認し、旧package属性とoverrideLibraryがないことを確認した。wrapper checksumは本ログ「最初の独立検証結果」の86eb4f8でダウンロード・展開・検証成功を記録済み。現在のgradle/wrapper/gradle-wrapper.propertiesにはdistributionSha256Sum=2ab2958f2a1e51120c326cad6f385153bb11ee93b3c216c5fccebfdfbb7ec6cbが保持されている。証拠参照の補足であり、理由なく同じビルドを再実行していない。
