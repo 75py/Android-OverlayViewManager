@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **共同作業再開・T01設計中**（2026-09-12 JST）。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01修正・再レビュー、T02許可待ち確認中。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -105,9 +105,9 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 
 | ID | 作業 | 初期担当案 | 依存 | 状態 |
 | --- | --- | --- | --- | --- |
-| T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示受領済み | 作業中 |
-| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00所有範囲合意済み | 作業中 |
-| T02 | CI導入・既存lintエラー解消 | Claude | T00所有範囲合意済み | 合意済み |
+| T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
+| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 修正・相互レビュー中（PR #22） |
+| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 子の許可待ち、未コミット変更保持 |
 | T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 未着手 |
 | T04 | 表示状態とスレッド処理の修正 | Codex | T01 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04 | 未着手 |
@@ -279,3 +279,32 @@ PR URL / head SHA:
 - T01: Terra / high（launch.effective確認）、Task task_5c129e6aca40 / Dispatch ctx_f585ff543e5e。隔離worktree codex-3.0.0-t01-design。編集対象docs/design/3.0.0-api.mdのみ。実装・Gradle実行はなし。
 - T02: Claude所有の.github/workflows、sampleの既存RestrictedApi修正のみ。ビルド設定・core・opt-timber・lint・version.propertiesの編集禁止。Gradle共有資源はT02側で使用。
 - PR #21: 開始記録の文書PR。復旧・合意・子起動記録を追記し、最新headでClaudeの承認を受ける。
+
+### 第1波の台帳（2026-09-12 00:49 JST）
+
+- T00: PR [#21](https://github.com/75py/Android-OverlayViewManager/pull/21)、head cdcd6003559db84aa64b7434bb72a3a5db658b5c、Claude承認 [5636971646](https://github.com/75py/Android-OverlayViewManager/pull/21#issuecomment-5636971646)、統合SHA d67f2e7212fe6b4757b316afae15e384056cfee6。文書差分検査成功、必須CIなし。
+- Claudeはユーザーによる復旧後、独立司令塔Run run_3ae778449744を作成。Codex Run run_18f7185e91aaとの対等な相互連絡へ移行。旧T00試行を再Dispatchしない。
+- T02: Sonnet 5 / high（Claudeからlaunch.effective報告）、Task task_336fecdad101 / Dispatch ctx_bebb1ab66ddc。worktree claude-3.0.0-t02-ci-lint、base 1646b3b。CIとsampleの指定2 Activity・関連layout/assetsのみ。Codex側の独立レビュー待ち、実装中で未承認。
+- T01: 初稿ebccbc8をCodexが確認し、仕様矛盾をTerra highへ差し戻し。後続Task task_5eec657e9b5e / Dispatch ctx_68f179dceb5c、head b374eeeca3403de0c080faecf96b1dec232063c0、[PR #22](https://github.com/75py/Android-OverlayViewManager/pull/22)。文書差分検査成功、Gradle未実行。Claude側レビュー依頼済み、API決定は未承認。子端末はworker_done後に解放済み、worktreeと成果は保持。
+- 詳細: [第1波の判断ログ](docs/coordination/3.0.0/2026-09-12-wave1.md)。
+
+- 00:52 JST: T01主要方針は双方合意（msg_aa4d17bac5ae、msg_14ab33b282fa）。cause nullable、有効spec/部分更新、focus/移行例の修正をTerra high（task_a00e41713481 / ctx_422c19486993）が実施中。最新head承認はまだない。
+
+## 中断・再開入口（2026-09-12）
+
+ユーザー: 「そろそろ寝ようと思うので、キリのいいところで中断して」。以降は保存・状態確認のみ。T03以降は未着手。
+
+1. 本書と [中断ログ](docs/coordination/3.0.0/2026-09-12-pause.md) を読む。文書更新はcodex/3.0.0/coordination-wave1に保存し、未承認のため統合しない。
+2. ユーザー再開後、両司令塔のOrca Run/端末を再確認。T02既存Dispatchを重複起動せず、許可待ちの解消を確認する。
+3. PR22最新headのClaude側増分レビューを実施。旧head b374eeeにはREQUEST CHANGESがあり、最新headの承認はない。
+4. T02は未コミットのsample変更を既存worktreeに保持。CI未完成、ビルド/テスト/lint未検証、push/PRなし。検証環境復旧後に担当が完成させる。
+5. 文書PRの相互レビュー後に計画・ログを統合。T01/T02が統合されるまでT03へ進まない。
+
+- 中断確定: PR22最新head a1fcfeb11fe61391e3372b9184c30e9568ac73a8をpush/clean確認。設計子はOrca完了通知失敗後に最終応答で終了したためworker-stopで端末を停止。T01再レビューとT02許可待ちは未完了のまま保持。
+
+## 13:17 JST: 再開
+
+- ユーザーが「再開してください」と指示。Codexのmsg_3c935a7e5029、Claudeのmsg_ea9f31f2fa95で再開連絡を確認。
+- PR22 a1fcfebに未反映の既知指摘をCodexが確認。Luna/high（launch.effective確認）のtask_0939bd1375f5 / ctx_8da0aa6c1a15が限定修正。spec getter main-thread、明示的spec/Java overload、NOT_ATTACHED診断、移行表の不足を対象とする。新設計は導入しない。
+- T02は同一ctx_bebb1ab66ddcのBash許可待ちが続き、進行中扱いだが実行は停止中。ユーザー側操作が必要。重複Dispatch・許可代答はしない。
+- ClaudeはFable5.1/highで復帰。PR23の記録確認は継続、最新再開追記後のSHAを承認対象にする。
