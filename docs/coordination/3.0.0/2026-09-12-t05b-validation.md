@@ -1,7 +1,7 @@
 # T05b候補の検証と座標モデルの再確認
 
 - 記録担当: Codex（Astra / medium）
-- 状態: 中断
+- 状態: T05b統合済み・T05端末検証は未完了
 - Claude実装・独立レビュー: Sonnet 5 / high（Claude司令塔報告）
 
 ## PR45統合
@@ -45,3 +45,7 @@ msg_e03607c9c9d0でClaudeは上記修正条件を受諾した。同時にセッ�
 msg_8e4190a03f37の候補867d85c33d42ce2d77247e7b47b1a790c9d2c07eを同じGradleコマンドで再検証しexit0。XMLは75 tests、failure/error/skipped各0。未使用isWithinFrameとその専用testの除去により初回76から1件減った。lint XMLはerror0/warning13、assembleDebug成功。msg_633e90c817adでClaudeへ実数を通知し、claude/3.0.0/t05b-geometryへpushしてdraft PR46を作成した。本文は最終動作・実測検証・合意済み未完了端末条件を中心に簡潔化した。CI34694161457と独立レビュー待ちで、まだ承認・統合していない。
 
 msg_f697b0f7f5f9でOverlayWindowFrame KDocの「全テストがRobolectric SDK28」とscopeがview.context種別を決めるという不正確な説明の補正を依頼。独立レビュー指摘があればまとめて直し、文言だけの変更で同じローカル検証を繰り返さない。
+
+## 最終候補と統合
+
+Claudeは読取確認で止まったレビュアーを停止し、867d85cのgit archiveを自身が読めるscratchpadへ展開して別の独立Sonnet5/highレビューを完了した。blockingなし、KDoc2点のみ修正。e246370ba48e0e0d5dcd00249bdb27390aeb7b0dの1ファイルKDoc差分をCodexが確認してpush。ローカルGradleは重複実行せず、現SHAのCI34695199190 SUCCESS、Claude承認5646052817、Codex承認5646054020を照合しPR46をbeafd01472298ecf63c23d1e45fc07cf6550d3fcへ通常mergeした。T05端末検証は未完了のまま。PR47はd41d0c3のClaude承認5645956039・CI34694273544成功後に8b918e8へ統合済み。
