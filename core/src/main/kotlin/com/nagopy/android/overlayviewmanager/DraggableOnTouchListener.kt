@@ -112,8 +112,8 @@ public class DraggableOnTouchListener<T : View>(
         val location = IntArray(2)
         view.getLocationOnScreen(location)
         val frame = OverlayWindowFrame.of(view)
-        val windowX = OverlayGeometry.screenToWindowX(location[0], frame)
-        val windowY = OverlayGeometry.screenToWindowY(location[1], frame)
+        val windowX = OverlayGeometry.screenToWindowX(location[0], frame.left)
+        val windowY = OverlayGeometry.screenToWindowY(location[1], frame.top)
 
         overlayView.update(
             overlayView.spec.toBuilder()

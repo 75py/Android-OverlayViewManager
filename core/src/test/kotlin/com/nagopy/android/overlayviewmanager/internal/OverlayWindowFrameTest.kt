@@ -11,7 +11,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-/** [OverlayWindowFrame] reads a real [View], so it is covered with Robolectric. */
+/**
+ * Verifies [OverlayWindowFrame] faithfully forwards whatever frame `View.getWindowVisibleDisplayFrame`
+ * reports, using a stubbed override (a listener/layout path test with a stubbed frame, not proof
+ * that the real framework reports any particular shape -- see [OverlayWindowFrame]'s KDoc).
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P], manifest = Config.NONE)
 class OverlayWindowFrameTest {

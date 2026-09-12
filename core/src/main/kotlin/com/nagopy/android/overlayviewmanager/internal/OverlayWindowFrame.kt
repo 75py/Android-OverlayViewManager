@@ -7,10 +7,19 @@ import androidx.annotation.RestrictTo
 
 /**
  * Obtains the visible frame of the window that currently hosts a managed [View], for use with
- * [OverlayGeometry]'s drag-path coordinate model. This is the sole source of window bounds/insets
- * for the drag gesture: it never creates a second/auxiliary window and never requires
- * `SYSTEM_ALERT_WINDOW` for the activity scope, because [View.getWindowVisibleDisplayFrame] works
- * against the view's own window on every supported API level (23+).
+ * [OverlayGeometry]'s drag-path coordinate model. [View.getWindowVisibleDisplayFrame] is the
+ * chosen positioning reference: it works against the view's own window without creating a second/
+ * auxiliary window and without requiring `SYSTEM_ALERT_WINDOW` for the activity scope.
+ *
+ * ## What is and is not verified by this module's unit tests
+ *
+ * The unit test suite runs entirely under Robolectric on a single SDK (28) with the frame value
+ * *overridden* by the test fixture (a fake `View.getWindowVisibleDisplayFrame`), not the real
+ * platform implementation. That proves the drag-path arithmetic (`OverlayGeometry`) and the
+ * listener/layout path correctly consume whatever frame this adapter returns; it does not prove
+ * that the real framework's `getWindowVisibleDisplayFrame` is itself equivalent across API 23,
+ * 26, 35, 36, multi-window/freeform, RTL, or edge-to-edge configurations. That real-framework
+ * equivalence is deferred to the T12 device/instrumentation validation matrix.
  *
  * ## Why not also cross-check with `WindowManager.getCurrentWindowMetrics()` (API 30+)
  *
@@ -18,23 +27,15 @@ import androidx.annotation.RestrictTo
  * [android.view.WindowInsets] -- not the display's -- so it is not inherently wrong as a source.
  * It is deliberately not used here, even as an API 30+ cross-check, because it is obtained from a
  * `WindowManager`, and which window that describes depends on which `Context` supplied it -- a
- * distinction that varies by this library's scope:
- * * For [com.nagopy.android.overlayviewmanager.OverlayScope.ACTIVITY], `view.context`'s
- *   `WindowManager` is the hosting Activity's own, so `currentWindowMetrics` is task-bounded and
- *   would likely agree with [View.getWindowVisibleDisplayFrame].
- * * For [com.nagopy.android.overlayviewmanager.OverlayScope.APPLICATION], the overlay view's
- *   context has no windowed Activity backing it, so the `WindowManager` obtained from it is the
- *   *default-display* window manager; its `currentWindowMetrics` describes the display's window,
- *   not necessarily the overlay's own `TYPE_APPLICATION_OVERLAY`/`TYPE_SYSTEM_ALERT` window. Using
- *   it here would reintroduce the same scope-dependent display-vs-window ambiguity that
- *   `OverlayViewManager.getDisplayWidth/Height()` was deprecated for.
- *
- * A second derivation whose own correctness would need to vary by scope is not a safe or provably
- * equivalent cross-check to add without a real-device/instrumented matrix across both scopes and
- * every supported API level -- which is out of scope here. [View.getWindowVisibleDisplayFrame]
- * alone is already correct and consistent across both scopes on every supported API level, so it
- * remains the only source; the coordinate-model tests instead verify its output end-to-end through
- * the real drag/layout path (see `DraggableOnTouchListenerTest` and `OverlayViewGravityTest`).
+ * distinction that varies by this library's scope: for
+ * [com.nagopy.android.overlayviewmanager.OverlayScope.ACTIVITY], `view.context`'s `WindowManager`
+ * is the hosting Activity's own; for
+ * [com.nagopy.android.overlayviewmanager.OverlayScope.APPLICATION], the overlay view's context has
+ * no windowed Activity backing it, so the `WindowManager` obtained from it describes the
+ * *default-display* window rather than the overlay's own window. A second derivation whose own
+ * correctness would need to vary by scope is not a safe cross-check to add without the same
+ * device/instrumentation validation noted above, so [View.getWindowVisibleDisplayFrame] remains
+ * the only source.
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY)
 internal object OverlayWindowFrame {

@@ -48,10 +48,14 @@ class DraggableOnTouchListenerTest {
         assertEquals(3, backend.updateCalls)
     }
 
-    @Test fun downMove_windowRelativeCoordinatesAccountForNonZeroLeftAndTopFrameOrigin() {
-        // The view's screen location is (300, 500); the target window's visible frame starts at
+    @Test fun downMove_listenerAndLayoutPathAreWindowRelativeWithAStubbedNonZeroLeftAndTopFrame() {
+        // The fake view's screen location is (300, 500); its stubbed visible frame starts at
         // (120, 60) (e.g. a multi-window/freeform window), so the layout-space origin is (120, 60)
-        // rather than the display's (0, 0).
+        // rather than the display's (0, 0). This is a listener/layout path test with a stubbed
+        // frame: it proves the listener and OverlayView.layoutParams() correctly consume whatever
+        // frame OverlayWindowFrame returns, not that the real framework's
+        // getWindowVisibleDisplayFrame reports this shape on a real device (see
+        // OverlayWindowFrame's KDoc).
         val view = PositionedView(screenX = 300, screenY = 500, visibleFrameLeft = 120, visibleFrameTop = 60)
         val backend = RecordingBackend()
         val overlay = OverlayView(
