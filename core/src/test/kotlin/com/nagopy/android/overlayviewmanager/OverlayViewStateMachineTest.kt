@@ -57,6 +57,20 @@ class OverlayViewStateMachineTest {
         assertEquals(applied.alpha, backend.lastSuccessfulParams!!.alpha, 0f)
     }
 
+    @Test fun legacyPendingConfigurationDoesNotReplaceEffectiveSpecWhenApplyFails() {
+        val backend = RecordingBackend()
+        val overlay = overlay(backend)
+        overlay.show()
+        val applied = overlay.spec
+        backend.updateFailure = IllegalStateException("rejected")
+        overlay.setX(24).setAlpha(.5f)
+        val result = overlay.update()
+        assertFalse(result.isSuccess)
+        assertEquals(applied, overlay.spec)
+        assertEquals(24, overlay.pendingSpecForTesting().x)
+        assertEquals(.5f, overlay.pendingSpecForTesting().alpha, 0f)
+    }
+
     @Test fun equalUpdatesAndRepeatedShowAreNoOps() {
         val backend = RecordingBackend()
         val overlay = overlay(backend)
@@ -77,6 +91,31 @@ class OverlayViewStateMachineTest {
         assertEquals(OverlayState.CONFIGURED, overlay.state)
         assertEquals(OverlayFailure.NOT_ATTACHED, overlay.lastFailure)
         assertNull(result.failure)
+    }
+
+    @Test fun notAttachedUpdateReconcilesButReportsTheDiagnosticFailure() {
+        val backend = RecordingBackend(updateFailure = IllegalArgumentException("View not attached"))
+        val overlay = overlay(backend)
+        overlay.show()
+        val result = overlay.update(overlay.spec.copy(x = 8))
+        assertFalse(result.isSuccess)
+        assertEquals(OverlayFailure.NOT_ATTACHED, result.failure)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+        assertEquals(OverlayFailure.NOT_ATTACHED, overlay.lastFailure)
+    }
+
+    @Test fun configuredHideAndDisposeRetainAnExistingDiagnostic() {
+        val backend = RecordingBackend(addFailure = SecurityException("denied"))
+        val overlay = overlay(backend)
+        overlay.show()
+        assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
+        assertTrue(overlay.hide().isSuccess)
+        assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
+        assertTrue(overlay.dispose().isSuccess)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
+        assertFalse(overlay.show().isSuccess)
+        assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
     }
 
     @Test fun failedDisposeIsRetryableButSuccessfulDisposeReleasesView() {

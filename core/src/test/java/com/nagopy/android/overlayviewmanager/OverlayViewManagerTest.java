@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThrows;
 import android.app.Activity;
 import android.app.Application;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.view.WindowManager;
 
 import org.junit.After;
@@ -53,5 +54,15 @@ public class OverlayViewManagerTest {
         OverlayViewManager.init(application);
         OverlaySpec spec = new OverlaySpec.Builder().setScreenBrightness(.5f).build();
         assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), spec));
+    }
+    @Test public void factoryRejectsAnAlreadyParentedViewAndDestroyedActivity() {
+        Application application = RuntimeEnvironment.getApplication();
+        OverlayViewManager.init(application);
+        View child = new View(application);
+        new FrameLayout(application).addView(child);
+        assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(child));
+        Activity destroyed = Mockito.mock(Activity.class);
+        Mockito.when(destroyed.isDestroyed()).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), destroyed));
     }
 }

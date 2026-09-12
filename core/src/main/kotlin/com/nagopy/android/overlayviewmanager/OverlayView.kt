@@ -73,7 +73,7 @@ public class OverlayView<T : View> internal constructor(
     public fun show(): OverlayResult {
         requireMainThread()
         when (currentState) {
-            OverlayState.DISPOSED -> return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
+            OverlayState.DISPOSED -> return disposedFailure()
             OverlayState.ATTACHED -> return success(changed = false)
             OverlayState.CONFIGURED -> Unit
         }
@@ -98,7 +98,7 @@ public class OverlayView<T : View> internal constructor(
     @MainThread
     public fun update(spec: OverlaySpec): OverlayResult {
         requireMainThread()
-        if (currentState == OverlayState.DISPOSED) return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
+        if (currentState == OverlayState.DISPOSED) return disposedFailure()
         if (currentState == OverlayState.CONFIGURED) {
             if (spec == effectiveSpec) return success(changed = false)
             pendingSpec = spec
@@ -125,7 +125,7 @@ public class OverlayView<T : View> internal constructor(
     @MainThread
     public fun hide(): OverlayResult {
         requireMainThread()
-        if (currentState == OverlayState.DISPOSED) return success(changed = false)
+        if (currentState == OverlayState.DISPOSED) return success(changed = false, preserveDiagnostic = true)
         if (currentState == OverlayState.CONFIGURED) return success(changed = false, preserveDiagnostic = true)
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         libraryRemovalInProgress = true
@@ -292,6 +292,13 @@ public class OverlayView<T : View> internal constructor(
         currentFailure = kind
         return OverlayResult(currentState, false, kind, cause)
     }
+
+    private fun disposedFailure(): OverlayResult = OverlayResult(
+        currentState,
+        false,
+        OverlayFailure.WINDOW_MANAGER_REJECTED,
+        null,
+    )
 
     private fun classify(throwable: Throwable): OverlayFailure = when {
         isNotAttached(throwable) -> OverlayFailure.NOT_ATTACHED
