@@ -84,7 +84,7 @@ public class OverlayViewManager private constructor(private val application: App
 
     private fun requireMainThread() {
         val main = Looper.getMainLooper()
-        check(main == null || Looper.myLooper() === main) { "OverlayViewManager must be used on the main thread." }
+        check(main != null && Looper.myLooper() === main) { "OverlayViewManager must be used on the main thread." }
     }
 
     public companion object {
@@ -93,7 +93,7 @@ public class OverlayViewManager private constructor(private val application: App
         /** Initializes the singleton. Repeating this with the same Application is harmless. */
         @JvmStatic @MainThread public fun init(application: Application) {
             val main = Looper.getMainLooper()
-            check(main == null || Looper.myLooper() === main) { "OverlayViewManager must be initialized on the main thread." }
+            check(main != null && Looper.myLooper() === main) { "OverlayViewManager must be initialized on the main thread." }
             synchronized(this) {
                 val existing = instance
                 check(existing == null || existing.application === application) { "OverlayViewManager is already initialized for another Application." }
@@ -104,7 +104,7 @@ public class OverlayViewManager private constructor(private val application: App
         /** Returns the initialized process singleton. */
         @JvmStatic @MainThread public fun getInstance(): OverlayViewManager {
             val main = Looper.getMainLooper()
-            check(main == null || Looper.myLooper() === main) { "OverlayViewManager must be accessed on the main thread." }
+            check(main != null && Looper.myLooper() === main) { "OverlayViewManager must be accessed on the main thread." }
             return instance ?: throw IllegalStateException("OverlayViewManager is not initialized. Call init(Application) first.")
         }
 

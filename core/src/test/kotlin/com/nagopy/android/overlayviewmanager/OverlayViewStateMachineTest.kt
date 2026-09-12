@@ -97,11 +97,15 @@ class OverlayViewStateMachineTest {
         val backend = RecordingBackend(updateFailure = IllegalArgumentException("View not attached"))
         val overlay = overlay(backend)
         overlay.show()
+        assertTrue(overlay.hasDetachListenerForTesting())
         val result = overlay.update(overlay.spec.copy(x = 8))
         assertFalse(result.isSuccess)
         assertEquals(OverlayFailure.NOT_ATTACHED, result.failure)
         assertEquals(OverlayState.CONFIGURED, overlay.state)
         assertEquals(OverlayFailure.NOT_ATTACHED, overlay.lastFailure)
+        assertFalse(overlay.hasDetachListenerForTesting())
+        assertTrue(overlay.show().isSuccess)
+        assertTrue(overlay.hasDetachListenerForTesting())
     }
 
     @Test fun configuredHideAndDisposeRetainAnExistingDiagnostic() {
@@ -113,6 +117,7 @@ class OverlayViewStateMachineTest {
         assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
         assertTrue(overlay.dispose().isSuccess)
         assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertNull(overlay.backendForTesting())
         assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
         assertFalse(overlay.show().isSuccess)
         assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
@@ -141,8 +146,44 @@ class OverlayViewStateMachineTest {
         assertEquals(OverlayState.CONFIGURED, overlay.state)
     }
 
-    private fun overlay(backend: RecordingBackend): OverlayView<View> = OverlayView(
-        View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, OverlaySpec(),
+    @Test fun applicationBrightnessIsRejectedForUpdateAndLegacySetter() {
+        val overlay = OverlayView(
+            View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, RecordingBackend(), OverlaySpec(),
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            overlay.update(OverlaySpec(screenBrightness = .4f))
+        }
+        assertThrows(IllegalArgumentException::class.java) { overlay.setScreenBrightness(.4f) }
+    }
+
+    @Test fun draggableSpecInstallsTheBridgeAndUpdatesOnlyAfterTheListenerRuns() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
+        overlay.show()
+        val down = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_DOWN, 12f, 20f, 0)
+        view.dispatchTouchEvent(down)
+        down.recycle()
+        assertEquals(1, backend.updateCalls)
+        assertEquals(OverlayTouchMode.DRAGGABLE, overlay.spec.touchMode)
+    }
+
+    @Test fun failedDraggableUpdateKeepsThePriorEffectiveTouchState() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.INTERACTIVE))
+        overlay.show()
+        backend.updateFailure = IllegalStateException("rejected")
+        assertFalse(overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.DRAGGABLE)).isSuccess)
+        assertEquals(OverlayTouchMode.INTERACTIVE, overlay.spec.touchMode)
+        val down = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_DOWN, 12f, 20f, 0)
+        view.dispatchTouchEvent(down)
+        down.recycle()
+        assertEquals(1, backend.updateCalls)
+    }
+
+    private fun overlay(backend: RecordingBackend, spec: OverlaySpec = OverlaySpec()): OverlayView<View> = OverlayView(
+        View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, spec,
     )
 
     private class RecordingBackend(

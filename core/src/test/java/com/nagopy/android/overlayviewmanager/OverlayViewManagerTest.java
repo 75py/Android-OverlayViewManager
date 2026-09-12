@@ -5,6 +5,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.Activity;
 import android.app.Application;
+import android.os.Build;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.view.WindowManager;
@@ -18,7 +19,7 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(manifest = Config.NONE)
+@Config(sdk = Build.VERSION_CODES.P, manifest = Config.NONE)
 public class OverlayViewManagerTest {
     @After public void tearDown() { OverlayViewManager.resetForTesting(); }
     @Test public void getInstanceBeforeInit_throws() { assertThrows(IllegalStateException.class, OverlayViewManager::getInstance); }

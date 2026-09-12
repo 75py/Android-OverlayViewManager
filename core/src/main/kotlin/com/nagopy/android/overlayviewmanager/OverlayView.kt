@@ -16,11 +16,9 @@
 
 package com.nagopy.android.overlayviewmanager
 
-import android.app.Activity
 import android.os.Build
 import android.os.Looper
 import android.provider.Settings
-import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import androidx.annotation.MainThread
@@ -33,16 +31,23 @@ import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 public class OverlayView<T : View> internal constructor(
     view: T,
     private val scope: OverlayScope,
-    private val backend: OverlayWindowManager,
+    backend: OverlayWindowManager,
     initialSpec: OverlaySpec,
 ) {
+    private var backend: OverlayWindowManager? = backend
     private var ownedView: T? = view
     private var detachListener: View.OnAttachStateChangeListener? = null
     private var pendingSpec: OverlaySpec = initialSpec
     private var effectiveSpec: OverlaySpec = initialSpec
+    private var pendingDragListener: DraggableOnTouchListener<T>? = null
+    private var effectiveDragListener: DraggableOnTouchListener<T>? = null
     @Volatile private var currentState: OverlayState = OverlayState.CONFIGURED
     @Volatile private var currentFailure: OverlayFailure? = null
     private var libraryRemovalInProgress: Boolean = false
+
+    init {
+        applyTouchListener(initialSpec)
+    }
 
     /** The managed view. It cannot be read once this handle is disposed. */
     @get:MainThread
@@ -84,11 +89,13 @@ public class OverlayView<T : View> internal constructor(
             return failure(OverlayFailure.PERMISSION_DENIED, null)
         }
         try {
-            backend.show(managedView, layoutParams(candidate))
-        } catch (throwable: Throwable) {
-            return failure(classify(throwable), throwable)
+            backendOrThrow().show(managedView, layoutParams(candidate))
+        } catch (exception: Exception) {
+            return failure(classify(exception), exception)
         }
         effectiveSpec = candidate
+        effectiveDragListener = pendingDragListener
+        applyTouchListener(candidate)
         currentState = OverlayState.ATTACHED
         installDetachListener(managedView)
         return success(changed = true)
@@ -96,28 +103,37 @@ public class OverlayView<T : View> internal constructor(
 
     /** Applies [spec] synchronously or replaces pending configuration before first show. */
     @MainThread
-    public fun update(spec: OverlaySpec): OverlayResult {
+    public fun update(spec: OverlaySpec): OverlayResult = updateInternal(spec, null)
+
+    private fun updateInternal(spec: OverlaySpec, dragListener: DraggableOnTouchListener<T>?): OverlayResult {
         requireMainThread()
+        requireApplicationBrightnessIsAbsent(spec)
         if (currentState == OverlayState.DISPOSED) return disposedFailure()
         if (currentState == OverlayState.CONFIGURED) {
             if (spec == effectiveSpec) return success(changed = false)
             pendingSpec = spec
+            pendingDragListener = dragListener
             effectiveSpec = spec
+            effectiveDragListener = dragListener
+            applyTouchListener(spec)
             return success(changed = true)
         }
         if (spec == effectiveSpec) return success(changed = false)
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         try {
-            backend.update(managedView, layoutParams(spec))
-        } catch (throwable: Throwable) {
-            if (isNotAttached(throwable)) {
+            backendOrThrow().update(managedView, layoutParams(spec))
+        } catch (exception: Exception) {
+            if (isNotAttached(exception)) {
                 reconcileExternalDetach()
-                return OverlayResult(currentState, false, OverlayFailure.NOT_ATTACHED, throwable)
+                return OverlayResult(currentState, false, OverlayFailure.NOT_ATTACHED, exception)
             }
-            return failure(classify(throwable), throwable)
+            return failure(classify(exception), exception)
         }
         pendingSpec = spec
+        pendingDragListener = dragListener
         effectiveSpec = spec
+        effectiveDragListener = dragListener
+        applyTouchListener(spec)
         return success(changed = true)
     }
 
@@ -130,14 +146,14 @@ public class OverlayView<T : View> internal constructor(
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         libraryRemovalInProgress = true
         try {
-            backend.hide(managedView)
-        } catch (throwable: Throwable) {
+            backendOrThrow().hide(managedView)
+        } catch (exception: Exception) {
             libraryRemovalInProgress = false
-            if (isNotAttached(throwable)) {
+            if (isNotAttached(exception)) {
                 reconcileExternalDetach()
                 return successfulReconciliation()
             }
-            return failure(classify(throwable), throwable)
+            return failure(classify(exception), exception)
         }
         libraryRemovalInProgress = false
         currentState = OverlayState.CONFIGURED
@@ -154,15 +170,15 @@ public class OverlayView<T : View> internal constructor(
             val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
             libraryRemovalInProgress = true
             try {
-                backend.hide(managedView)
-            } catch (throwable: Throwable) {
+                backendOrThrow().hide(managedView)
+            } catch (exception: Exception) {
                 libraryRemovalInProgress = false
-                if (isNotAttached(throwable)) {
+                if (isNotAttached(exception)) {
                     reconcileExternalDetach()
                     release(managedView)
                     return successfulReconciliation(OverlayState.DISPOSED)
                 }
-                return failure(classify(throwable), throwable)
+                return failure(classify(exception), exception)
             }
             libraryRemovalInProgress = false
             release(managedView)
@@ -178,13 +194,15 @@ public class OverlayView<T : View> internal constructor(
      */
     @Deprecated("Use update(OverlaySpec) instead.")
     @MainThread
-    public fun update(): OverlayResult = update(pendingSpec)
+    public fun update(): OverlayResult = updateInternal(pendingSpec, pendingDragListener)
 
     /** Temporary 2.x migration bridge. */
     @Deprecated("Use OverlaySpec.touchMode instead.")
     @MainThread
-    public fun setTouchable(touchable: Boolean): OverlayView<T> = setPending {
-        it.copy(touchMode = if (touchable) OverlayTouchMode.INTERACTIVE else OverlayTouchMode.PASS_THROUGH)
+    public fun setTouchable(touchable: Boolean): OverlayView<T> {
+        requireMainThread()
+        pendingDragListener = null
+        return setPending { it.copy(touchMode = if (touchable) OverlayTouchMode.INTERACTIVE else OverlayTouchMode.PASS_THROUGH) }
     }
 
     /** Temporary 2.x migration bridge. */
@@ -192,7 +210,7 @@ public class OverlayView<T : View> internal constructor(
     @MainThread
     public fun setDraggable(draggable: Boolean): OverlayView<T> {
         requireMainThread()
-        view.setOnTouchListener(if (draggable) DraggableOnTouchListener(this) else null)
+        pendingDragListener = null
         return setPending { it.copy(touchMode = if (draggable) OverlayTouchMode.DRAGGABLE else OverlayTouchMode.PASS_THROUGH) }
     }
 
@@ -201,7 +219,7 @@ public class OverlayView<T : View> internal constructor(
     @MainThread
     public fun setDraggable(draggable: Boolean, listener: DraggableOnTouchListener<T>): OverlayView<T> {
         requireMainThread()
-        view.setOnTouchListener(if (draggable) listener else null)
+        pendingDragListener = if (draggable) listener else null
         return setPending { it.copy(touchMode = if (draggable) OverlayTouchMode.DRAGGABLE else OverlayTouchMode.PASS_THROUGH) }
     }
 
@@ -213,7 +231,10 @@ public class OverlayView<T : View> internal constructor(
     @Deprecated("Use OverlaySpec.alpha instead.") @MainThread public fun setAlpha(value: Float): OverlayView<T> = setPending { it.copy(alpha = value) }
     @Deprecated("Use OverlaySpec.horizontalMargin instead.") @MainThread public fun setHorizontalMargin(value: Float): OverlayView<T> = setPending { it.copy(horizontalMargin = value) }
     @Deprecated("Use OverlaySpec.verticalMargin instead.") @MainThread public fun setVerticalMargin(value: Float): OverlayView<T> = setPending { it.copy(verticalMargin = value) }
-    @Deprecated("Use OverlaySpec.screenBrightness instead.") @MainThread public fun setScreenBrightness(value: Float): OverlayView<T> = setPending { it.copy(screenBrightness = value) }
+    @Deprecated("Use OverlaySpec.screenBrightness instead.") @MainThread public fun setScreenBrightness(value: Float): OverlayView<T> {
+        require(scope == OverlayScope.ACTIVITY) { "screenBrightness is supported only for activity overlays." }
+        return setPending { it.copy(screenBrightness = value) }
+    }
     @Deprecated("No 3.0 replacement is available.") @MainThread public fun allowViewToExtendOutsideScreen(value: Boolean): OverlayView<T> = setPending { it.copy(allowOutsideBounds = value) }
     @Deprecated("Use state == OverlayState.ATTACHED instead.") public fun isVisible(): Boolean = state == OverlayState.ATTACHED
     @Deprecated("Use spec.x instead.") @MainThread public fun getX(): Int = spec.x
@@ -224,6 +245,12 @@ public class OverlayView<T : View> internal constructor(
 
     @VisibleForTesting
     internal fun pendingSpecForTesting(): OverlaySpec = pendingSpec
+
+    @VisibleForTesting
+    internal fun backendForTesting(): OverlayWindowManager? = backend
+
+    @VisibleForTesting
+    internal fun hasDetachListenerForTesting(): Boolean = detachListener != null
 
     private fun setPending(transform: (OverlaySpec) -> OverlaySpec): OverlayView<T> {
         requireMainThread()
@@ -251,13 +278,23 @@ public class OverlayView<T : View> internal constructor(
     private fun reconcileExternalDetach() {
         currentState = OverlayState.CONFIGURED
         currentFailure = OverlayFailure.NOT_ATTACHED
+        ownedView?.let(::removeDetachListener)
     }
 
     private fun release(managedView: T) {
         removeDetachListener(managedView)
         managedView.setOnTouchListener(null)
+        pendingDragListener = null
+        effectiveDragListener = null
         ownedView = null
+        backend = null
         currentState = OverlayState.DISPOSED
+    }
+
+    private fun applyTouchListener(spec: OverlaySpec) {
+        ownedView?.setOnTouchListener(
+            if (spec.touchMode == OverlayTouchMode.DRAGGABLE) effectiveDragListener ?: DraggableOnTouchListener(this) else null,
+        )
     }
 
     private fun layoutParams(value: OverlaySpec): WindowManager.LayoutParams = WindowManager.LayoutParams().apply {
@@ -300,17 +337,25 @@ public class OverlayView<T : View> internal constructor(
         null,
     )
 
-    private fun classify(throwable: Throwable): OverlayFailure = when {
-        isNotAttached(throwable) -> OverlayFailure.NOT_ATTACHED
-        throwable is WindowManager.BadTokenException -> OverlayFailure.INVALID_WINDOW_TOKEN
-        throwable is SecurityException -> OverlayFailure.PERMISSION_DENIED
+    private fun backendOrThrow(): OverlayWindowManager = checkNotNull(backend) { "OverlayView is disposed." }
+
+    private fun requireApplicationBrightnessIsAbsent(spec: OverlaySpec) {
+        require(scope != OverlayScope.APPLICATION || spec.screenBrightness == null) {
+            "screenBrightness is supported only for activity overlays."
+        }
+    }
+
+    private fun classify(exception: Exception): OverlayFailure = when {
+        isNotAttached(exception) -> OverlayFailure.NOT_ATTACHED
+        exception is WindowManager.BadTokenException -> OverlayFailure.INVALID_WINDOW_TOKEN
+        exception is SecurityException -> OverlayFailure.PERMISSION_DENIED
         else -> OverlayFailure.WINDOW_MANAGER_REJECTED
     }
 
-    private fun isNotAttached(throwable: Throwable): Boolean = throwable is IllegalArgumentException && throwable.message?.contains("not attached", ignoreCase = true) == true
+    private fun isNotAttached(exception: Exception): Boolean = exception is IllegalArgumentException && exception.message?.contains("not attached", ignoreCase = true) == true
 
     private fun requireMainThread() {
         val main = Looper.getMainLooper()
-        check(main == null || Looper.myLooper() === main) { "OverlayView must be used on the main thread." }
+        check(main != null && Looper.myLooper() === main) { "OverlayView must be used on the main thread." }
     }
 }
