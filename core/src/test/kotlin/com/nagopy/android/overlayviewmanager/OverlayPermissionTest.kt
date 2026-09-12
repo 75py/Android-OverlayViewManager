@@ -33,34 +33,37 @@ class OverlayPermissionTest {
     @Config(sdk = [Build.VERSION_CODES.M], manifest = Config.NONE)
     fun isGranted_reflectsDeniedAndGrantedStateAtApi23() {
         val permission = permission()
+        val context = RuntimeEnvironment.getApplication()
 
         ShadowSettings.setCanDrawOverlays(false)
-        assertFalse(permission.isGranted())
+        assertFalse(permission.isGranted(context))
         ShadowSettings.setCanDrawOverlays(true)
-        assertTrue(permission.isGranted())
+        assertTrue(permission.isGranted(context))
     }
 
     @Test
     @Config(sdk = [Build.VERSION_CODES.O], manifest = Config.NONE)
     fun isGranted_reflectsDeniedAndGrantedStateAtApi26() {
         val permission = permission()
+        val context = RuntimeEnvironment.getApplication()
 
         ShadowSettings.setCanDrawOverlays(false)
-        assertFalse(permission.isGranted())
+        assertFalse(permission.isGranted(context))
         ShadowSettings.setCanDrawOverlays(true)
-        assertTrue(permission.isGranted())
+        assertTrue(permission.isGranted(context))
     }
 
     @Test
-    fun isGranted_queriesTheCurrentModernPlatformStateFromWorkerThread() {
+    fun isGranted_queriesTheCurrentPlatformStateFromWorkerThread() {
         val permission = permission()
+        val context = RuntimeEnvironment.getApplication()
         ShadowSettings.setCanDrawOverlays(false)
         val result = AtomicReference<Boolean>()
         val failure = AtomicReference<Throwable>()
 
         Thread {
             try {
-                result.set(permission.isGranted())
+                result.set(permission.isGranted(context))
             } catch (error: Throwable) {
                 failure.set(error)
             }
@@ -69,17 +72,18 @@ class OverlayPermissionTest {
         assertEquals(null, failure.get())
         assertFalse(result.get())
         ShadowSettings.setCanDrawOverlays(true)
-        assertTrue(permission.isGranted())
+        assertTrue(permission.isGranted(context))
     }
 
     @Test
     fun settingsIntent_hasPackageActionAndDataWithoutReusingAnIntent() {
         val permission = permission()
-        val first = permission.settingsIntent()
-        val second = permission.settingsIntent()
+        val context = RuntimeEnvironment.getApplication<Application>()
+        val first = permission.settingsIntent(context)
+        val second = permission.settingsIntent(context)
 
         assertEquals(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, first.action)
-        assertEquals("package:${RuntimeEnvironment.getApplication<Application>().packageName}", first.dataString)
+        assertEquals("package:${context.packageName}", first.dataString)
         assertNotSame(first, second)
         assertEquals(first.action, second.action)
         assertEquals(first.data, second.data)

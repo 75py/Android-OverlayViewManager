@@ -21,7 +21,7 @@ import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 /** Process-scoped factory for synchronous overlay handles. */
 public class OverlayViewManager private constructor(private val application: Application) {
     private val windowManager: WindowManager = application.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private val permission: OverlayPermission = OverlayPermission.create(application)
+    private val permission: OverlayPermission = OverlayPermission()
 
     init {
         OverlayWindowManager.initApplicationInstance(windowManager)
@@ -36,14 +36,17 @@ public class OverlayViewManager private constructor(private val application: App
     /** Creates an activity-scoped overlay with [spec]. */
     @MainThread public fun <T : View> newOverlayView(view: T, activity: Activity, spec: OverlaySpec): OverlayView<T> = newActivityOverlay(view, activity, spec)
 
-    /** Returns the immutable, application-scoped overlay permission helper. */
+    /** Returns the immutable overlay permission helper. See [OverlayPermission]. */
     public fun overlayPermission(): OverlayPermission = permission
 
-    /** Temporary 2.x bridge. New code should use [OverlayPermission]. */
-    @Deprecated("Use OverlayPermission from the host application instead.") public fun canDrawOverlays(): Boolean = overlayPermission().isGranted()
+    /** Temporary 2.x bridge. New code should use [OverlayPermission.isGranted] instead. */
+    @Deprecated("Use OverlayPermission.isGranted from the host application instead.") public fun canDrawOverlays(): Boolean = overlayPermission().isGranted(application)
 
-    /** Temporary 2.x bridge retained until sample and consumer migration. */
-    @Deprecated("The host application should own its permission rationale.")
+    /**
+     * Temporary 2.x bridge retained until sample and consumer migration.
+     * New code should use [OverlayPermission.settingsIntent] and own its rationale UI instead.
+     */
+    @Deprecated("Use OverlayPermission.settingsIntent from the host application instead.")
     @TargetApi(Build.VERSION_CODES.M)
     public fun showPermissionRequestDialog(fragmentManager: FragmentManager, @StringRes appNameId: Int) {
         PermissionRequestDialogFragment.newInstance(appNameId).show(fragmentManager, "PermissionRequestDialogFragment")
@@ -54,7 +57,7 @@ public class OverlayViewManager private constructor(private val application: App
     @TargetApi(Build.VERSION_CODES.M)
     public fun requestOverlayPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !canDrawOverlays()) {
-            val intent = overlayPermission().settingsIntent()
+            val intent = overlayPermission().settingsIntent(application)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             application.startActivity(intent)
         }
