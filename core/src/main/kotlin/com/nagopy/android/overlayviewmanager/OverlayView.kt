@@ -18,7 +18,6 @@ package com.nagopy.android.overlayviewmanager
 
 import android.os.Build
 import android.os.Looper
-import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
 import androidx.annotation.MainThread
@@ -32,6 +31,7 @@ public class OverlayView<T : View> internal constructor(
     private val scope: OverlayScope,
     backend: OverlayWindowManager,
     initialSpec: OverlaySpec,
+    private val permission: OverlayPermission = OverlayPermission(),
 ) {
     private var backend: OverlayWindowManager? = backend
     private var ownedView: T? = view
@@ -89,7 +89,7 @@ public class OverlayView<T : View> internal constructor(
         val candidate = pendingSpec
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         if (managedView.parent != null) return failure(OverlayFailure.ALREADY_HAS_PARENT, null)
-        if (scope == OverlayScope.APPLICATION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(managedView.context)) {
+        if (scope == OverlayScope.APPLICATION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !permission.isGranted(managedView.context)) {
             return failure(OverlayFailure.PERMISSION_DENIED, null)
         }
         try {
@@ -103,7 +103,18 @@ public class OverlayView<T : View> internal constructor(
         return success(changed = true)
     }
 
-    /** Applies [spec] synchronously or replaces pending configuration before first show. */
+    /**
+     * Applies [spec] synchronously or replaces pending configuration before first show.
+     *
+     * Unlike [show], this performs no application-scope permission preflight -- neither does
+     * [hide] or [dispose]. Only the initial [show] checks [OverlayPermission.isGranted]. If the
+     * overlay permission is revoked while [ATTACHED][OverlayState.ATTACHED], the platform reports
+     * that on the next window operation: the backend throws [SecurityException], which is
+     * classified [OverlayFailure.PERMISSION_DENIED] like any other backend rejection, while the
+     * current [state] and the last effective [spec] are preserved unchanged. This mirrors how
+     * every other platform rejection here is a later observation rather than a proactive check,
+     * and avoids a redundant permission query on every mutation of an already-attached window.
+     */
     @MainThread
     public fun update(spec: OverlaySpec): OverlayResult = updateInternal(spec, null, false)
 
