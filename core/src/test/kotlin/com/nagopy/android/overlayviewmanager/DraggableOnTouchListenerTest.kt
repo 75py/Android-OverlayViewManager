@@ -27,6 +27,14 @@ import org.robolectric.shadows.ShadowSettings
 /**
  * Covers the internal drag gesture: touch-slop-gated consumption, active-pointer tracking across
  * a second finger, and alpha/effective-spec restoration on UP/CANCEL and on a rejected update.
+ *
+ * [dispatch] observes whether the *listener itself* consumed an event, not
+ * [View.dispatchTouchEvent]'s own return value: for a clickable/long-clickable fixture, the
+ * view's own [View.onTouchEvent] independently returns `true` once the listener declines an
+ * event, so `dispatchTouchEvent`'s result is `true` regardless of what the listener returned. It
+ * does so by wrapping the real, currently-installed [DraggableOnTouchListener] in a one-shot
+ * capturing delegate before dispatching -- the exact same listener instance and its internal
+ * gesture state are still exercised end to end, only the assertion observes a different signal.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P], manifest = Config.NONE)
@@ -41,14 +49,19 @@ class DraggableOnTouchListenerTest {
             OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE),
         )
         overlay.show()
+        // View.onTouchEvent(UP) delivers a click via post(mPerformClick); an unattached view has
+        // no real Handler, so that post is queued but never flushed. Attach to a real window and
+        // idle the looper afterward so the click actually runs.
+        attachToActivityContent(view)
         var clicks = 0
         overlay.view.setOnClickListener { clicks++ }
         val before = overlay.spec
         val slop = touchSlop(view)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f))
-        assertFalse(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop - 1, 260f))
-        assertFalse(dispatch(view, MotionEvent.ACTION_UP, 110f + slop - 1, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop - 1, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop - 1, 260f))
+        shadowOf(Looper.getMainLooper()).idle()
 
         assertEquals(1, clicks)
         assertEquals(before, overlay.spec)
@@ -67,20 +80,20 @@ class DraggableOnTouchListenerTest {
         val slop = touchSlop(view)
 
         val afterShow = overlay.spec
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
         assertEquals(afterShow, overlay.spec)
         assertEquals(.8f, overlay.spec.alpha, 0f)
 
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
         assertEquals(100 + slop + 20, overlay.spec.x)
         assertEquals(216, overlay.spec.y)
         assertEquals(.48f, overlay.spec.alpha, .0001f)
 
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 50, 290f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 50, 290f))
         assertEquals(100 + slop + 50, overlay.spec.x)
         assertEquals(246, overlay.spec.y)
 
-        assertTrue(dispatch(view, MotionEvent.ACTION_UP, 110f + slop + 50, 290f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 50, 290f))
         assertEquals(.8f, overlay.spec.alpha, 0f)
         assertEquals(100 + slop + 50, overlay.spec.x)
         assertEquals(246, overlay.spec.y)
@@ -105,8 +118,8 @@ class DraggableOnTouchListenerTest {
         overlay.show()
         val slop = touchSlop(view)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 310f, 520f))
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 310f + slop + 20, 545f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 310f, 520f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 310f + slop + 20, 545f))
         assertEquals(180 + slop + 20, overlay.spec.x)
         assertEquals(465, overlay.spec.y)
         // Goes through the real WindowManager.LayoutParams built by OverlayView.layoutParams(),
@@ -114,7 +127,7 @@ class DraggableOnTouchListenerTest {
         assertEquals(180 + slop + 20, backend.lastParams!!.x)
         assertEquals(465, backend.lastParams!!.y)
 
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 330f + slop + 20, 545f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 330f + slop + 20, 545f))
         assertEquals(200 + slop + 20, overlay.spec.x)
         assertEquals(465, overlay.spec.y)
     }
@@ -130,11 +143,11 @@ class DraggableOnTouchListenerTest {
         overlay.show()
         val slop = touchSlop(view)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 10f, 30f))
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 10f + slop + 10, 55f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 10f, 30f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 10f + slop + 10, 55f))
         val draggedX = overlay.spec.x
         val draggedY = overlay.spec.y
-        assertTrue(dispatch(view, MotionEvent.ACTION_CANCEL, 10f + slop + 10, 55f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_CANCEL, 10f + slop + 10, 55f))
         assertEquals(draggedX, overlay.spec.x)
         assertEquals(draggedY, overlay.spec.y)
         assertEquals(.75f, overlay.spec.alpha, 0f)
@@ -151,8 +164,8 @@ class DraggableOnTouchListenerTest {
         overlay.show()
         val before = overlay.spec
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 10f, 30f))
-        assertFalse(dispatch(view, MotionEvent.ACTION_CANCEL, 11f, 31f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 10f, 30f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_CANCEL, 11f, 31f))
         assertEquals(before, overlay.spec)
     }
 
@@ -167,8 +180,8 @@ class DraggableOnTouchListenerTest {
         overlay.show()
         val slop = touchSlop(view)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f))
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
         val afterFirstMoveX = overlay.spec.x
         val afterFirstMoveY = overlay.spec.y
 
@@ -178,8 +191,7 @@ class DraggableOnTouchListenerTest {
             listOf(Triple(0, 110f + slop + 20, 260f), Triple(1, 900f, 900f)),
             actionIndex = 1,
         )
-        assertTrue(view.dispatchTouchEvent(pointerDown))
-        pointerDown.recycle()
+        assertTrue(dispatch(overlay, pointerDown))
         assertEquals(afterFirstMoveX, overlay.spec.x)
         assertEquals(afterFirstMoveY, overlay.spec.y)
 
@@ -188,8 +200,7 @@ class DraggableOnTouchListenerTest {
             MotionEvent.ACTION_MOVE,
             listOf(Triple(0, 110f + slop + 40, 260f), Triple(1, 20f, 20f)),
         )
-        assertTrue(view.dispatchTouchEvent(move))
-        move.recycle()
+        assertTrue(dispatch(overlay, move))
         assertEquals(afterFirstMoveX + 20, overlay.spec.x)
         assertEquals(afterFirstMoveY, overlay.spec.y)
     }
@@ -205,8 +216,8 @@ class DraggableOnTouchListenerTest {
         overlay.show()
         val slop = touchSlop(view)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f))
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
         val beforeLiftX = overlay.spec.x
         val beforeLiftY = overlay.spec.y
 
@@ -217,23 +228,20 @@ class DraggableOnTouchListenerTest {
             listOf(Triple(0, 110f + slop + 20, 260f), Triple(1, 700f, 500f)),
             actionIndex = 1,
         )
-        view.dispatchTouchEvent(pointerDown)
-        pointerDown.recycle()
+        dispatch(overlay, pointerDown)
 
         val pointerUp = obtainMultiTouch(
             MotionEvent.ACTION_POINTER_UP,
             listOf(Triple(0, 110f + slop + 20, 260f), Triple(1, 700f, 500f)),
             actionIndex = 0,
         )
-        assertTrue(view.dispatchTouchEvent(pointerUp))
-        pointerUp.recycle()
+        assertTrue(dispatch(overlay, pointerUp))
         assertEquals(beforeLiftX, overlay.spec.x)
         assertEquals(beforeLiftY, overlay.spec.y)
 
         // Only pointer 1 remains; its own subsequent delta must drive the drag without a jump.
         val move = obtainMultiTouch(MotionEvent.ACTION_MOVE, listOf(Triple(1, 715f, 505f)))
-        assertTrue(view.dispatchTouchEvent(move))
-        move.recycle()
+        assertTrue(dispatch(overlay, move))
         assertEquals(beforeLiftX + 15, overlay.spec.x)
         assertEquals(beforeLiftY + 5, overlay.spec.y)
     }
@@ -247,18 +255,18 @@ class DraggableOnTouchListenerTest {
             OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE),
         )
         overlay.show()
+        attachToActivityContent(view)
         var clicks = 0
         view.setOnClickListener { clicks++ }
         val before = overlay.spec
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 0f, 0f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 0f, 0f))
         val pointerDown = obtainMultiTouch(
             MotionEvent.ACTION_POINTER_DOWN,
             listOf(Triple(0, 0f, 0f), Triple(1, 900f, 900f)),
             actionIndex = 1,
         )
-        view.dispatchTouchEvent(pointerDown)
-        pointerDown.recycle()
+        dispatch(overlay, pointerDown)
 
         // Pointer 0 (at the original slop origin) lifts before slop; pointer 1 becomes active.
         val pointerUp = obtainMultiTouch(
@@ -266,18 +274,17 @@ class DraggableOnTouchListenerTest {
             listOf(Triple(0, 0f, 0f), Triple(1, 900f, 900f)),
             actionIndex = 0,
         )
-        view.dispatchTouchEvent(pointerUp)
-        pointerUp.recycle()
+        dispatch(overlay, pointerUp)
 
         // A stationary move from the new active pointer must not be measured against pointer 0's
         // original (0,0) down point -- which would spuriously already exceed slop -- so no drag
         // starts and the spec/click state are untouched.
         val move = obtainMultiTouch(MotionEvent.ACTION_MOVE, listOf(Triple(1, 900f, 900f)))
-        assertFalse(view.dispatchTouchEvent(move))
-        move.recycle()
+        assertFalse(dispatch(overlay, move))
         assertEquals(before, overlay.spec)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_UP, 900f, 900f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_UP, 900f, 900f))
+        shadowOf(Looper.getMainLooper()).idle()
         assertEquals(1, clicks)
     }
 
@@ -292,27 +299,24 @@ class DraggableOnTouchListenerTest {
         overlay.show()
         val slop = touchSlop(view)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 0f, 0f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 0f, 0f))
         val pointerDown = obtainMultiTouch(
             MotionEvent.ACTION_POINTER_DOWN,
             listOf(Triple(0, 0f, 0f), Triple(1, 900f, 900f)),
             actionIndex = 1,
         )
-        view.dispatchTouchEvent(pointerDown)
-        pointerDown.recycle()
+        dispatch(overlay, pointerDown)
         val pointerUp = obtainMultiTouch(
             MotionEvent.ACTION_POINTER_UP,
             listOf(Triple(0, 0f, 0f), Triple(1, 900f, 900f)),
             actionIndex = 0,
         )
-        view.dispatchTouchEvent(pointerUp)
-        pointerUp.recycle()
+        dispatch(overlay, pointerUp)
 
         // The new active pointer now moves beyond slop measured from the handoff position
         // (900,900), not from pointer 0's original (0,0) down point.
         val move = obtainMultiTouch(MotionEvent.ACTION_MOVE, listOf(Triple(1, 900f + slop + 20, 900f)))
-        assertTrue(view.dispatchTouchEvent(move))
-        move.recycle()
+        assertTrue(dispatch(overlay, move))
         assertEquals(100 + slop + 20, overlay.spec.x)
         assertEquals(216, overlay.spec.y)
     }
@@ -331,26 +335,26 @@ class DraggableOnTouchListenerTest {
         val slop = touchSlop(view)
         backend.updateFailure = IllegalStateException("rejected")
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f))
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
         assertEquals(afterShow, overlay.spec)
         assertEquals(1, backend.updateCalls)
 
         // A second, still-failing move must retry the FULL cumulative delta since the down point,
         // not compound on top of the previously rejected attempt.
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 50, 290f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 50, 290f))
         assertEquals(afterShow, overlay.spec)
         assertEquals(2, backend.updateCalls)
 
         // Once the backend recovers, the very next move must land exactly where the finger now is
         // relative to the drag origin, not offset by the two failed attempts in between.
         backend.updateFailure = null
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 60, 300f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 60, 300f))
         assertEquals(100 + slop + 60, overlay.spec.x)
         assertEquals(256, overlay.spec.y)
         assertEquals(3, backend.updateCalls)
 
-        assertTrue(dispatch(view, MotionEvent.ACTION_CANCEL, 110f + slop + 60, 300f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_CANCEL, 110f + slop + 60, 300f))
         assertEquals(.9f, overlay.spec.alpha, 0f)
         assertEquals(100 + slop + 60, overlay.spec.x)
     }
@@ -364,26 +368,25 @@ class DraggableOnTouchListenerTest {
             OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE),
         )
         overlay.show()
-        // Attached only so the real framework posts the long-press callback through a real
-        // Handler (an unattached View queues posts until attachment instead of scheduling them);
-        // the library backend above is a no-op recorder, so this extra real parent does not
+        // Attached only so the real framework posts the long-press callback (and a click) through
+        // a real Handler (an unattached View queues posts until attachment instead of scheduling
+        // them); the library backend above is a no-op recorder, so this extra real parent does not
         // interact with it.
-        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
-        activity.findViewById<ViewGroup>(android.R.id.content).addView(view)
+        attachToActivityContent(view)
         var clicks = 0
         var longClicks = 0
         view.setOnClickListener { clicks++ }
         view.setOnLongClickListener { longClicks++; true }
         val slop = touchSlop(view)
 
-        assertFalse(dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
         assertTrue(view.isPressed) // the view's own onTouchEvent(DOWN) ran and pressed it
         // Crossing slop must cancel the pending long-press callback and clear the press state
         // before either would fire.
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
         assertFalse(view.isPressed)
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ViewConfiguration.getLongPressTimeout() + 50L))
-        assertTrue(dispatch(view, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
 
         assertEquals(0, clicks)
         assertEquals(0, longClicks)
@@ -402,13 +405,13 @@ class DraggableOnTouchListenerTest {
         val slop = touchSlop(view)
 
         // DOWN is consumed immediately: there is no click to preserve on a non-clickable view.
-        assertTrue(dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
         // Still below slop, but the listener keeps consuming every event of this same gesture.
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop - 1, 260f))
-        assertTrue(dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop - 1, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
         assertEquals(100 + slop + 20, overlay.spec.x)
         assertEquals(216, overlay.spec.y)
-        assertTrue(dispatch(view, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
     }
 
     @Test
@@ -426,9 +429,9 @@ class DraggableOnTouchListenerTest {
         val slop = touchSlop(view)
 
         assertTrue(overlay.show().isSuccess)
-        dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f)
-        dispatch(view, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f)
-        dispatch(view, MotionEvent.ACTION_UP, 110f + slop + 20, 260f)
+        dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f)
+        dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f)
+        dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f)
         assertTrue(overlay.hide().isSuccess)
 
         assertEquals(1, backend.showCalls)
@@ -438,12 +441,44 @@ class DraggableOnTouchListenerTest {
 
     private fun touchSlop(view: View): Int = ViewConfiguration.get(view.context).scaledTouchSlop
 
-    private fun dispatch(view: View, action: Int, x: Float, y: Float): Boolean =
-        MotionEvent.obtain(0, 0, action, x, y, 0).let {
-            val consumed = view.dispatchTouchEvent(it)
-            it.recycle()
-            consumed
-        }
+    /**
+     * Attaches [view] to a real Activity's content view. An unattached View has no real
+     * [android.os.Handler], so anything it `post()`s (a long-press callback, or the click that
+     * [View.onTouchEvent]'s `ACTION_UP` posts via `mPerformClick`) is queued and never flushed;
+     * a real window gives it a Handler tied to the main looper, which the caller can then idle.
+     */
+    private fun attachToActivityContent(view: View) {
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        activity.findViewById<ViewGroup>(android.R.id.content).addView(view)
+    }
+
+    /**
+     * Dispatches a synthesized single-pointer [action]/[x]/[y] event and reports whether the
+     * listener itself consumed it (see the class KDoc for why this differs from
+     * [View.dispatchTouchEvent]'s own return value).
+     */
+    private fun dispatch(overlay: OverlayView<*>, action: Int, x: Float, y: Float): Boolean {
+        val event = MotionEvent.obtain(0, 0, action, x, y, 0)
+        val consumed = dispatch(overlay, event)
+        event.recycle()
+        return consumed
+    }
+
+    /** Dispatches [event] (not recycled here -- the caller owns it) and reports listener consumption. */
+    private fun dispatch(overlay: OverlayView<*>, event: MotionEvent): Boolean {
+        val view = overlay.view
+        @Suppress("UNCHECKED_CAST")
+        val delegate = privateField(overlay, "effectiveDragListener") as View.OnTouchListener
+        var consumed = false
+        view.setOnTouchListener { v, ev -> consumed = delegate.onTouch(v, ev); consumed }
+        view.dispatchTouchEvent(event)
+        return consumed
+    }
+
+    private fun privateField(instance: Any, name: String): Any? = instance.javaClass.getDeclaredField(name).let {
+        it.isAccessible = true
+        it.get(instance)
+    }
 
     private fun obtainMultiTouch(
         action: Int,
