@@ -446,10 +446,22 @@ class DraggableOnTouchListenerTest {
      * [android.os.Handler], so anything it `post()`s (a long-press callback, or the click that
      * [View.onTouchEvent]'s `ACTION_UP` posts via `mPerformClick`) is queued and never flushed;
      * a real window gives it a Handler tied to the main looper, which the caller can then idle.
+     *
+     * Also gives the view a concrete size via a direct measure/layout call, bypassing reliance on
+     * an async layout traversal: [View.onTouchEvent]'s `ACTION_MOVE`/`ACTION_UP` handling checks
+     * `pointInView(x, y, slop)` against the view's own laid-out width/height in the *view's local*
+     * coordinate frame (dispatching straight to this leaf view applies no parent offset, so a
+     * fixture's raw test coordinates double as local ones here); a never-laid-out view is 0x0, so
+     * every point reads as outside, clearing the pressed state before `ACTION_UP` can post a click
+     * -- with no effect on tests where the listener itself consumes `MOVE`/`UP` before
+     * `onTouchEvent` ever runs. 2000x2000 comfortably covers every coordinate this suite dispatches.
      */
     private fun attachToActivityContent(view: View) {
         val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
         activity.findViewById<ViewGroup>(android.R.id.content).addView(view)
+        val size = View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.EXACTLY)
+        view.measure(size, size)
+        view.layout(0, 0, 2000, 2000)
     }
 
     /**
@@ -457,14 +469,10 @@ class DraggableOnTouchListenerTest {
      * listener itself consumed it (see the class KDoc for why this differs from
      * [View.dispatchTouchEvent]'s own return value).
      */
-    private fun dispatch(overlay: OverlayView<*>, action: Int, x: Float, y: Float): Boolean {
-        val event = MotionEvent.obtain(0, 0, action, x, y, 0)
-        val consumed = dispatch(overlay, event)
-        event.recycle()
-        return consumed
-    }
+    private fun dispatch(overlay: OverlayView<*>, action: Int, x: Float, y: Float): Boolean =
+        dispatch(overlay, MotionEvent.obtain(0, 0, action, x, y, 0))
 
-    /** Dispatches [event] (not recycled here -- the caller owns it) and reports listener consumption. */
+    /** Dispatches and recycles [event] (a single-use, freshly obtained event) and reports listener consumption. */
     private fun dispatch(overlay: OverlayView<*>, event: MotionEvent): Boolean {
         val view = overlay.view
         @Suppress("UNCHECKED_CAST")
@@ -472,6 +480,7 @@ class DraggableOnTouchListenerTest {
         var consumed = false
         view.setOnTouchListener { v, ev -> consumed = delegate.onTouch(v, ev); consumed }
         view.dispatchTouchEvent(event)
+        event.recycle()
         return consumed
     }
 
