@@ -420,3 +420,15 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - PR36: Claude承認5644737864、CI34683075403成功後、41d74aaへ統合。設定型のJava補足を完了。
 - PR37 a95f227: 25 tests/lint/sample build成功、ただし旧内部可変メンバがpublic JVM APIへ拡大するため承認せず差戻し（5644737303）。private化とtest側アクセス適応、KDoc訂正をClaudeが担当する。
 - T04b: terminal diagnostic補足b316ff8のみでは親の6点指摘が未完了。同じ担当へ修正を再提示しGradle専有を許可。検証・独立レビューはまだ完了していない。
+
+### T04b検証不足の補足と端末環境の準備（2026-09-12 17:55 JST）
+
+- T04b fbfd42eの実XMLは51 tests。誤報46を訂正し、旧tests対応表で不足を確認。drag listener再生成とdispose後setter再保持を追加差戻しし、同じTerra/high task_6a0a8696194e / ctx_3cedaff14c1aが実gesture・API23/26・permission/type検証も補う。
+- T07はprivate化とtest適応を継続。Kotlin view propertyと、core main/init契約に合うfixtureを両側で揃え、組み合わせたunit testsで確認する。必要なopt-timber testImplementation Robolectric4.16追加のみを許可した。
+- API23/26/35画像を追加し、23/26/35/36の専用AVD作成に成功。起動・device testsは未実行でT12は未完了。詳細: docs/coordination/3.0.0/2026-09-12-device-preparation.md。
+
+### 2026-09-12 18:05 JST checkpoint
+
+- T04b候補2ea8c02: core 59 testsと3 module assemble成功。Timberは既知fixtureで25件失敗、統合は保留。
+- 両司令塔がproduction reset APIを追加しない方針に合意。Terra/high継続担当が既存test hookを除去し、Claude側はtest-only reflectionでfixtureを適応する。
+- 次の受け入れ条件: 修正候補の独立レビュー、core/Timberの組み合わせ検証、CI成功、相手司令塔の候補SHA承認。
