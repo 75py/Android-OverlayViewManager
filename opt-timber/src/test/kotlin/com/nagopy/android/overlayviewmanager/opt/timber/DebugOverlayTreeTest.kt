@@ -63,8 +63,13 @@ private fun reflectField(name: String): Field {
     return field
 }
 
-private fun reflectCompanionField(name: String): Field {
-    val field = DebugOverlayTree.Companion.javaClass.getDeclaredField(name)
+// A companion object's backing field -- for both a `const val` and a plain
+// `private var` such as INSTANCE -- is generated as a static field on the
+// outer class itself, not as an instance field on the Companion class, so
+// these are looked up on DebugOverlayTree::class.java with a null (static)
+// target, not on DebugOverlayTree.Companion.
+private fun reflectStaticField(name: String): Field {
+    val field = DebugOverlayTree::class.java.getDeclaredField(name)
     field.isAccessible = true
     return field
 }
@@ -105,19 +110,13 @@ private val DebugOverlayTree.reflectedMaxLines: Int
 private val DebugOverlayTree.reflectedActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks
     get() = reflectField("activityLifecycleCallbacks").get(this) as Application.ActivityLifecycleCallbacks
 
+@Suppress("UNCHECKED_CAST")
 private var reflectedInstance: DebugOverlayTree
-    get() = reflectCompanionField("INSTANCE").get(DebugOverlayTree.Companion) as DebugOverlayTree
-    set(value) = reflectCompanionField("INSTANCE").set(DebugOverlayTree.Companion, value)
+    get() = reflectStaticField("INSTANCE").get(null) as DebugOverlayTree
+    set(value) = reflectStaticField("INSTANCE").set(null, value)
 
-// `const val` in a companion object is placed as a static field on the
-// outer class itself (not the Companion class), unlike a regular
-// companion `val`/`var` such as INSTANCE above.
 private val reflectedDefaultMaxLines: Int
-    get() {
-        val field = DebugOverlayTree::class.java.getDeclaredField("DEFAULT_MAX_LINES")
-        field.isAccessible = true
-        return field.getInt(null)
-    }
+    get() = reflectStaticField("DEFAULT_MAX_LINES").getInt(null)
 
 private fun DebugOverlayTree.callInitialize(application: Application) {
     val method = DebugOverlayTree::class.java.getDeclaredMethod("initialize", Application::class.java)
