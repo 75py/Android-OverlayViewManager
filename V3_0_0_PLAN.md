@@ -473,3 +473,11 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 ### T09a / T05a統合結果（2026-09-12 19:36 JST）
 
 文書PR44を先に作成後、両実装PRをreadyへ変更し、base work/3.0.0・完全head・CI SUCCESS・相互承認・MERGEABLE/CLEANを再確認。--match-head-commit付きの通常mergeでPR42を65c7e956d18bbd4bb72ffa073bf6fe73f02f98c7（19:35:52 JST）、PR43を40c45dcee6916cd1991ccc3db73a34a0eeafb9ac（19:36:18 JST）へ統合した。保護ルール迂回なし。main/releaseへのマージ・公開なし。先の未統合記載は各checkpoint時点の履歴。T05b・T09 stage 2と文書PR44のClaudeレビューは未完了。
+
+### 2026-09-12 20:37 JST: 司令塔復旧・T05b開始
+
+- PR41/44を対向承認・CI確認後に統合。work/3.0.0は53c2c2a。
+- Claude司令塔を新端末term_370f23caへ再接続し、Fable5.1/highを確認。Codex rootは変更なし。
+- T05bはClaudeのSonnet5/high担当がt05b-geometryで実装中。原点変換とpermission revoke回帰が対象。候補・検証・承認は未完了。
+- T10→T04cの順序を維持。新しいCodex子を起動せず、必要時のローカル検証は司令塔が直接実行する。
+- 詳細: docs/coordination/3.0.0/2026-09-12-coordinator-recovery.md。
