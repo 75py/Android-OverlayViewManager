@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = Build.VERSION_CODES.LOLLIPOP
+@Config(sdk = Build.VERSION_CODES.M
         , manifest = Config.NONE
 )
 public class ScreenMonitorTest {

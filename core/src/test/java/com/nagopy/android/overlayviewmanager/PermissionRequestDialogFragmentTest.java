@@ -19,7 +19,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = Build.VERSION_CODES.LOLLIPOP
+@Config(sdk = Build.VERSION_CODES.M
 )
 public class PermissionRequestDialogFragmentTest {
 

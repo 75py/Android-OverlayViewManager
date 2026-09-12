@@ -107,27 +107,20 @@ public class SampleAllOptionsActivityTest {
 
                 activity.binding.scrollView.smoothScrollTo(0, active.getBottom() - active.getMeasuredHeight());
                 active.setCardBackgroundColor(Color.argb(100, 255, 255, 0));
-                switch (active.getId()) {
-                    case R.id.parent_flags:
-                        break;
-                    case R.id.parent_width:
-                        activity.overlayView.getView().setText("OverlayView#setWidth(int)");
-                        break;
-                    case R.id.parent_height:
-                        activity.overlayView.getView().setText("OverlayView#setHeight(int)");
-                        break;
-                    case R.id.parent_xy:
-                        activity.overlayView.getView().setText("OverlayView#setX(int), setY(int)");
-                        break;
-                    case R.id.parent_alpha:
-                        activity.overlayView.getView().setText("OverlayView#setAlpha(float)");
-                        break;
-                    case R.id.parent_gravity:
-                        activity.overlayView.getView().setText("OverlayView#setGravity(int)");
-                        break;
-                    case R.id.parent_margins:
-                        activity.overlayView.getView().setText("OverlayView#setVerticalMargin(float), setHorizontalMargin(float)");
-                        break;
+                if (active.getId() == R.id.parent_flags) {
+                    return;
+                } else if (active.getId() == R.id.parent_width) {
+                    activity.overlayView.getView().setText("OverlayView#setWidth(int)");
+                } else if (active.getId() == R.id.parent_height) {
+                    activity.overlayView.getView().setText("OverlayView#setHeight(int)");
+                } else if (active.getId() == R.id.parent_xy) {
+                    activity.overlayView.getView().setText("OverlayView#setX(int), setY(int)");
+                } else if (active.getId() == R.id.parent_alpha) {
+                    activity.overlayView.getView().setText("OverlayView#setAlpha(float)");
+                } else if (active.getId() == R.id.parent_gravity) {
+                    activity.overlayView.getView().setText("OverlayView#setGravity(int)");
+                } else if (active.getId() == R.id.parent_margins) {
+                    activity.overlayView.getView().setText("OverlayView#setVerticalMargin(float), setHorizontalMargin(float)");
                 }
             }
         });
