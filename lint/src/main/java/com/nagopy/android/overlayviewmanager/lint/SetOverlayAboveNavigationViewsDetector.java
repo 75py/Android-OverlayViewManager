@@ -27,11 +27,16 @@ import com.android.tools.lint.detector.api.Severity;
 import com.intellij.psi.PsiMethod;
 
 import org.jetbrains.uast.UCallExpression;
+import org.jetbrains.uast.UExpression;
 
 import java.util.Collections;
 import java.util.List;
 
 public class SetOverlayAboveNavigationViewsDetector extends Detector implements Detector.UastScanner {
+
+    // allowViewToExtendOutsideScreen is a deprecated 2.x bridge method; T09 stage 2 (after
+    // T06/T04c) retargets this detector once the final 3.0 API surface is decided.
+    private static final String OVERLAY_VIEW_CLASS = "com.nagopy.android.overlayviewmanager.OverlayView";
 
     static final Issue ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN = Issue.create("ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN",
             "Using OverlayView#allowViewToExtendOutsideScreen",
@@ -42,18 +47,24 @@ public class SetOverlayAboveNavigationViewsDetector extends Detector implements 
             new Implementation(SetOverlayAboveNavigationViewsDetector.class, Scope.JAVA_FILE_SCOPE));
 
     @Override
-    public List<String> getApplicableCallNames() {
-        return Collections.singletonList("com.nagopy.android.overlayviewmanager.OverlayView");
-    }
-
-    @Override
     public List<String> getApplicableMethodNames() {
         return Collections.singletonList("allowViewToExtendOutsideScreen");
     }
 
     @Override
     public void visitMethod(JavaContext context, UCallExpression node, PsiMethod method) {
-        Object arg = node.getValueArguments().get(0);
+        if (!context.getEvaluator().isMemberInClass(method, OVERLAY_VIEW_CLASS)) {
+            // A same-named method on an unrelated class must not be flagged.
+            return;
+        }
+
+        List<UExpression> arguments = node.getValueArguments();
+        if (arguments.size() != 1) {
+            // Guard against unexpected call shapes so an unrelated overload never throws.
+            return;
+        }
+
+        Object arg = arguments.get(0);
         String argStr = arg == null ? "" : arg.toString();
         if (arg != null && !argStr.equals("false")) {
             LintFix.GroupBuilder fixGrouper = fix().group();
