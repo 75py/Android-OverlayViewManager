@@ -15,6 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSettings
 import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(RobolectricTestRunner::class)
@@ -156,6 +157,108 @@ class OverlayViewStateMachineTest {
         assertThrows(IllegalArgumentException::class.java) { overlay.setScreenBrightness(.4f) }
     }
 
+    @Test fun disposedLegacyCustomListenerIsNotRetainedBeforeTheSetterFails() {
+        val overlay = overlay(RecordingBackend())
+        overlay.dispose()
+        val customListener = DraggableOnTouchListener(overlay)
+
+        assertThrows(IllegalStateException::class.java) { overlay.setDraggable(true, customListener) }
+
+        assertNull(privateField(overlay, "pendingDragListener"))
+        assertNull(privateField(overlay, "effectiveDragListener"))
+        assertFalse(privateField(overlay, "pendingDragListenerChange") as Boolean)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertNull(overlay.backendForTesting())
+    }
+
+    @Test fun customLegacyListenerChangeIsAppliedEvenWhenTheSpecIsOtherwiseEqual() {
+        val backend = RecordingBackend()
+        val overlay = overlay(backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
+        overlay.show()
+        val customListener = DraggableOnTouchListener(overlay)
+
+        val result = overlay.setDraggable(true, customListener).update()
+
+        assertTrue(result.isSuccess)
+        assertTrue(result.changed)
+        assertEquals(1, backend.updateCalls)
+        assertSame(customListener, privateField(overlay, "effectiveDragListener"))
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.M], manifest = Config.NONE)
+    fun applicationPermissionPreflightPreventsAddAndAllowsRetryWhileActivityScopeWorksDenied() {
+        val application = RuntimeEnvironment.getApplication()
+        val applicationBackend = RecordingBackend()
+        ShadowSettings.setCanDrawOverlays(false)
+        val applicationOverlay = OverlayView(View(application), OverlayScope.APPLICATION, applicationBackend, OverlaySpec())
+
+        assertEquals(OverlayFailure.PERMISSION_DENIED, applicationOverlay.show().failure)
+        assertEquals(0, applicationBackend.addCalls)
+        ShadowSettings.setCanDrawOverlays(true)
+        assertTrue(applicationOverlay.show().isSuccess)
+        assertEquals(1, applicationBackend.addCalls)
+
+        ShadowSettings.setCanDrawOverlays(false)
+        val activityBackend = RecordingBackend()
+        val activityOverlay = OverlayView(View(application), OverlayScope.ACTIVITY, activityBackend, OverlaySpec())
+        assertTrue(activityOverlay.show().isSuccess)
+        assertEquals(1, activityBackend.addCalls)
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.M], manifest = Config.NONE)
+    fun windowTypesAndFlagsUseOnlyAllowedApplicationAndActivityValuesAtApi23Boundary() {
+        ShadowSettings.setCanDrawOverlays(true)
+        val application = RuntimeEnvironment.getApplication()
+        val applicationBackend = RecordingBackend()
+        val applicationOverlay = OverlayView(View(application), OverlayScope.APPLICATION, applicationBackend, OverlaySpec())
+        applicationOverlay.show()
+        assertAllowedFlags(applicationBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_SYSTEM_ALERT, passThrough = true)
+        applicationOverlay.update(applicationOverlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE))
+        assertAllowedFlags(applicationBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_SYSTEM_ALERT, passThrough = false)
+        applicationOverlay.update(applicationOverlay.spec.copy(touchMode = OverlayTouchMode.DRAGGABLE))
+        assertAllowedFlags(applicationBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_SYSTEM_ALERT, passThrough = false)
+
+        val activityBackend = RecordingBackend()
+        val activityOverlay = OverlayView(View(application), OverlayScope.ACTIVITY, activityBackend, OverlaySpec())
+        activityOverlay.show()
+        assertAllowedFlags(activityBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_APPLICATION, passThrough = true)
+        activityOverlay.update(activityOverlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE))
+        assertAllowedFlags(activityBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_APPLICATION, passThrough = false)
+        activityOverlay.update(activityOverlay.spec.copy(touchMode = OverlayTouchMode.DRAGGABLE))
+        assertAllowedFlags(activityBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_APPLICATION, passThrough = false)
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.O], manifest = Config.NONE)
+    fun applicationWindowTypeUsesApplicationOverlayFromApi26() {
+        ShadowSettings.setCanDrawOverlays(true)
+        val backend = RecordingBackend()
+        val overlay = OverlayView(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec())
+
+        assertTrue(overlay.show().isSuccess)
+        assertAllowedFlags(backend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, passThrough = true)
+    }
+
+    @Test fun legacyLayoutAndClickBridgeUsePendingSpecAndBackendSnapshot() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec())
+        overlay.show()
+        var clicks = 0
+        overlay.setOnClickListener { clicks++ }
+        overlay.setWidth(240).setHeight(80).setGravity(android.view.Gravity.BOTTOM).setX(12).setY(34)
+            .setAlpha(.7f).setHorizontalMargin(.2f).setVerticalMargin(.3f).update()
+
+        assertEquals(240, overlay.spec.width)
+        assertEquals(80, backend.lastSuccessfulParams!!.height)
+        assertEquals(12, backend.lastSuccessfulParams!!.x)
+        assertEquals(.7f, backend.lastSuccessfulParams!!.alpha, 0f)
+        view.performClick()
+        assertEquals(1, clicks)
+    }
+
     @Test fun draggableSpecInstallsTheBridgeAndUpdatesOnlyAfterTheListenerRuns() {
         val backend = RecordingBackend()
         val view = View(RuntimeEnvironment.getApplication())
@@ -185,6 +288,20 @@ class OverlayViewStateMachineTest {
     private fun overlay(backend: RecordingBackend, spec: OverlaySpec = OverlaySpec()): OverlayView<View> = OverlayView(
         View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, spec,
     )
+
+    private fun assertAllowedFlags(params: WindowManager.LayoutParams, type: Int, passThrough: Boolean) {
+        assertEquals(type, params.type)
+        val expectedFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            if (passThrough) WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE else 0
+        assertEquals(expectedFlags, params.flags)
+        assertFalse(params.type == WindowManager.LayoutParams.TYPE_SYSTEM_ERROR)
+        assertFalse(params.type == WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY)
+    }
+
+    private fun privateField(instance: Any, name: String): Any? = instance.javaClass.getDeclaredField(name).let {
+        it.isAccessible = true
+        it.get(instance)
+    }
 
     private class RecordingBackend(
         var addFailure: Throwable? = null,

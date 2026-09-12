@@ -40,13 +40,18 @@ public class OverlayView<T : View> internal constructor(
     private var pendingSpec: OverlaySpec = initialSpec
     private var effectiveSpec: OverlaySpec = initialSpec
     private var pendingDragListener: DraggableOnTouchListener<T>? = null
+    private var pendingDragListenerChange: Boolean = false
     private var effectiveDragListener: DraggableOnTouchListener<T>? = null
+    private var effectiveDragListenerIsCustom: Boolean = false
     @Volatile private var currentState: OverlayState = OverlayState.CONFIGURED
     @Volatile private var currentFailure: OverlayFailure? = null
     private var libraryRemovalInProgress: Boolean = false
 
     init {
-        applyTouchListener(initialSpec)
+        if (initialSpec.touchMode == OverlayTouchMode.DRAGGABLE) {
+            effectiveDragListener = DraggableOnTouchListener(this)
+        }
+        applyTouchListener(effectiveDragListener)
     }
 
     /** The managed view. It cannot be read once this handle is disposed. */
@@ -93,9 +98,7 @@ public class OverlayView<T : View> internal constructor(
         } catch (exception: Exception) {
             return failure(classify(exception), exception)
         }
-        effectiveSpec = candidate
-        effectiveDragListener = pendingDragListener
-        applyTouchListener(candidate)
+        accept(candidate, nextDragListener(candidate, pendingDragListener, pendingDragListenerChange))
         currentState = OverlayState.ATTACHED
         installDetachListener(managedView)
         return success(changed = true)
@@ -103,22 +106,24 @@ public class OverlayView<T : View> internal constructor(
 
     /** Applies [spec] synchronously or replaces pending configuration before first show. */
     @MainThread
-    public fun update(spec: OverlaySpec): OverlayResult = updateInternal(spec, null)
+    public fun update(spec: OverlaySpec): OverlayResult = updateInternal(spec, null, false)
 
-    private fun updateInternal(spec: OverlaySpec, dragListener: DraggableOnTouchListener<T>?): OverlayResult {
+    private fun updateInternal(
+        spec: OverlaySpec,
+        dragListener: DraggableOnTouchListener<T>?,
+        dragListenerChange: Boolean,
+    ): OverlayResult {
         requireMainThread()
         requireApplicationBrightnessIsAbsent(spec)
         if (currentState == OverlayState.DISPOSED) return disposedFailure()
+        val nextDragListener = nextDragListener(spec, dragListener, dragListenerChange)
+        val listenerChanged = nextDragListener.listener !== effectiveDragListener
         if (currentState == OverlayState.CONFIGURED) {
-            if (spec == effectiveSpec) return success(changed = false)
-            pendingSpec = spec
-            pendingDragListener = dragListener
-            effectiveSpec = spec
-            effectiveDragListener = dragListener
-            applyTouchListener(spec)
+            if (spec == effectiveSpec && !listenerChanged) return success(changed = false)
+            accept(spec, nextDragListener)
             return success(changed = true)
         }
-        if (spec == effectiveSpec) return success(changed = false)
+        if (spec == effectiveSpec && !listenerChanged) return success(changed = false)
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         try {
             backendOrThrow().update(managedView, layoutParams(spec))
@@ -129,11 +134,7 @@ public class OverlayView<T : View> internal constructor(
             }
             return failure(classify(exception), exception)
         }
-        pendingSpec = spec
-        pendingDragListener = dragListener
-        effectiveSpec = spec
-        effectiveDragListener = dragListener
-        applyTouchListener(spec)
+        accept(spec, nextDragListener)
         return success(changed = true)
     }
 
@@ -194,14 +195,15 @@ public class OverlayView<T : View> internal constructor(
      */
     @Deprecated("Use update(OverlaySpec) instead.")
     @MainThread
-    public fun update(): OverlayResult = updateInternal(pendingSpec, pendingDragListener)
+    public fun update(): OverlayResult = updateInternal(pendingSpec, pendingDragListener, pendingDragListenerChange)
 
     /** Temporary 2.x migration bridge. */
     @Deprecated("Use OverlaySpec.touchMode instead.")
     @MainThread
     public fun setTouchable(touchable: Boolean): OverlayView<T> {
-        requireMainThread()
+        requireMutableState()
         pendingDragListener = null
+        pendingDragListenerChange = true
         return setPending { it.copy(touchMode = if (touchable) OverlayTouchMode.INTERACTIVE else OverlayTouchMode.PASS_THROUGH) }
     }
 
@@ -209,8 +211,9 @@ public class OverlayView<T : View> internal constructor(
     @Deprecated("Use OverlaySpec.touchMode instead.")
     @MainThread
     public fun setDraggable(draggable: Boolean): OverlayView<T> {
-        requireMainThread()
+        requireMutableState()
         pendingDragListener = null
+        pendingDragListenerChange = true
         return setPending { it.copy(touchMode = if (draggable) OverlayTouchMode.DRAGGABLE else OverlayTouchMode.PASS_THROUGH) }
     }
 
@@ -218,8 +221,9 @@ public class OverlayView<T : View> internal constructor(
     @Deprecated("Use OverlaySpec.touchMode instead.")
     @MainThread
     public fun setDraggable(draggable: Boolean, listener: DraggableOnTouchListener<T>): OverlayView<T> {
-        requireMainThread()
+        requireMutableState()
         pendingDragListener = if (draggable) listener else null
+        pendingDragListenerChange = true
         return setPending { it.copy(touchMode = if (draggable) OverlayTouchMode.DRAGGABLE else OverlayTouchMode.PASS_THROUGH) }
     }
 
@@ -232,6 +236,7 @@ public class OverlayView<T : View> internal constructor(
     @Deprecated("Use OverlaySpec.horizontalMargin instead.") @MainThread public fun setHorizontalMargin(value: Float): OverlayView<T> = setPending { it.copy(horizontalMargin = value) }
     @Deprecated("Use OverlaySpec.verticalMargin instead.") @MainThread public fun setVerticalMargin(value: Float): OverlayView<T> = setPending { it.copy(verticalMargin = value) }
     @Deprecated("Use OverlaySpec.screenBrightness instead.") @MainThread public fun setScreenBrightness(value: Float): OverlayView<T> {
+        requireMutableState()
         require(scope == OverlayScope.ACTIVITY) { "screenBrightness is supported only for activity overlays." }
         return setPending { it.copy(screenBrightness = value) }
     }
@@ -253,8 +258,7 @@ public class OverlayView<T : View> internal constructor(
     internal fun hasDetachListenerForTesting(): Boolean = detachListener != null
 
     private fun setPending(transform: (OverlaySpec) -> OverlaySpec): OverlayView<T> {
-        requireMainThread()
-        check(currentState != OverlayState.DISPOSED) { "OverlayView is disposed." }
+        requireMutableState()
         pendingSpec = transform(pendingSpec)
         return this
     }
@@ -285,16 +289,45 @@ public class OverlayView<T : View> internal constructor(
         removeDetachListener(managedView)
         managedView.setOnTouchListener(null)
         pendingDragListener = null
+        pendingDragListenerChange = false
         effectiveDragListener = null
+        effectiveDragListenerIsCustom = false
         ownedView = null
         backend = null
         currentState = OverlayState.DISPOSED
     }
 
-    private fun applyTouchListener(spec: OverlaySpec) {
-        ownedView?.setOnTouchListener(
-            if (spec.touchMode == OverlayTouchMode.DRAGGABLE) effectiveDragListener ?: DraggableOnTouchListener(this) else null,
-        )
+    private fun accept(spec: OverlaySpec, drag: DragListenerState<T>) {
+        pendingSpec = spec
+        effectiveSpec = spec
+        effectiveDragListener = drag.listener
+        effectiveDragListenerIsCustom = drag.isCustom
+        pendingDragListener = if (drag.isCustom) drag.listener else null
+        pendingDragListenerChange = drag.isCustom
+        applyTouchListener(drag.listener)
+    }
+
+    private fun nextDragListener(
+        spec: OverlaySpec,
+        requestedListener: DraggableOnTouchListener<T>?,
+        requestedChange: Boolean,
+    ): DragListenerState<T> {
+        if (spec.touchMode != OverlayTouchMode.DRAGGABLE) return DragListenerState(null, false)
+        if (requestedChange) {
+            return if (requestedListener != null) {
+                DragListenerState(requestedListener, true)
+            } else {
+                DragListenerState(DraggableOnTouchListener(this), false)
+            }
+        }
+        if (effectiveSpec.touchMode == OverlayTouchMode.DRAGGABLE && effectiveDragListener != null) {
+            return DragListenerState(effectiveDragListener, effectiveDragListenerIsCustom)
+        }
+        return DragListenerState(DraggableOnTouchListener(this), false)
+    }
+
+    private fun applyTouchListener(listener: DraggableOnTouchListener<T>?) {
+        ownedView?.setOnTouchListener(listener)
     }
 
     private fun layoutParams(value: OverlaySpec): WindowManager.LayoutParams = WindowManager.LayoutParams().apply {
@@ -358,4 +391,14 @@ public class OverlayView<T : View> internal constructor(
         val main = Looper.getMainLooper()
         check(main != null && Looper.myLooper() === main) { "OverlayView must be used on the main thread." }
     }
+
+    private fun requireMutableState() {
+        requireMainThread()
+        check(currentState != OverlayState.DISPOSED) { "OverlayView is disposed." }
+    }
+
+    private data class DragListenerState<T : View>(
+        val listener: DraggableOnTouchListener<T>?,
+        val isCustom: Boolean,
+    )
 }

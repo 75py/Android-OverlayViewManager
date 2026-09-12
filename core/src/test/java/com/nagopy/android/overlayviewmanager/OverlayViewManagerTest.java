@@ -2,6 +2,8 @@ package com.nagopy.android.overlayviewmanager;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.app.Application;
@@ -17,6 +19,7 @@ import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowSettings;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = Build.VERSION_CODES.P, manifest = Config.NONE)
@@ -65,5 +68,14 @@ public class OverlayViewManagerTest {
         Activity destroyed = Mockito.mock(Activity.class);
         Mockito.when(destroyed.isDestroyed()).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), destroyed));
+    }
+    @Test @Config(sdk = Build.VERSION_CODES.M, manifest = Config.NONE)
+    public void canDrawOverlaysTemporarilyBridgesPlatformAllowAndDenyAtApi23() {
+        Application application = RuntimeEnvironment.getApplication();
+        OverlayViewManager.init(application);
+        ShadowSettings.setCanDrawOverlays(false);
+        assertFalse(OverlayViewManager.getInstance().canDrawOverlays());
+        ShadowSettings.setCanDrawOverlays(true);
+        assertTrue(OverlayViewManager.getInstance().canDrawOverlays());
     }
 }
