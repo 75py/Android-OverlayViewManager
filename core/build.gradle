@@ -65,7 +65,9 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.10.0'
     implementation 'androidx.fragment:fragment-ktx:1.9.0'
 
+    // lintChecks runs the checks while developing core; lintPublish bundles lint.jar into the AAR.
     lintChecks project(':lint')
+    lintPublish project(':lint')
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation "org.mockito:mockito-core:5.23.0"
