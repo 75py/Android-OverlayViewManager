@@ -12,6 +12,7 @@ import com.nagopy.android.overlayviewmanager.internal.WeakReferenceCache
 import org.hamcrest.CoreMatchers.`is` as isEqualTo
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.CoreMatchers.nullValue
+import org.hamcrest.CoreMatchers.sameInstance
 import org.junit.After
 import org.junit.Assert.assertThat
 import org.junit.Assert.fail
@@ -21,7 +22,6 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
 import org.mockito.Mockito.doAnswer
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.reset
 import org.mockito.Mockito.spy
@@ -114,11 +114,11 @@ private val reflectedDefaultMaxLines: Int
         return field.getInt(null)
     }
 
-// `initialize` and `postToMainThread` stay `internal` (not `private`) in
-// the production class specifically so Mockito can generate a subclass
-// override for `verify()`/`doAnswer()`; being in the same Gradle module,
-// this Kotlin test can call `initialize` directly like any other internal
-// member, no reflection needed.
+private fun DebugOverlayTree.callInitialize(application: Application) {
+    val method = DebugOverlayTree::class.java.getDeclaredMethod("initialize", Application::class.java)
+    method.isAccessible = true
+    method.invoke(this, application)
+}
 
 private fun DebugOverlayTree.callLog(priority: Int, tag: String?, message: String, t: Throwable?) {
     val method = DebugOverlayTree::class.java.getDeclaredMethod(
@@ -196,16 +196,24 @@ class DebugOverlayTreeTest {
 
     @Test
     fun init() {
-        val mockTree = mock(DebugOverlayTree::class.java)
-        reflectedInstance = mockTree
-        DebugOverlayTree.init(application)
+        // initialize() is private, so Mockito cannot generate a subclass
+        // override to verify a call on a mock; instead, swap in a known
+        // fresh (uninitialized) instance and confirm initialize() ran on
+        // that same instance by checking its resulting state.
+        val freshTree = newDebugOverlayTree()
+        reflectedInstance = freshTree
+        assertThat(freshTree.reflectedOverlayView, isEqualTo(nullValue()))
 
-        verify(mockTree, times(1)).initialize(application)
+        val result = DebugOverlayTree.init(application)
+
+        assertThat(result, isEqualTo(sameInstance(freshTree)))
+        assertThat(freshTree.reflectedOverlayView, isEqualTo(notNullValue()))
+        assertThat(freshTree.reflectedMessages, isEqualTo(notNullValue()))
     }
 
     @Test
     fun initialize() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
 
         assertThat(debugOverlayTree.reflectedMessages, isEqualTo(notNullValue()))
         assertThat(debugOverlayTree.reflectedThreshold, isEqualTo(Log.DEBUG))
@@ -225,7 +233,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun setMaxLines() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.setMaxLines(1)
@@ -235,7 +243,7 @@ class DebugOverlayTreeTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun setMaxLines_zero_throws() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.setMaxLines(0)
@@ -243,7 +251,7 @@ class DebugOverlayTreeTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun setMaxLines_negative_throws() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.setMaxLines(-1)
@@ -251,7 +259,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun setMaxLines_invalid_doesNotChangeState() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         try {
@@ -266,7 +274,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun setMaxLines_shrink_trimsBufferAndRerenders() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
         for (i in 1..5) {
             debugOverlayTree.callLog(Log.DEBUG, "tag", "message$i", null)
@@ -281,7 +289,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun setMaxLines_equal_doesNotTrimOrRerender() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
         for (i in 1..5) {
             debugOverlayTree.callLog(Log.DEBUG, "tag", "message$i", null)
@@ -296,7 +304,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun setMaxLines_grow_doesNotTrimExistingBuffer() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
         for (i in 1..5) {
             debugOverlayTree.callLog(Log.DEBUG, "tag", "message$i", null)
@@ -343,7 +351,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun log_threshold() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.callLog(Log.VERBOSE, "tag", "message", null)
@@ -353,7 +361,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun log() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.callLog(Log.DEBUG, "tag", "message", null)
@@ -363,7 +371,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun log_multiLine() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
         debugOverlayTree.reflectedMessages!!.add("tag: message")
 
@@ -374,7 +382,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun log_multiLine_max() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
         debugOverlayTree.reflectedMessages!!.add("tag: message1")
         debugOverlayTree.reflectedMessages!!.add("tag: message2")
@@ -489,7 +497,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun log_rendersOnlyThroughMainThreadPost_neverDirectly() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
         val spied = spy(debugOverlayTree)
         val posted: MutableList<Runnable> = Collections.synchronizedList(ArrayList())
@@ -510,7 +518,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun log_highFrequencyLogging_coalescesToSinglePendingRender() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
         val spied = spy(debugOverlayTree)
         val posted: MutableList<Runnable> = Collections.synchronizedList(ArrayList())
@@ -535,7 +543,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun log_concurrentThreads_doesNotCorruptBufferOrThrow() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         val threadCount = 8
@@ -573,7 +581,7 @@ class DebugOverlayTreeTest {
 
     @Test
     fun setThreshold_onOtherThread_isVisibleWhenLoggingFromAnotherThread() {
-        debugOverlayTree.initialize(application)
+        debugOverlayTree.callInitialize(application)
         debugOverlayTree.reflectedOverlayView = overlayView
 
         val errors: MutableList<Throwable> = Collections.synchronizedList(ArrayList())

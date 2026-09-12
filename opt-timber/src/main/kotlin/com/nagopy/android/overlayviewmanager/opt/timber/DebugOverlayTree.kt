@@ -145,15 +145,9 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
     /**
      * Inner method. Initialize members.
      *
-     * Kept `internal` rather than `private`: the [init] unit test replaces
-     * the singleton with a Mockito mock and verifies this method was
-     * called on it, which requires Mockito to generate a subclass override
-     * -- impossible for a `private` method (no vtable entry to override,
-     * even via reflection). Not supported API.
-     *
      * @param application Application
      */
-    internal open fun initialize(application: Application) {
+    private fun initialize(application: Application) {
         messages = ArrayDeque()
         threshold = Log.DEBUG
         maxLines = DEFAULT_MAX_LINES
