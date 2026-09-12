@@ -29,7 +29,7 @@
 
         <variable
             name="onProgressChanged"
-            type="androidx.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+            type="android.widget.SeekBar.OnSeekBarChangeListener" />
     </data>
 
 
@@ -55,7 +55,7 @@
             android:layout_toEndOf="@+id/lbl_margin_vertical"
             android:layout_toRightOf="@+id/lbl_margin_vertical"
             android:max="100"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{verticalMarginPercentage}" />
 
 
@@ -79,7 +79,7 @@
             android:layout_toEndOf="@+id/lbl_margin_horizontal"
             android:layout_toRightOf="@+id/lbl_margin_horizontal"
             android:max="100"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{horizontalMarginPercentage}" />
     </RelativeLayout>
 </layout>

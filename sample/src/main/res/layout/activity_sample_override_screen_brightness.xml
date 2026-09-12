@@ -30,7 +30,7 @@
 
         <variable
             name="onProgressChanged"
-            type="androidx.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+            type="android.widget.SeekBar.OnSeekBarChangeListener" />
     </data>
 
     <RelativeLayout
@@ -66,7 +66,7 @@
             android:layout_toRightOf="@+id/lbl_brightness"
             android:enabled="@{isOverrideEnabled}"
             android:max="255"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{brightness}" />
 
         <WebView

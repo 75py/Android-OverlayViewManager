@@ -26,7 +26,7 @@ pre {
     <li>Override brightness of the screen
 </ul>
 <pre class="prettyprint">
-public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBarBindingAdapter.OnProgressChanged {
+public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBar.OnSeekBarChangeListener {
 
     OverlayView&gt;View&lt; overlayView;
     ActivitySampleOverrideScreenBrightnessBinding binding;
@@ -46,8 +46,8 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         overlayView.hide();
+        super.onDestroy();
     }
 
     public void onClick(View view) {
@@ -64,6 +64,14 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         overlayView.setScreenBrightness(progress / 255f).update();
         binding.setBrightness(progress);
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
     }
 }
 </pre>

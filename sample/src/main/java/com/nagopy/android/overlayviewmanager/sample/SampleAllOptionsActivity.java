@@ -18,7 +18,6 @@ package com.nagopy.android.overlayviewmanager.sample;
 
 import android.annotation.SuppressLint;
 import androidx.databinding.DataBindingUtil;
-import androidx.databinding.adapters.SeekBarBindingAdapter;
 import android.graphics.Color;
 import android.os.Bundle;
 import androidx.annotation.Nullable;
@@ -50,7 +49,7 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 public class SampleAllOptionsActivity extends AppCompatActivity implements
         CheckBox.OnCheckedChangeListener
         , View.OnClickListener
-        , SeekBarBindingAdapter.OnProgressChanged
+        , SeekBar.OnSeekBarChangeListener
         , RadioGroup.OnCheckedChangeListener {
 
     ActivitySampleAllOptionsBinding binding;
@@ -198,6 +197,14 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
                 updateText("overlayView\n  .setHorizontalMargin(%.2f)\n  .update()", horizontalMargin);
                 break;
         }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
     }
 
     @Override

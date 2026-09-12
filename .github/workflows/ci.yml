@@ -1,0 +1,73 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - work/3.0.0
+      - 'release/**'
+      - main
+  pull_request:
+    branches:
+      - work/3.0.0
+      - 'release/**'
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-lint:
+    name: Build, test, and lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK platform 34
+        run: sdkmanager "platforms;android-34"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Assemble debug builds
+        run: ./gradlew :core:assembleDebug :opt-timber:assembleDebug :sample:assembleDebug
+
+      - name: Run unit tests
+        run: ./gradlew :core:testDebugUnitTest :opt-timber:testDebugUnitTest :lint:test :sample:testDebugUnitTest
+
+      - name: Run Android lint
+        run: ./gradlew :core:lintDebug :sample:lintDebug
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          retention-days: 7
+
+      - name: Upload lint reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-reports
+          path: |
+            **/build/reports/lint-results*.html
+            **/build/reports/lint-results*.xml
+          retention-days: 7
