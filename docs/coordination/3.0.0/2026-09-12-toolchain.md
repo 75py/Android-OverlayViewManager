@@ -1,6 +1,7 @@
 # T03: ビルド構成の再評価と独立検証
 
-- 状態: 24fc1f2はsample設定で失敗、core/TimberのJava/Kotlin相互コンパイルは成功、次修正待ち
+- 状態: 双方合意
+- 進捗: 7a05b90の全体検証でsampleコンパイル失敗。残修正をCodexへ移管済み。
 - 記録担当: Codex（Astra / medium）
 - 関連タスク: T03、T04a
 - Codex Run: run_18f7185e91aa
@@ -104,3 +105,36 @@ Codexはmsg_92c3354402ae（15:07:36 JST）で、ビルド実行が可能な側�
 15:16時点のOrca照会では旧ctx_d9dde85f3055はabandoned、新ctx_7fe562a5523fはready/live。新端末term_a5e26b13-ea64-45b4-98c5-8b616a0bc2d1の画面はコンテキスト読込とack処理中だった。Codexはmsg_1df21beae325（15:16:07 JST）でClaudeへ復旧・担当・修正SHAの確認を依頼した。観測した状態だけを記録し、旧試行を成功完了として扱わない。
 
 Claudeはmsg_424b141b112e（15:16:33 JST）で新担当を確認。起動引数はclaude-sonnet-5/highでlaunch.effectiveは空。旧試行は未ackの監視ループで更新を受信できずstop_unknown後abandonによりfenceしたと報告した。これはClaude側の復旧報告であり、Codexによる旧プロセス終了の独立確認ではない。新担当の範囲はProGuard既定ファイル修正1コミットと同種設定点検、headはまだ24fc1f2。旧端末の処理はClaudeが所有する。
+
+## ProGuard修正後の全体検証と正式な担当移管
+
+Claudeはmsg_2cbf871997ac（15:18:10 JST）で7a05b90ecb327dddec1a34f277f5fe5287882414を提示。sample/build.gradleの旧ProGuard既定ファイル名だけを修正した1コミットで、Codexが指定SHAをPR29へpushした。
+
+Codexはmsg_32ca328c3576（15:19:38 JST）で独立検証を共有した。
+- Model/effort: gpt-5.6-terra / high（launch.effective確認）
+- Task / Dispatch: task_33beab77cec4 / ctx_a14038591bf9
+- Worktree: codex-3.0.0-t03-final-check（新規、過去のfixture出力なし）
+- Report: /private/tmp/overlay-t03-review-proguard.md
+- Log: /private/tmp/overlay-t03-gradle-full.log
+
+CI run34677793662と独立ローカル実行は、ProGuard設定を通過し、:sample:compileDebugJavaWithJavacのR.id switch caseによるconstant expression required、46件で失敗した。core/opt-timberのassemble、opt-timber24件とlint4件、計28テストは成功（失敗・error・skipなし）。core/sampleテストとcore/sample lintは未完了で、98件全成功とはしない。1行のProGuard修正自体に問題はなく、sampleの旧ソース互換性が次の阻害要因になった。
+
+Codexはmsg_e104718f0ae1（15:21:57 JST）でCI結果と移管準備を依頼し、msg_78dc95375dce（15:23:40 JST）で独立ローカル再現を補足した。これまでT10へ分類していたNonConstantResourceId対応の最小範囲を、コンパイル阻害のためT03へ前倒しする。JavaのID比較へ機械的に置換し、マッピング・既定分岐・副作用を保持する。広いsample Kotlin移行はT10に残す。
+
+検証担当の正式worker_doneはmsg_d85695bf0acb（15:23:27 JST）、outcome failedとして受領し、ctx_a14038591bf9をrelease、transcript保存を確認した。途中のsandbox内Orca接続失敗は実行環境停止の証拠ではなく、Codex司令塔からは通常の昇格実行で接続できた。追加助言の送信は既にsettle済みでdispatch_inactiveとなり未配信だった。正式な報告受領を根拠に後処理した。
+
+Claudeのmsg_36833232803e（15:24:36 JST）で最終SHA7a05b90、未解決事項、PR_BODY_T03.mdを明示して移管に合意。msg_f0d13fbdf431（15:27:15 JST）で旧担当ctx_7fe562a5523fのworker_done（未完了・引き継ぎのためfailed）受領とrelease、以後編集しないことを確認した。Codexも旧端末の最終ターンで編集終了を読み取り確認してから新担当を起動した。
+
+新しいT03担当:
+- Model/effort: gpt-5.6-terra / high（launch.effective確認）
+- Task / Dispatch: task_219a9b571780 / ctx_f6d6f9259023
+- Terminal: term_7aa30be7-8726-4d54-88a7-135ec3e88c0a
+- Worktree: codex-3.0.0-t03-completion
+- Base: 7a05b90ecb327dddec1a34f277f5fe5287882414、全履歴を保持
+- Scope: sampleの最小互換修正、不要になったnonFinalResIds設定撤去、以後実証されたツールチェーン非互換の解消、全必須検証。coreの3.0動作実装・広い移行は開始しない。
+- 所有: ソース編集とローカルGradleを専有。Claude側は独立レビュー。
+- 成果: Codex所有の新T03 PRを作成し、ClaudeがPR29を参照付きでclose。最新SHAのClaude APPROVEとCI成功後にCodexが統合する。
+
+引き継ぎPR本文は/private/tmp/overlay-t03-claude-handoff-body.mdへ保存した。本文の旧89件想定、ローカル検証不可の説明は新実測結果へ書き直す。coreは旧構成でもKotlin pluginを適用していたため、「stdlibが新たに推移依存する」との主張は旧新POM等の証拠なしに転記しない。成果物/POMの最終検証はT11/T12で別途行う。
+
+msg_cc34373c4375（15:29:07 JST）で移管実行と担当情報を共有。PR30はhead9739fae4d16fa40f0e55d7aee50bdcf453d167b2に対する[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/30#issuecomment-5644189536)とCI run34677777272成功後、19c4252674e448cf46bcfdd092cbea4268c48d96へ統合した。非ブロッキング指摘を受け、計画のT04行を集約行と明記し、本ログの状態語彙をREADMEへ合わせる。

@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03のJava/Kotlin相互コンパイルを実証済み。全体検証はsampleの旧ProGuard設定で停止し、修正中。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03のJava/Kotlin相互コンパイルを実証済み。ProGuard修正後の全体検証でsampleのR.id分岐46件がコンパイル失敗。双方合意でT03の残修正をCodexへ移管した。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -103,13 +103,13 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 
 状態は `未着手 → 合意済み → 作業中 → 相互レビュー中 → 統合済み` とする。検証不能・判断待ちは理由と担当を記録し、完了扱いにしない。
 
-| ID | 作業 | 初期担当案 | 依存 | 状態 |
+| ID | 作業 | 担当（未合意は案） | 依存 | 状態 |
 | --- | --- | --- | --- | --- |
 | T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
 | T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 統合済み |
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
-| T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 作業中 |
-| T04 | 表示状態とスレッド処理の修正 | Codex | T01, T03 | 未着手 |
+| T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 作業中 |
+| T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 未着手 |
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 未着手 |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 未着手 |
 | T04c | 一時互換APIの最終除去 | Codex | T07, T10 | 未着手 |
@@ -375,3 +375,10 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - T03修正版24fc1f2faacedf088eb7dbefd6d2bf961562af6bをpushし、Terra/high task_74810ea07694 / ctx_d88e20a3160aで再検証開始（msg_be74df233e72 / msg_15ff4dbb7933）。組み込みKotlinのjvmTargetがcompileOptionsを継承する公式既定を採用し、一時Java/Kotlinコードで実証する。前回未実行だった全チェックをこのSHAで行う。
 
 - 24fc1f2のCI run34676815383とTerra再検証はsample/build.gradle36の旧proguard-android.txtで設定失敗（msg_30d961482558）。core/Timberは個別構成でJava/Kotlin双方向コンパイル・class major61を実証。全98テストとlintは未実行のまま。次の設定修正後に必須全チェックを再実行する（msg_4c4ceee43442 / msg_8e7f857cf73f / msg_5b1b01e48d25）。
+
+### T03残修正の担当移管（2026-09-12 15:29 JST）
+
+- 7a05b90のProGuard修正をCI・Terra/highで検証。core/Timberビルド、Timber24件・lint4件は成功。sampleのR.id switchで46件のコンパイルエラー、残るcore/sampleテストとAndroid lintは未完了。
+- 事前の条件付き合意に該当し、Claudeから最終SHA・未解決事項・PR本文を引き継いだ（msg_36833232803e）。旧担当のworker_done/releaseと編集終了を確認（msg_f0d13fbdf431）してから、Codex Terra/high task_219a9b571780 / ctx_f6d6f9259023を新checkoutに起動。Gradleと編集を専有する。
+- R.id分岐の最小互換修正をT10からT03へ前倒し。広いKotlin移行はT10のまま。既存コミットを保持し、新T03 PRをClaudeが独立レビュー、SHA固定APPROVE後にCodexが統合。PR29は新PRへの参照付きでClaudeがcloseする。
+- PR30文書は19c4252674e448cf46bcfdd092cbea4268c48d96へ統合。詳細と根拠はdocs/coordination/3.0.0/2026-09-12-toolchain.md参照。
