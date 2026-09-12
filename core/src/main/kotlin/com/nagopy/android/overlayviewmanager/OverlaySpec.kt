@@ -25,7 +25,7 @@ import android.view.ViewGroup
  * Scope-specific rules are applied by the overlay factory. This value only validates its own
  * dimensions and normalized numeric properties.
  */
-public data class OverlaySpec @JvmOverloads constructor(
+public data class OverlaySpec constructor(
     public val width: Int = ViewGroup.LayoutParams.WRAP_CONTENT,
     public val height: Int = ViewGroup.LayoutParams.WRAP_CONTENT,
     public val gravity: Int = Gravity.TOP or Gravity.START,
