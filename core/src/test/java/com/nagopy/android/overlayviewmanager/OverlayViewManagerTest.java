@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -109,6 +110,15 @@ public class OverlayViewManagerTest {
         OverlayViewManager.init(application);
 
         assertTrue(OverlayViewManager.getInstance().canDrawOverlays());
+    }
+
+    @Config(sdk = Build.VERSION_CODES.M)
+    @Test
+    public void canDrawOverlays_23_permissionDenied() throws Exception {
+        ShadowSettings.setCanDrawOverlays(false);
+        OverlayViewManager.init(application);
+
+        assertFalse(OverlayViewManager.getInstance().canDrawOverlays());
     }
 
     /*
