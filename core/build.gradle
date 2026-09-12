@@ -23,10 +23,10 @@ plugins {
 
 android {
     namespace 'com.nagopy.android.overlayviewmanager'
-    compileSdk 34
+    compileSdk 36
     defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 34
+        minSdkVersion 23
+        targetSdkVersion 36
         versionCode publish_version_code
         versionName publish_version_name
 

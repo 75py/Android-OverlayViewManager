@@ -21,11 +21,11 @@ plugins {
 
 android {
     namespace 'com.nagopy.android.overlayviewmanager.sample'
-    compileSdk 34
+    compileSdk 36
     defaultConfig {
         applicationId 'com.nagopy.android.overlayviewmanager.sample'
-        minSdkVersion 21
-        targetSdkVersion 34
+        minSdkVersion 23
+        targetSdkVersion 36
         versionCode publish_version_code
         versionName publish_version_name
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
