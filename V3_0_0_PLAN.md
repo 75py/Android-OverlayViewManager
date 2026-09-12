@@ -110,7 +110,7 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
 | T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 統合済み |
 | T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 作業中 |
-| T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足テストは別変更） |
+| T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 作業中 |
 | T04c | 一時互換APIの最終除去 | Codex | T07, T10 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04b | 未着手 |
@@ -406,3 +406,17 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - T04b: Terra/high（launch.effective確認）task_8dae019402ea / ctx_026ea69247c9、codex-3.0.0-t04b-state、base d2a1dd6。core manager/view/adapterのKotlin同期状態処理、新結果API・4 factoryを導入する。旧setter/noarg updateはeffective specと分離した一時橋渡しのみとしT04cで除去する。
 - 段階移行案はClaudeがmsg_bf7ddf364470で合意。Sample2Activityのshow代入分割だけT04bに含め、sample全体はT10、同一Application init契約はT04b、Activity寿命はT08、opacity budgetはT06とする。
 - msg_44fa28c940e9でClaudeへT07 Kotlin段階を引き渡し。opt-timberとcoreの編集を分離し、GradleはClaudeに先行枠、T04bは編集後に検証枠を問い合わせる。詳細: docs/coordination/3.0.0/2026-09-12-api-implementation.md。
+
+### 補足検証とKotlin移行のレビュー（2026-09-12 17:25 JST）
+
+- T04a補足PR36 head2d2dc4b: 不要constructor overload削減、Java正常/異常値とsnapshot検証。初回テストの正常サイズ誤認を親が差し戻し、Luna/high修正後83 core testsとjavap確認成功。Claudeの独立レビュー待ち。
+- T04b候補4a24cd2は未承認。親が破棄後のbackend参照・古いdetachListener保持等を6点差し戻し、同じTerra/high担当が修正中。
+- T04bに補助monitor request/cancel除去と最小drag座標橋渡しを含めることにClaudeが同意（msg_16212d73b4f5）。T05は完全bounds/insetsとmonitor撤去、T06は完全drag処理とopacity admission。橋渡しの限界と検証を明示する。
+- T07 Kotlin候補a95f227をpushし、Terra/high task_18c7821b0712 / ctx_c704670bf482で独立レビュー・Gradle検証中。テスト用メンバのpublic化は公開APIの審査対象であり、未承認。
+- PR35はClaude承認・CI成功後に復旧端末が9691d35へ統合。次ログに実施者、検証未完了の差戻し、通信制限から同じ担当を復帰させた経緯を保存する。
+
+### T04a補足の統合とTimber Kotlin候補の差戻し（17:31 JST）
+
+- PR36: Claude承認5644737864、CI34683075403成功後、41d74aaへ統合。設定型のJava補足を完了。
+- PR37 a95f227: 25 tests/lint/sample build成功、ただし旧内部可変メンバがpublic JVM APIへ拡大するため承認せず差戻し（5644737303）。private化とtest側アクセス適応、KDoc訂正をClaudeが担当する。
+- T04b: terminal diagnostic補足b316ff8のみでは親の6点指摘が未完了。同じ担当へ修正を再提示しGradle専有を許可。検証・独立レビューはまだ完了していない。

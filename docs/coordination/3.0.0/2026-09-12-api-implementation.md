@@ -1,6 +1,10 @@
 # T04段階移行の事前整理
 
 - 状態: 双方合意
+- 記録担当: Codex（Astra / medium）
+- 関連PR: #33、#34、#35、#36、#37
+- Codex Run: run_18f7185e91aa
+- Claude Run: run_3ae778449744
 - 関連タスク: T04a、T04b、T04c、T05、T06、T07、T08、T10
 - 実装開始条件: T03・T04a統合済み。T04bを実装中。
 
@@ -59,3 +63,35 @@ Codex司令塔はexact-head APPROVE 5644608014を記録し、CI成功とSHA再�
 Claudeのmsg_f5a51449cf12: T07 stage 3 task_b34964bd9497 / ctx_ee0098f1485c / term_72e33a29-7093-4735-afad-186cce32af99、worktree claude-3.0.0-t07-timber-kotlin、base d2a1dd6。Sonnet5/highは起動引数で指定、手動作成端末のためlaunch.effectiveは空。候補後のpush・Gradle・独立検証はCodex側が担当する。msg_4ac10f75c9f0で受領した。
 
 T04a補足: Luna/high（launch.effective・turn_started確認）task_2961dfd70174 / ctx_691d3023796f / term_ff1b0d7d-bffc-4e50-a866-ffffac0d65cb、worktree codex-3.0.0-t04a-followup、base d2a1dd6。編集はOverlaySpec.ktとOverlaySpecJavaConsumerTest.javaのみ。constructor overload削減とJava検証補足を行い、Gradle実行前に専有枠を問い合わせる。
+
+## PR35統合とT04a補足の差戻し・検証
+
+PR35 head08c6b4fはClaude独立レビューと承認5644660877、CI34682494798成功後、復旧端末により9691d35b7a35d463800dbe0a026a0d9f6ac7fae8へ統合された。当司令塔は重複mergeせず、msg_4237917de1d7で実施者を区別して共有。非ブロッキングのログ見出し欄を今回補った。
+
+Lunaの初回補足候補6aee461は、sandbox内Orca接続エラーでGradleを実行せずworker_done msg_1e216b05eebcを送った。実装のみ受領・releaseし、検証未完了とCodexの検証責任をmsg_850d6a0cf848で明示した。親の差分確認で、JavaテストがMATCH_PARENT=-1とWRAP_CONTENT=-2を不正値と誤認していることを発見。実装の正常値許可を変えず、テストを差し戻した。
+
+修正・検証はLuna/high（launch.effective確認）task_d60f7c17a9b3 / ctx_3ee505bcf0b4 / term_34f93e8c-f9e8-48c0-80aa-59c14ec7b709、同じcodex-3.0.0-t04a-followup checkoutで担当。初回の既存checkout起動は--setup指定が不適合としてpreflight拒否され、余分な引数を除いた起動のみ成立した。Claudeからmsg_ed15b5e6fb8cでGradle枠返却後、指定JDK/SDKでcore:testDebugUnitTest成功。XML83件、失敗/エラー/skipなし、javapでnoarg/full constructorを確認した。通知中のSDK34表記は古いガイド由来の誤記で、実コマンドは指定SDKパスとchecked-in compileSdk36を使用した。Gradle枠返却msg_040e849e97f5、最終worker_done msg_4f9250c35a98、受領後release。最終head2d2dc4b580b1b8c9b0ba177c7deff6a17ea9d675をPR36にし、msg_17abd2259398でClaudeへ独立レビューを依頼。
+
+## T04b一次確認での修正要求とmonitor境界
+
+T04b担当は4a24cd21c6b4dea449843df2f94621c27c0e9015を未検証で作成し、sandboxのruntime_unavailableを停止と判断してターンを終了した。親は実runtimeへ接続可能であること、worker_done未送信を確認し、同じterminalへ通信復旧と継続を送りturn_startedを確認した。重複editorは起動していない。報告中のruntime停止は確認済み事実ではなく、sandbox接続制限による観測だった。
+
+親はmsg_544b212f28b4で6点を差し戻した: dispose後のbackend/WM参照保持、external detach後の古いlistener残存、application brightnessのupdate/旧setter経由の検証漏れ、main Looper null許容、Throwableの過広な捕捉、DRAGGABLE spec経由のlistener適用漏れ。これは承認前の候補確認であり、実装・独立検証完了ではない。
+
+monitorのrequest/cancelを新state pathから外したことで補助window失敗が結果へ混入しないことは担当msg_5161111ac97aで確認。一方、旧dragのmonitor座標が未測定0になる影響を親が指摘し、msg_5c517443e6fdでClaudeへ相談。Claudeのmsg_16212d73b4f5で、T04bに最小座標橋渡しと最低1件の検証を含め、insets等の限界を明示し、T05で完全boundsとmonitor撤去へ進めることに合意した。msg_221f0cf139ffで担当へ受け入れ条件を伝達。T04bのGradleは修正checkpointまで待機、T07検証担当が先に専有する。
+
+## T07 Kotlin候補の独立検証開始
+
+Claudeがmsg_16212d73b4f5 / msg_f0f25dd8788fでa95f227e2be6776aeaa9f45a97151e4162183995を確定。Codexがclaude/3.0.0/t07-timber-kotlinへpushし、msg_c81372b69b2fで通知した。
+
+独立Terra/high（launch.effective・turn_started確認）task_18c7821b0712 / ctx_c704670bf482 / term_a5620eef-80f8-4648-aaf7-af09e962eac3、codex-3.0.0-t07-kotlin-review、base a95f227。検証はopt-timber tests/lintとsample assemble、Java/JVM公開APIとfield初期化・並行処理を対象とする。package-privateからpublicへ拡大したテスト用要素、overlayView説明のgetInstance参照欠落も審査する。候補をKotlinへ変換しただけで承認済みとはしない。
+
+## PR36統合とPR37差戻し（17:31 JST）
+
+ClaudeはPR36 head2d2dc4bを独立Sonnet5レビュー後に承認5644737864（msg_6309a45cb52b）。子のnoarg constructor消失という疑いは、全引数既定値のKotlin仕様と実javap結果で司令塔が解消した。CI34683075403成功を照合し、Codexが41d74aa45284d3b18423b30ec03da5f85a857cf4へmergeした。これでPR33のJavaテスト・constructor補足を完了とする。
+
+T07独立レビューworker_done msg_8dfd45aaa87aを受領・release。25 tests・lintエラー0・sample assemble成功だが、javapで旧package-private constructor/initialize/postToMainThread/INSTANCEおよびbuffer等のpublic化を確認した。外部から同期を迂回して内部状態を操作できるため、候補a95f227は未承認。PR37コメント5644737303とmsg_84dcded7d6c0で必須修正を依頼し、Claudeはmsg_b6db52e0b966で担当への差戻しに同意した。
+
+公開APIを広げないことを優先し、既存Javaテスト無変更という下位制約を緩和する。msg_89add64cdeffで、protectedも外部subclassに公開されるためprivateを基本とし、test sourceのreflection helper等で検証目的を維持しproductionの新hookを避ける方針を補足した。元からprotectedのlog overrideは維持する。KDocのgetInstance参照漏れとregisterのmain-thread断定も修正対象。
+
+T04b担当はb316ff8でterminal diagnostic保持を補ったが、親の6点差戻しを処理せず再度検証待機でターンを終えた。親は同じterminalへ6点とmonitor橋渡しを再提示し、T07レビュー終了後のGradle枠を明示GRANT、turn_startedを確認した。msg_9c2a31cba059でClaudeへ枠所有を通知。T04bの受け入れ・独立レビューは引き続き未完了。
