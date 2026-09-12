@@ -23,6 +23,7 @@ import android.view.WindowManager
 import androidx.annotation.MainThread
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
+import com.nagopy.android.overlayviewmanager.internal.Logger
 import com.nagopy.android.overlayviewmanager.internal.MaximumObscuringOpacity
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import com.nagopy.android.overlayviewmanager.internal.PassThroughOpacityRegistry
@@ -34,10 +35,17 @@ public class OverlayView<T : View> internal constructor(
     backend: OverlayWindowManager,
     initialSpec: OverlaySpec,
     private val permission: OverlayPermission = OverlayPermission(),
+    activityReleaseCallback: (() -> Unit)? = null,
 ) {
     private var backend: OverlayWindowManager? = backend
     private var ownedView: T? = view
     private var detachListener: View.OnAttachStateChangeListener? = null
+    /**
+     * Invoked exactly once, from [release], to deregister this handle from the owning Activity's
+     * entry in `ActivityOverlayRegistry`. Cleared immediately after invocation so that the closure
+     * -- and whatever Activity it captured -- is not retained by a disposed handle.
+     */
+    private var onActivityRelease: (() -> Unit)? = activityReleaseCallback
     private var pendingSpec: OverlaySpec = initialSpec
     private var effectiveSpec: OverlaySpec = initialSpec
     private var pendingDragListener: DraggableOnTouchListener<T>? = null
@@ -207,6 +215,33 @@ public class OverlayView<T : View> internal constructor(
     }
 
     /**
+     * Forced cleanup for the owning Activity's `onActivityDestroyed`. If [ATTACHED][OverlayState.ATTACHED],
+     * attempts exactly one `removeViewImmediate`; regardless of that outcome, releases every owned
+     * reference and transitions to [DISPOSED][OverlayState.DISPOSED]. A failed removal is classified
+     * with the existing [classify] mapping and retained as [lastFailure] -- the exception itself is
+     * never retained. `DISPOSED` here means library ownership is released, not proof that the
+     * framework removal succeeded. Idempotent: a no-op once already [DISPOSED][OverlayState.DISPOSED].
+     */
+    @MainThread
+    internal fun disposeForActivityDestruction() {
+        requireMainThread()
+        if (currentState == OverlayState.DISPOSED) return
+        val managedView = ownedView
+        if (currentState == OverlayState.ATTACHED && managedView != null) {
+            libraryRemovalInProgress = true
+            try {
+                backendOrThrow().hide(managedView)
+            } catch (exception: Exception) {
+                currentFailure = classify(exception)
+                Logger.w(exception, "Forced Activity-destruction removeViewImmediate failed; classified as %s", currentFailure)
+            } finally {
+                libraryRemovalInProgress = false
+            }
+        }
+        managedView?.let(::release)
+    }
+
+    /**
      * Temporary 2.x migration bridge. It changes pending configuration only; callers must invoke
      * [update] to apply it, so [spec] never reports a rejected layout as applied.
      */
@@ -305,6 +340,9 @@ public class OverlayView<T : View> internal constructor(
         backend = null
         currentState = OverlayState.DISPOSED
         PassThroughOpacityRegistry.unregister(this)
+        val activityRelease = onActivityRelease
+        onActivityRelease = null
+        activityRelease?.invoke()
     }
 
     private fun accept(spec: OverlaySpec, drag: DragListenerState<T>) {

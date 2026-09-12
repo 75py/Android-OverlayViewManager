@@ -243,6 +243,24 @@ class PassThroughOpacityAdmissionTest {
         assertFalse(second.show().isSuccess)
     }
 
+    @Test fun failedApplicationDisposeKeepsTheRegistryEntryAndASuccessfulRetryRemovesIt() {
+        MaximumObscuringOpacity.setForTests { 0.8f }
+        val backend = FailingHideBackend()
+        val overlay = OverlayView(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec(alpha = .6f, touchMode = OverlayTouchMode.PASS_THROUGH, crossUidPassThrough = CrossUidPassThrough.WHEN_SYSTEM_ALLOWS))
+        assertTrue(overlay.show().isSuccess)
+        assertTrue(PassThroughOpacityRegistry.containsForTests(overlay))
+
+        backend.hideFailure = IllegalStateException("rejected")
+        assertFalse(overlay.dispose().isSuccess)
+        assertEquals(OverlayState.ATTACHED, overlay.state)
+        assertTrue(PassThroughOpacityRegistry.containsForTests(overlay))
+
+        backend.hideFailure = null
+        assertTrue(overlay.dispose().isSuccess)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertFalse(PassThroughOpacityRegistry.containsForTests(overlay))
+    }
+
     private fun handle(alpha: Float, backend: OverlayWindowManager = RecordingBackend()): OverlayView<View> = OverlayView(
         View(RuntimeEnvironment.getApplication()),
         OverlayScope.APPLICATION,

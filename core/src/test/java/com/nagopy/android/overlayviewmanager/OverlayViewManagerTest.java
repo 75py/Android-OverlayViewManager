@@ -3,6 +3,7 @@ package com.nagopy.android.overlayviewmanager;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -33,6 +34,19 @@ public class OverlayViewManagerTest {
         OverlayViewManager.init(application);
         OverlayViewManager.init(application);
         assertThrows(IllegalStateException.class, () -> OverlayViewManager.init(Mockito.mock(Application.class)));
+    }
+    @Test public void repeatedInitRegistersExactlyOneLifecycleCallbackAndPreservesInstanceOnRejectedReinit() {
+        Application application = Mockito.spy(RuntimeEnvironment.getApplication());
+        OverlayViewManager.init(application);
+        OverlayViewManager manager = OverlayViewManager.getInstance();
+        OverlayViewManager.init(application);
+        Mockito.verify(application, Mockito.times(1)).registerActivityLifecycleCallbacks(Mockito.any());
+        assertSame(manager, OverlayViewManager.getInstance());
+
+        assertThrows(IllegalStateException.class, () -> OverlayViewManager.init(Mockito.mock(Application.class)));
+
+        Mockito.verify(application, Mockito.times(1)).registerActivityLifecycleCallbacks(Mockito.any());
+        assertSame(manager, OverlayViewManager.getInstance());
     }
     @Test public void explicitJavaFactoryOverloadsCreateBothScopes() {
         Application application = RuntimeEnvironment.getApplication();
@@ -70,6 +84,15 @@ public class OverlayViewManagerTest {
         Activity destroyed = Mockito.mock(Activity.class);
         Mockito.when(destroyed.isDestroyed()).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), destroyed));
+        assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), destroyed, new OverlaySpec()));
+    }
+    @Test public void factoryRejectsAFinishingActivityOnBothOverloadShapes() {
+        Application application = RuntimeEnvironment.getApplication();
+        OverlayViewManager.init(application);
+        Activity finishing = Mockito.mock(Activity.class);
+        Mockito.when(finishing.isFinishing()).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), finishing));
+        assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), finishing, new OverlaySpec()));
     }
     @Test @Config(sdk = Build.VERSION_CODES.M, manifest = Config.NONE)
     public void canDrawOverlaysTemporarilyBridgesPlatformAllowAndDenyAtApi23() {

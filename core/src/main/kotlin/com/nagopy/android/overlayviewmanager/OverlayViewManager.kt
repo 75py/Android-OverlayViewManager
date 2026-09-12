@@ -16,7 +16,9 @@ import android.view.WindowManager
 import androidx.annotation.MainThread
 import androidx.annotation.StringRes
 import androidx.fragment.app.FragmentManager
+import com.nagopy.android.overlayviewmanager.internal.ActivityOverlayRegistry
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
+import com.nagopy.android.overlayviewmanager.internal.SimpleActivityLifecycleCallbacks
 
 /** Process-scoped factory for synchronous overlay handles. */
 public class OverlayViewManager private constructor(private val application: Application) {
@@ -82,7 +84,16 @@ public class OverlayViewManager private constructor(private val application: App
         requireMainThread()
         require(view.parent == null) { "The managed view must not already have a parent." }
         require(!activity.isFinishing && (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1 || !activity.isDestroyed)) { "Activity is finishing or destroyed." }
-        return OverlayView(view, OverlayScope.ACTIVITY, OverlayWindowManager.getActivityInstance(activity), spec, permission)
+        lateinit var handle: OverlayView<T>
+        handle = OverlayView(
+            view,
+            OverlayScope.ACTIVITY,
+            OverlayWindowManager.getActivityInstance(activity),
+            spec,
+            permission,
+        ) { ActivityOverlayRegistry.deregister(activity, handle) }
+        ActivityOverlayRegistry.register(activity, handle)
+        return handle
     }
 
     private fun requireMainThread() {
@@ -93,6 +104,19 @@ public class OverlayViewManager private constructor(private val application: App
     public companion object {
         @Volatile private var instance: OverlayViewManager? = null
 
+        /**
+         * Registered on the first successful [init], never again on a same-Application no-op init.
+         * Forces every live activity-scoped handle of the destroyed Activity to release and drops
+         * the Activity's entry from [OverlayWindowManager]'s per-Activity instance cache.
+         */
+        private val activityDestructionCallbacks: Application.ActivityLifecycleCallbacks =
+            object : SimpleActivityLifecycleCallbacks() {
+                override fun onActivityDestroyed(activity: Activity) {
+                    ActivityOverlayRegistry.disposeAll(activity)
+                    OverlayWindowManager.removeActivityInstance(activity)
+                }
+            }
+
         /** Initializes the singleton. Repeating this with the same Application is harmless. */
         @JvmStatic @MainThread public fun init(application: Application) {
             val main = Looper.getMainLooper()
@@ -100,7 +124,10 @@ public class OverlayViewManager private constructor(private val application: App
             synchronized(this) {
                 val existing = instance
                 check(existing == null || existing.application === application) { "OverlayViewManager is already initialized for another Application." }
-                if (existing == null) instance = OverlayViewManager(application)
+                if (existing == null) {
+                    instance = OverlayViewManager(application)
+                    application.registerActivityLifecycleCallbacks(activityDestructionCallbacks)
+                }
             }
         }
 
