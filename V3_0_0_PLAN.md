@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で一時中断**（2026-09-12 JST）。再開指示まで新規作業・レビュー・マージを行わない。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01修正・再レビュー、T02許可待ち確認中。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -106,8 +106,8 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | ID | 作業 | 初期担当案 | 依存 | 状態 |
 | --- | --- | --- | --- | --- |
 | T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
-| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 中断：修正版PR #22再レビュー待ち |
-| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 中断：子の許可待ち、未コミット変更保持 |
+| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 修正・相互レビュー中（PR #22） |
+| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 子の許可待ち、未コミット変更保持 |
 | T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 未着手 |
 | T04 | 表示状態とスレッド処理の修正 | Codex | T01 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04 | 未着手 |
@@ -301,3 +301,10 @@ PR URL / head SHA:
 5. 文書PRの相互レビュー後に計画・ログを統合。T01/T02が統合されるまでT03へ進まない。
 
 - 中断確定: PR22最新head a1fcfeb11fe61391e3372b9184c30e9568ac73a8をpush/clean確認。設計子はOrca完了通知失敗後に最終応答で終了したためworker-stopで端末を停止。T01再レビューとT02許可待ちは未完了のまま保持。
+
+## 13:17 JST: 再開
+
+- ユーザーが「再開してください」と指示。Codexのmsg_3c935a7e5029、Claudeのmsg_ea9f31f2fa95で再開連絡を確認。
+- PR22 a1fcfebに未反映の既知指摘をCodexが確認。Luna/high（launch.effective確認）のtask_0939bd1375f5 / ctx_8da0aa6c1a15が限定修正。spec getter main-thread、明示的spec/Java overload、NOT_ATTACHED診断、移行表の不足を対象とする。新設計は導入しない。
+- T02は同一ctx_bebb1ab66ddcのBash許可待ちが続き、進行中扱いだが実行は停止中。ユーザー側操作が必要。重複Dispatch・許可代答はしない。
+- ClaudeはFable5.1/highで復帰。PR23の記録確認は継続、最新再開追記後のSHAを承認対象にする。
