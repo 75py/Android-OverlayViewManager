@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThrows;
 
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -36,6 +37,11 @@ public class OverlaySpecJavaConsumerTest {
         assertEquals(ViewGroup.LayoutParams.WRAP_CONTENT, spec.getWidth());
         assertEquals(ViewGroup.LayoutParams.WRAP_CONTENT, spec.getHeight());
         assertEquals(Gravity.TOP | Gravity.START, spec.getGravity());
+        assertEquals(0, spec.getX());
+        assertEquals(0, spec.getY());
+        assertEquals(0f, spec.getHorizontalMargin(), 0f);
+        assertEquals(0f, spec.getVerticalMargin(), 0f);
+        assertEquals(1f, spec.getAlpha(), 0f);
         assertEquals(OverlayTouchMode.PASS_THROUGH, spec.getTouchMode());
         assertEquals(CrossUidPassThrough.SAME_UID_ONLY, spec.getCrossUidPassThrough());
         assertFalse(spec.getAllowOutsideBounds());
@@ -72,6 +78,58 @@ public class OverlaySpecJavaConsumerTest {
         assertTrue(spec.getAllowOutsideBounds());
         assertEquals(Float.valueOf(0.4f), spec.getScreenBrightness());
         assertEquals(spec, spec.toBuilder().build());
+    }
+
+    @Test
+    public void builderRejectsInvalidDimensionsAndNormalizedValues() {
+        OverlaySpec.Builder builder = new OverlaySpec.Builder()
+                .setWidth(12)
+                .setHeight(24)
+                .setHorizontalMargin(0.2f)
+                .setVerticalMargin(0.3f)
+                .setAlpha(0.4f)
+                .setScreenBrightness(Float.valueOf(0.5f));
+
+        assertThrows(IllegalArgumentException.class, () -> builder.setWidth(-1));
+        assertThrows(IllegalArgumentException.class, () -> builder.setHeight(-2));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setHorizontalMargin(Float.NaN));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setVerticalMargin(Float.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class, () -> builder.setAlpha(Float.NEGATIVE_INFINITY));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setScreenBrightness(Float.NaN));
+
+        OverlaySpec spec = builder.build();
+        assertEquals(12, spec.getWidth());
+        assertEquals(24, spec.getHeight());
+        assertEquals(0.2f, spec.getHorizontalMargin(), 0f);
+        assertEquals(0.3f, spec.getVerticalMargin(), 0f);
+        assertEquals(0.4f, spec.getAlpha(), 0f);
+        assertEquals(Float.valueOf(0.5f), spec.getScreenBrightness());
+    }
+
+    @Test
+    public void builderFromExistingSpec_isAnIndependentSnapshot() {
+        OverlaySpec source = new OverlaySpec.Builder()
+                .setWidth(16)
+                .setX(3)
+                .setY(-4)
+                .setAlpha(0.6f)
+                .setScreenBrightness(Float.valueOf(0.7f))
+                .build();
+
+        OverlaySpec.Builder builder = new OverlaySpec.Builder(source);
+        assertEquals(source, builder.build());
+
+        OverlaySpec changed = builder.setX(8).setAlpha(0.9f).build();
+        assertEquals(3, source.getX());
+        assertEquals(0.6f, source.getAlpha(), 0f);
+        assertEquals(8, changed.getX());
+        assertEquals(0.9f, changed.getAlpha(), 0f);
     }
 
     @Test
