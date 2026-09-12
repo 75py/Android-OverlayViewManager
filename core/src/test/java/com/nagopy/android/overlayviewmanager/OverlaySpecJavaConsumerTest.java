@@ -81,6 +81,17 @@ public class OverlaySpecJavaConsumerTest {
     }
 
     @Test
+    public void builderAcceptsValidLayoutConstants() {
+        OverlaySpec spec = new OverlaySpec.Builder()
+                .setWidth(ViewGroup.LayoutParams.MATCH_PARENT)
+                .setHeight(ViewGroup.LayoutParams.WRAP_CONTENT)
+                .build();
+
+        assertEquals(ViewGroup.LayoutParams.MATCH_PARENT, spec.getWidth());
+        assertEquals(ViewGroup.LayoutParams.WRAP_CONTENT, spec.getHeight());
+    }
+
+    @Test
     public void builderRejectsInvalidDimensionsAndNormalizedValues() {
         OverlaySpec.Builder builder = new OverlaySpec.Builder()
                 .setWidth(12)
@@ -90,8 +101,14 @@ public class OverlaySpecJavaConsumerTest {
                 .setAlpha(0.4f)
                 .setScreenBrightness(Float.valueOf(0.5f));
 
-        assertThrows(IllegalArgumentException.class, () -> builder.setWidth(-1));
-        assertThrows(IllegalArgumentException.class, () -> builder.setHeight(-2));
+        assertThrows(IllegalArgumentException.class, () -> builder.setWidth(-3));
+        assertThrows(IllegalArgumentException.class, () -> builder.setHeight(-4));
+        assertThrows(IllegalArgumentException.class, () -> builder.setHorizontalMargin(1.01f));
+        assertThrows(IllegalArgumentException.class, () -> builder.setVerticalMargin(-0.01f));
+        assertThrows(IllegalArgumentException.class, () -> builder.setAlpha(1.01f));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setScreenBrightness(-0.01f));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> builder.setHorizontalMargin(Float.NaN));
