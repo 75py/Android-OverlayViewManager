@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計を統合済み。T02のローカル必須検証89件・lintエラー0を確認し、PR・CI待ち。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T03ビルド基盤とT07 Java段階をClaude側Sonnet5/highが並行作業中。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -107,12 +107,12 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | --- | --- | --- | --- | --- |
 | T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
 | T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 統合済み |
-| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 作業中 |
-| T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 未着手 |
+| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
+| T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 作業中 |
 | T04 | 表示状態とスレッド処理の修正 | Codex | T01, T03 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04 | 未着手 |
 | T06 | タッチ透過・ドラッグの互換性改善 | Codex | T05 | 未着手 |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 未着手 |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 作業中 |
 | T08 | 初期化・Activity寿命・リソース解放 | Codex | T05 | 未着手 |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 未着手 |
 | T10 | sample・README・3.0移行ガイド | Claude | T03〜T09 | 未着手 |
@@ -329,3 +329,12 @@ PR URL / head SHA:
 - Terra/high（task_2be9b58c2828 / ctx_382b023d4c6e）がbf3e42bb48a60d87d5cd838263f4cdad408639cbを検証。必須ビルド・89テスト・core/sample lint成功（エラー0、警告9/124）。168タスクを再実行し、生成Data Bindingコードもレビューした。
 - CIの明示的read権限と既存HTMLのonDestroy順序差を改善提案。Codex司令塔は現在の振る舞いの回帰とは判定せず、限定修正をClaude側へ依頼（msg_aab84c40f1c7）。PR・GitHub Actionsの結果を待ち、承認は最新headへ別途行う。
 - ローカルGradle資源を解放。検証担当は最終回答まで完了したがworker_doneがruntime不達で届かず、transcript確認後に当該端末のみworker-stop。成果とworktreeは保持。
+
+### T02統合とT03引渡し（2026-09-12 13:54 JST）
+
+- PR24最新head8510b6e0c8cfd855cc6fcbbe3f3de6e14b47d4edはCodexが限定差分を再確認し、GitHub Actions run34673893306成功後にAPPROVE。統合SHA9192f8360b79ad71d2b37fc3b886d5e5d91c467c。PR25はClaude承認済みhead2b0182fをf69e7bf21f6d27e35d913ef7c6eb856d67700e7fへ統合。
+- 残存警告の対応先を双方で合意（msg_611bc9df8fa2 / msg_b0528f5bf522）。SDK/依存はT03、core accessibilityはT06、VisibleForTestsはT04、sample固有はT10。詳細分類はPR24本文。
+- msg_5dc7170819a3でClaudeへT03開始を引渡し。Sonnet5/high、統合SHAから独立worktree、公式情報で版を確定、必要ならCodexが検証担当。T07のJava先行段階はソースのみ並行可、dispose統合はT04/T08後、GradleはT03優先。
+- 詳細: docs/coordination/3.0.0/2026-09-12-wave2.md。
+
+- 13:58 JST実起動（msg_add30b0b0135）: T03 task_ddc6ad210b34 / ctx_2f7b18d0b503、T07段階1 task_3bee9d099ded / ctx_5816cf1fe027。双方Sonnet5/highをlaunch.effectiveで確認。T07はJavaのバッファ・main描画・maxLinesのみ、dispose/lifecycleは未実施。
