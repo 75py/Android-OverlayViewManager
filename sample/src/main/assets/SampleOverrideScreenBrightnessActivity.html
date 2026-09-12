@@ -46,8 +46,8 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         overlayView.hide();
+        super.onDestroy();
     }
 
     public void onClick(View view) {
