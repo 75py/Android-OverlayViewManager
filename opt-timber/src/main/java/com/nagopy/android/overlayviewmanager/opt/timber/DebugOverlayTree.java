@@ -63,11 +63,26 @@ public class DebugOverlayTree extends Timber.DebugTree {
     @VisibleForTesting
     final AtomicBoolean renderPending = new AtomicBoolean(false);
 
+    /**
+     * Read from the logging thread by {@link #postToMainThread}. Safe without
+     * {@code volatile}/locking because it is assigned only once, in this
+     * field initializer, which runs while {@link #INSTANCE} is created by the
+     * class's static initializer; the JLS guarantees that write is visible to
+     * every thread that subsequently observes an initialized
+     * {@code DebugOverlayTree} class (JLS 12.4.2). It must not be reassigned
+     * outside of tests, or this safe-publication argument no longer holds.
+     */
     @VisibleForTesting
     Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @VisibleForTesting
     ArrayDeque<String> messages;
+    /**
+     * Never read from the logging thread: only {@link #render()} (posted to
+     * and always run on the main thread) and the main-thread-only
+     * registration/lifecycle methods touch it, so it needs no additional
+     * synchronization for the thread-safety gap this class addresses.
+     */
     @VisibleForTesting
     OverlayView<TextView> overlayView;
     @VisibleForTesting
@@ -76,8 +91,18 @@ public class DebugOverlayTree extends Timber.DebugTree {
     WeakReferenceCache<Activity> runningActivities;
     @VisibleForTesting
     WeakReferenceCache<Activity> registeredAndRunningActivities;
+    /**
+     * Minimum log priority accepted by {@link #log}. {@link #setThreshold} is
+     * typically called from the main thread while {@link #log} runs on
+     * whatever thread Timber is logging from, so there is no lock or other
+     * happens-before edge naturally connecting the two. This field is
+     * {@code volatile} rather than guarded by {@link #bufferLock} so the
+     * threshold check in {@link #log} stays lock-free on its fast path
+     * (the common case where a line is filtered out before the buffer is
+     * ever touched).
+     */
     @VisibleForTesting
-    int threshold;
+    volatile int threshold;
     @VisibleForTesting
     int maxLines;
 
