@@ -44,15 +44,15 @@ android {
 
 dependencies {
     implementation(project(":core"))
-    implementation("androidx.annotation:annotation:1.8.0")
-    compileOnly("com.jakewharton.timber:timber:4.7.1")
-    testImplementation("com.jakewharton.timber:timber:4.7.1")
+    implementation("androidx.annotation:annotation:1.10.0")
+    compileOnly("com.jakewharton.timber:timber:5.0.1")
+    testImplementation("com.jakewharton.timber:timber:5.0.1")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.12.0")
+    testImplementation("org.mockito:mockito-core:5.23.0")
 
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 }
 
 

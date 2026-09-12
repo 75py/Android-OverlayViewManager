@@ -62,18 +62,18 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.annotation:annotation:1.8.0'
-    implementation 'androidx.fragment:fragment-ktx:1.8.1'
+    implementation 'androidx.annotation:annotation:1.10.0'
+    implementation 'androidx.fragment:fragment-ktx:1.9.0'
 
     lintChecks project(':lint')
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation "org.mockito:mockito-core:5.12.0"
-    testImplementation "org.robolectric:robolectric:4.13"
+    testImplementation "org.mockito:mockito-core:5.23.0"
+    testImplementation "org.robolectric:robolectric:4.16"
 
-    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
-    androidTestImplementation 'androidx.test:runner:1.6.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.4.0'
+    androidTestImplementation 'androidx.test:runner:1.7.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 }
 
 publishing {
