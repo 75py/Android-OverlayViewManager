@@ -21,24 +21,25 @@ plugins {
 }
 
 android {
-    namespace 'com.nagopy.android.overlayviewmanager'
-    compileSdk 36
+    namespace = 'com.nagopy.android.overlayviewmanager'
+    compileSdk = 36
     defaultConfig {
-        minSdkVersion 23
-        targetSdkVersion 36
-        versionCode publish_version_code
-        versionName publish_version_name
+        minSdk = 23
+        targetSdk = 36
+        versionCode = publish_version_code
+        versionName = publish_version_name
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'proguard-rules.pro'
         resourcePrefix 'overlayviewmanager_'
     }
     buildTypes {
         debug {
-            testCoverageEnabled true
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
         }
         release {
-            minifyEnabled false
+            minifyEnabled = false
         }
     }
     testOptions {
@@ -46,8 +47,8 @@ android {
         unitTests.includeAndroidResources = true
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         buildConfig = true

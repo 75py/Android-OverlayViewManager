@@ -20,28 +20,28 @@ plugins {
 }
 
 android {
-    namespace 'com.nagopy.android.overlayviewmanager.sample'
-    compileSdk 36
+    namespace = 'com.nagopy.android.overlayviewmanager.sample'
+    compileSdk = 36
     defaultConfig {
-        applicationId 'com.nagopy.android.overlayviewmanager.sample'
-        minSdkVersion 23
-        targetSdkVersion 36
-        versionCode publish_version_code
-        versionName publish_version_name
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        applicationId = 'com.nagopy.android.overlayviewmanager.sample'
+        minSdk = 23
+        targetSdk = 36
+        versionCode = publish_version_code
+        versionName = publish_version_name
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    dataBinding {
-        enabled = true
+    buildFeatures {
+        dataBinding = true
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
