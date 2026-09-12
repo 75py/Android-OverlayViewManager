@@ -4,13 +4,15 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **再開して作業継続中**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06実装PR49はb105885へ統合済み、T08はPR51で統合済み（core111 tests・lint・build成功）。T07寿命管理へ進行中。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
+- 状態: **ユーザー指示により一時停止（2026-09-13 JST）**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06実装PR49はb105885へ統合済み、T08はPR51で統合済み（core111 tests・lint・build成功）。T07寿命管理は未検証の作業途中で停止。再開はユーザーの明示指示後に行う。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
 - **開始指示受領済み**: 「あなたはcodex側の司令塔として、claudeと一緒に作業を開始してください」。準備中の停止条件を解除し、本書の分担合意・相互承認・検証条件に従って進める。
 - `release/3.0.0` は今は作らず、統合・検証後のリリース候補として作る。
 - `AGENTS.md`、この計画書、`docs/coordination/3.0.0/` の記録、共有用 `.serena/project.yml` と `.serena/.gitignore` をGit管理する。Serenaのcacheとproject.local.ymlはコミットしない。
+
+停止時点の詳細と再開手順: [2026-09-13-pause.md](docs/coordination/3.0.0/2026-09-13-pause.md)。停止中は新規実装・検証・レビュー・PR作成・マージを行わない。
 
 ## 目的・到達点
 
@@ -118,7 +120,7 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命L1〜L7作業中（task_2db547061e3f） |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
-| T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
+| T10 | sample・README・3.0移行ガイド | Claude（sample/docs分離所有） | T07寿命統合、T08、T09 stage 1 | 合意済み（C1/K1〜K7、T07統合後開始） |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
 | T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
