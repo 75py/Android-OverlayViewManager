@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03のJava/Kotlin相互コンパイルを実証済み。T03の残修正をCodexへ移管し、PR31のビルド・99テスト・lint・CIが成功。Claudeの独立レビューと承認待ち。
+- 状態: **再開して作業継続中**。T01設計・T02 CI・T03ツールチェーン更新・T04a不変設定・結果型・T07 Java段階2まで統合済み。T04bの同期状態管理を実装中、T07 Kotlin段階はClaude担当。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -108,10 +108,10 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
 | T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 統合済み |
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
-| T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 相互レビュー中 |
-| T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 未着手 |
-| T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 未着手 |
-| T04b | 同期表示状態機械の段階移行 | Codex | T04a | 未着手 |
+| T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 統合済み |
+| T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 作業中 |
+| T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足テストは別変更） |
+| T04b | 同期表示状態機械の段階移行 | Codex | T04a | 作業中 |
 | T04c | 一時互換APIの最終除去 | Codex | T07, T10 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04b | 未着手 |
 | T06 | タッチ透過・ドラッグの互換性改善 | Codex | T05 | 未着手 |
@@ -127,33 +127,35 @@ T02とT01、T04とT07などは編集範囲が独立する場合に並列実行�
 
 ### T00: 起動・合意
 
-- [ ] 両司令塔のモデル・effort、Orca連絡経路、GitHub権限とレビュー証跡の方式を確認する。
-- [ ] main/originの状態と準備用計画書を確認し、`work/3.0.0` を共有する。
-- [ ] 各司令塔が担当サブエージェントを起動する。Task/Dispatch、worktree、ブランチ、モデル・effortを記録する。
-- [ ] 各タスクの担当・レビュー担当・ファイル所有者・受け入れ条件を確定する。
+- [x] 両司令塔のモデル・effort、Orca連絡経路、GitHub権限とレビュー証跡の方式を確認する。
+- [x] main/originの状態と準備用計画書を確認し、`work/3.0.0` を共有する。
+- [x] 各司令塔が担当サブエージェントを起動する。Task/Dispatch、worktree、ブランチ、モデル・effortを記録する。
+- [x] 各タスクの担当・レビュー担当・ファイル所有者・受け入れ条件を確定する。
 
 受け入れ条件: 両司令塔の合意が記録され、担当が重複せず、相手が実際にレビュー可能。
 
 ### T01: 3.0の設計
 
-- [ ] Activity内表示と他アプリ上の表示の責務・権限・公開APIを区別する。
-- [ ] 公開APIのスレッド契約、表示要求と実際のattachment、失敗通知、再試行、hide/disposeの意味を決める。
-- [ ] initの複数回呼び出し、Activity破棄・再生成、呼び出し側の所有・終了責任を決める。
-- [ ] minSdk、compileSdk/targetSdk、JDK/Gradle/AGP、検証OS、Java/Kotlin利用互換性を合意する。バージョンは開始時の公式情報で確認する。
-- [ ] 保守性改善に合わせて適宜JavaをKotlinへ置き換える。両司令塔が対象・理由・所有者を合意し、各関連タスクに移行範囲を追記する。全面的な機械変換やCompose対応は自動的にスコープへ入れない。
-- [ ] Kotlin変換と動作変更は可能な範囲でPRまたはコミットを分ける。Java呼び出し互換性、nullability、JVMシグネチャ、公開APIと移行ガイドへの影響を検証する。
-- [ ] 破壊的変更と2.xからの移行方針を記録する。
+以下のチェックは設計判断と移行範囲の合意を示す。各機能の実装完了はT04以降で管理する。
+
+- [x] Activity内表示と他アプリ上の表示の責務・権限・公開APIを区別する。
+- [x] 公開APIのスレッド契約、表示要求と実際のattachment、失敗通知、再試行、hide/disposeの意味を決める。
+- [x] initの複数回呼び出し、Activity破棄・再生成、呼び出し側の所有・終了責任を決める。
+- [x] minSdk、compileSdk/targetSdk、JDK/Gradle/AGP、検証OS、Java/Kotlin利用互換性を合意する。バージョンは開始時の公式情報で確認する。
+- [x] 保守性改善に合わせて適宜JavaをKotlinへ置き換える。両司令塔が対象・理由・所有者を合意し、各関連タスクに移行範囲を追記する。全面的な機械変換やCompose対応は自動的にスコープへ入れない。
+- [x] Kotlin変換と動作変更は可能な範囲でPRまたはコミットを分ける。Java呼び出し互換性、nullability、JVMシグネチャ、公開APIと移行ガイドへの影響を検証する。
+- [x] 破壊的変更と2.xからの移行方針を記録する。
 
 受け入れ条件: API・寿命・スレッド・対応環境の判断が文書化され、双方が合意している。
 
 ### T02 / T03: CIとビルド基盤
 
-- [ ] Debugビルド、全ローカルテスト、core/sample lintをCI化する。
-- [ ] sampleのRestrictedApiエラー2件を解消する。全体抑制やbaseline追加だけで隠さない。
-- [ ] 警告を実害・互換性・文書等に分類し、残すものは理由を記録する。
-- [ ] AGP 3.2.1の旧buildscript宣言と8.5.1のplugins宣言の二重管理を解消する。
-- [ ] 合意したバージョンへ関連依存を段階更新する。Kotlin移行に必要な設定・依存を維持・整備し、不要なktx、legacy依存、Jetifierの要否を確認する。
-- [ ] Manifestの古いpackage指定・overrideLibrary等、Gradle非推奨設定、wrapperの整合性・checksumを見直す。
+- [x] Debugビルド、全ローカルテスト、core/sample lintをCI化する。
+- [x] sampleのRestrictedApiエラー2件を解消する。全体抑制やbaseline追加だけで隠さない。
+- [x] 警告を実害・互換性・文書等に分類し、残すものは理由を記録する。
+- [x] AGP 3.2.1の旧buildscript宣言と8.5.1のplugins宣言の二重管理を解消する。
+- [x] 合意したバージョンへ関連依存を段階更新する。Kotlin移行に必要な設定・依存を維持・整備し、不要なktx、legacy依存、Jetifierの要否を確認する。
+- [x] Manifestの古いpackage指定・overrideLibrary等、Gradle非推奨設定、wrapperの整合性・checksumを見直す。
 
 受け入れ条件: 合意したツールチェーンでCI成功。残存警告に説明があり、クリーンな環境で再現できる。
 
@@ -389,3 +391,18 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - 全ビルド・テスト・lint成功後、テストのみの追補をcore70件で確認。総数99件（70/24/4/1）、failure/error/skip 0。core/sample lint error0、warning12/61。sample androidTest APKビルド成功、端末実行は未実施。最終headのCI run34678799436成功。
 - 独立レビューと最終SHA APPROVEはClaude待ち。相手端末の受信確認コマンドが許可待ちで停止していることを確認。未承認のため未マージ、T04a以降は未着手。AGENTS.mdのSDK/Gradle記載更新はT03統合後に行う。
 - 残存警告の対応案・受信処理の手戻り・担当終了の証拠はtoolchainログに保存。後続作業へ進む前に相手のレビュー/承認を確認する。
+
+### T03統合とT04a開始（2026-09-12 16:10 JST）
+
+- PR31はClaude/Sonnet5 highの独立レビューと24e93fdへのAPPROVE（comment5644370904）、CI run34678799436成功後、00b45cb9fbc78d4911e164fc8c5109b936eafc16へ統合。PR32文書は先に7be795cへ統合済み。
+- T04a: Terra/high task_6ca5c3ca3e03 / ctx_31dbaecdd7b2、codex-3.0.0-t04a-models、base00b45cb。新Kotlin spec/result/enumとJava/Kotlin利用テストのみ。既存表示処理は未変更、Gradleはこの担当が専有。
+- AGENTS.mdのJDK17/SDK36/Gradle9.4.1/AGP9.2.1と組み込みKotlinの記載を実構成へ更新。成果物のstdlib依存とPOMはT11/T12で実測する。既存Kotlin相互コンパイル証拠と、最終公開成果物の検証を混同しない。
+- T04bの読取調査を完了。新結果APIをT04cへ遅らせる子の案は依存循環のため不採用。最小consumer修正を含む分担をClaudeへ相談中。詳細: docs/coordination/3.0.0/2026-09-12-api-implementation.md。
+
+### T04a・T07段階2統合とT04b開始（2026-09-12 17:03 JST）
+
+- T04a PR33: head3224165、Claudeの独立レビューとAPPROVE（5644524714）、CI34680272503成功後、復旧対応Codex端末が997a958へ統合。Java異常系・既定値・Builder snapshot補足と不要なconstructor overload削減は小さな別PRで対応する。
+- T07 PR34: headf86c40fec07845a91dead130cee175407a7a84f9。Terra/high独立レビューtask_0f937a90d7eb / ctx_e954a5fd2d52でblockingなし、25 tests成功、lintエラー0。CI34681799560成功、Codex承認5644608014後、d2a1dd6dd78fc1dd30ae0caa7f185cb6b30cb66aへ統合。テストの同期自体にhappens-beforeがあるため、volatile削除を検出するテストとは扱わない。
+- T04b: Terra/high（launch.effective確認）task_8dae019402ea / ctx_026ea69247c9、codex-3.0.0-t04b-state、base d2a1dd6。core manager/view/adapterのKotlin同期状態処理、新結果API・4 factoryを導入する。旧setter/noarg updateはeffective specと分離した一時橋渡しのみとしT04cで除去する。
+- 段階移行案はClaudeがmsg_bf7ddf364470で合意。Sample2Activityのshow代入分割だけT04bに含め、sample全体はT10、同一Application init契約はT04b、Activity寿命はT08、opacity budgetはT06とする。
+- msg_44fa28c940e9でClaudeへT07 Kotlin段階を引き渡し。opt-timberとcoreの編集を分離し、GradleはClaudeに先行枠、T04bは編集後に検証枠を問い合わせる。詳細: docs/coordination/3.0.0/2026-09-12-api-implementation.md。

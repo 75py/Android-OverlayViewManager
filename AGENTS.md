@@ -27,11 +27,11 @@
 - `lint/`: Java library containing custom Android lint detectors and their tests.
 - `sample/`: Android demo app; layouts are in `src/main/res/`, and displayed code examples are in `src/main/assets/`.
 
-Java sources live under each module's `src/main/java/`. Local tests use `src/test/java/`; device tests use `src/androidTest/java/` in `core` and `sample`. Documentation animations are in `images/anime/`.
+Java and Kotlin sources live under each module's `src/main/java/` or `src/main/kotlin/`. Local tests use `src/test/java/` or `src/test/kotlin/`; device tests use `src/androidTest/java/` in `core` and `sample`. Documentation animations are in `images/anime/`.
 
 ## Build, Test, and Development Commands
 
-Use JDK 17, Android SDK 34, and the checked-in Gradle wrapper (Gradle 8.9). Configure your SDK through `ANDROID_HOME` or an untracked `local.properties`.
+Use JDK 17, Android SDK 36 (Build Tools 36.0.0), and the checked-in Gradle wrapper (Gradle 9.4.1). The Android modules use AGP 9.2.1 with built-in Kotlin 2.2.10 and support API 23 or later. Configure your SDK through `ANDROID_HOME` or an untracked `local.properties`.
 
 - `./gradlew :core:assembleDebug :opt-timber:assembleDebug :sample:assembleDebug`: build libraries and the demo APK.
 - `./gradlew :core:testDebugUnitTest :opt-timber:testDebugUnitTest :lint:test :sample:testDebugUnitTest`: run local tests.
