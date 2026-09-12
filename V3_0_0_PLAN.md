@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03のJava/Kotlin相互コンパイルを実証済み。ProGuard修正後の全体検証でsampleのR.id分岐46件がコンパイル失敗。双方合意でT03の残修正をCodexへ移管した。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03のJava/Kotlin相互コンパイルを実証済み。T03の残修正をCodexへ移管し、PR31のビルド・99テスト・lint・CIが成功。Claudeの独立レビューと承認待ち。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -108,7 +108,7 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
 | T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 統合済み |
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
-| T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 作業中 |
+| T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 相互レビュー中 |
 | T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 未着手 |
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 未着手 |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 未着手 |
@@ -382,3 +382,10 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - 事前の条件付き合意に該当し、Claudeから最終SHA・未解決事項・PR本文を引き継いだ（msg_36833232803e）。旧担当のworker_done/releaseと編集終了を確認（msg_f0d13fbdf431）してから、Codex Terra/high task_219a9b571780 / ctx_f6d6f9259023を新checkoutに起動。Gradleと編集を専有する。
 - R.id分岐の最小互換修正をT10からT03へ前倒し。広いKotlin移行はT10のまま。既存コミットを保持し、新T03 PRをClaudeが独立レビュー、SHA固定APPROVE後にCodexが統合。PR29は新PRへの参照付きでClaudeがcloseする。
 - PR30文書は19c4252674e448cf46bcfdd092cbea4268c48d96へ統合。詳細と根拠はdocs/coordination/3.0.0/2026-09-12-toolchain.md参照。
+
+### T03候補の検証完了（2026-09-12 15:43 JST）
+
+- PR31 head24e93fd78b1e89c4d8d7c737f16b4d1bf2a69546。sampleのID分岐を互換化し、Robolectric fixtureをAPI23へ移行。許可・拒否の両ケースを検証。本番coreの権限動作は未変更。
+- 全ビルド・テスト・lint成功後、テストのみの追補をcore70件で確認。総数99件（70/24/4/1）、failure/error/skip 0。core/sample lint error0、warning12/61。sample androidTest APKビルド成功、端末実行は未実施。最終headのCI run34678799436成功。
+- 独立レビューと最終SHA APPROVEはClaude待ち。相手端末の受信確認コマンドが許可待ちで停止していることを確認。未承認のため未マージ、T04a以降は未着手。AGENTS.mdのSDK/Gradle記載更新はT03統合後に行う。
+- 残存警告の対応案・受信処理の手戻り・担当終了の証拠はtoolchainログに保存。後続作業へ進む前に相手のレビュー/承認を確認する。

@@ -1,7 +1,7 @@
 # T03: ビルド構成の再評価と独立検証
 
 - 状態: 双方合意
-- 進捗: 7a05b90の全体検証でsampleコンパイル失敗。残修正をCodexへ移管済み。
+- 進捗: PR31の24e93fdでローカル検証・CI成功。Claudeの独立レビュー待ち。
 - 記録担当: Codex（Astra / medium）
 - 関連タスク: T03、T04a
 - Codex Run: run_18f7185e91aa
@@ -138,3 +138,32 @@ Claudeのmsg_36833232803e（15:24:36 JST）で最終SHA7a05b90、未解決事項
 引き継ぎPR本文は/private/tmp/overlay-t03-claude-handoff-body.mdへ保存した。本文の旧89件想定、ローカル検証不可の説明は新実測結果へ書き直す。coreは旧構成でもKotlin pluginを適用していたため、「stdlibが新たに推移依存する」との主張は旧新POM等の証拠なしに転記しない。成果物/POMの最終検証はT11/T12で別途行う。
 
 msg_cc34373c4375（15:29:07 JST）で移管実行と担当情報を共有。PR30はhead9739fae4d16fa40f0e55d7aee50bdcf453d167b2に対する[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/30#issuecomment-5644189536)とCI run34677777272成功後、19c4252674e448cf46bcfdd092cbea4268c48d96へ統合した。非ブロッキング指摘を受け、計画のT04行を集約行と明記し、本ログの状態語彙をREADMEへ合わせる。
+
+## テスト実行SDKの移行判断
+
+T03担当のask msg_02b3d2cb9015（15:32:50 JST）は、Robolectric4.16でSDK21/22が利用不可となりcore69件中39件が失敗したと報告。Codexは既承認minSDK23に基づき、一般fixtureをAPI23へ移し、API22専用のcanDrawOverlays_22をAPI23の権限拒否・許可テストへ置換すると回答した（msg_2800131d3fd9、15:34:16 JST）。本番の権限動作は変更せず、Ignore等で隠さない。歴史上の98件に合わせるためにテストを捨てず、実測の件数差と理由を記録する。
+
+msg_8807c42d3fa6（15:34:21 JST）でClaudeへ共有し、msg_5445b7cedd73（15:34:41 JST）で同意を得た。PRに変更テスト・理由・最終XML集計を明記する。サンプルandroidTestにもR.id switchがあったため、msg_5cecd7bbe714（15:31:51 JST）で:sample:assembleDebugAndroidTestによるソースコンパイル確認を追加。端末上の実行はT12であり、APKビルド成功と区別する。
+
+## PR31の検証完了と追加テストの手戻り
+
+T03担当はmsg_41954b3d1573（15:38:48 JST）で9bd87c576e9c624893285b8e5f5cd2208b25789e、draft PR31を報告。全必須Gradleコマンド、98テスト（core69/Timber24/lint4/sample1）、lint error/fatal 0（core warning12/sample warning61）、sample androidTest APKのビルドが成功した。
+
+ただしCodexの差分確認では、合意済みAPI23の権限拒否テストが欠けていた。子が配信delivery_e0e399b38acfをackせず古いメッセージを繰り返し受信したため、追加指示がコンテキストへ届かなかった。msg_c6c5438094d2（15:36:20 JST）で受領処理を補足したが同じ配信待ちだった。端末への一度の操作補足もagent_prompt_blockedで拒否され、入力成功とは扱わず再送しなかった。
+
+正式なworker_doneを受領後、同じTerra/high端末を即時再利用して、task_f925723fbb47 / ctx_48a91118e250へ限定的な追補を渡した。再利用のlaunch.effectiveは空で、新しいモデル起動の証拠とはしない。同一プロセスは元のTerra/high起動で確認済み。新Dispatchの受信処理と旧IDを流用しない条件も明示した。
+
+msg_1cc3ffe66b45（15:42:14 JST）で24e93fd78b1e89c4d8d7c737f16b4d1bf2a69546を受領。API23のShadowSettings.setCanDrawOverlays(false)とassertFalseの10行を追加し、許可ケースを保持。本番コードの変更なし。core再テストは70件成功、変更のない他モジュールの成功XMLと合わせ99件（failure/error/skip 0）。このテストのみの追補では、変更のないsampleビルド・lint・androidTestビルドをローカルで無目的に繰り返さなかった。担当は正しく新worker_doneを送り、releaseしてtranscript保存済み。
+
+最終headのCI run34678799436も2026-09-12 15:43:20 JSTに成功した。PR31は相互レビュー待ちであり、T03は未統合。Codexはmsg_1a6bf435e213（15:40:43 JST）でClaudeへ全変更の独立Sonnet5/highレビューと旧PR29の参照付きcloseを依頼し、msg_7f63dcff0900（15:43:07 JST）で追補後SHAを共有した。
+
+## 残存警告の対応案（Claude回答待ち）
+
+msg_1a6bf435e213で提案した分類:
+- core UseRequiresApi 2件、ObsoleteSdkInt 4件: T04b/T05の公開API・権限処理移行。
+- core VisibleForTests 1件: T04、ClickableViewAccessibility 2件: T06。
+- sample既存UI/文言・WebView等: T10。警告抑制は追加していない。
+- lint registry vendor警告: T09。
+- 版の通知はAPI37、Robolectric4.17、Gradle9.7.1を示す。SDK36の合意済み試験範囲、対応するRobolectric4.16、AGP9.2の既定Gradle9.4.1を今回の検証対象として保持する案。「全て最新版」とは表現しない。採否はClaudeの回答待ち。
+
+15:42〜15:43 JSTの読み取りでは、Claude司令塔は受信確認コマンドを/usr/bin/python3へpipeする操作の許可待ち。画面理由はpermissions.blockReadsOutsideWorkingDirectoriesによる計算されたpathの確認不可。Codexは相手の許可画面へ回答せず、今後はPythonなしのplain orca orchestration checkを使う提案と最終SHAをキューへ保存した。送信成功を受信・承認成功とは扱わない。相手承認なしにPR31をマージしない。
