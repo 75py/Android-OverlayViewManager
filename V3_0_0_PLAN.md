@@ -502,3 +502,9 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 - draft PR46 head867d85c: core75 tests全成功、lintエラー0/警告13、core assemble成功。独立レビュー・最終SHA承認・CIは未完了。
 - T05端末検証はrelease-blockingとしてT12へ持ち越す合意を維持。未完了事項と初回失敗は検証ログに保存した。
+
+### 2026-09-12 22:06 JST: T05b統合・T06開始
+
+- PR46 head e246370を相互承認・最終CI成功後にbeafd014へ統合。PR47の計画・ログも統合済み。T05端末検証はT12のrelease-blocking項目として未完了。
+- Claude Sonnet5/highがt06-touch-opacity、task_5bd2567d9bc3でT06を開始。実装・独立レビューをClaude中心としCodexは集約検証と対向承認・統合を担当。
+- ユーザーの指示で、Claudeの許可待ちはCodexが内容を確認し妥当なら代理許可できる運用へ変更。詳細はAGENTS.mdとdocs/coordination/3.0.0/2026-09-12-t06-start.md。

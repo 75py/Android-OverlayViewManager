@@ -54,3 +54,7 @@ Recent commits use short imperative subjects, such as `Update JavaDocs` and `Rem
 ## 3.0.0 Resource Allocation Override (2026-09-12)
 
 The user requested a larger Claude Code share because Codex usage is constrained. Prefer Claude Code / Sonnet 5 for new implementation, validation, and independent review work. Keep reviewers separate from implementers. Codex coordinates ownership, performs focused approval synthesis, and serializes integration; do not start new Codex workers by default. If Claude cannot run a required local check, Codex may execute the supplied minimal commands directly without spawning a validation worker. Exact-head approval by the opposite coordinator and successful CI remain required before merging. Record handoffs and decisions in V3_0_0_PLAN.md and docs/coordination/3.0.0/.
+
+## Claude permission prompts
+
+The user explicitly authorizes the Codex coordinator to inspect Claude permission prompts and approve appropriate in-scope actions on the user's behalf. Inspect the complete command, target, and effects before approving. This supersedes the earlier convention of always waiting for the user; it does not authorize unrelated or destructive actions or bypass reciprocal PR approval. Record delegated approvals in the coordination log.
