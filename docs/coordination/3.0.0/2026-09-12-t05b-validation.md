@@ -1,0 +1,35 @@
+# T05b候補の検証と座標モデルの再確認
+
+- 記録担当: Codex（Astra / medium）
+- 状態: 中断
+- Claude実装・独立レビュー: Sonnet 5 / high（Claude司令塔報告）
+
+## PR45統合
+
+Claude承認5645719685はhead f5987196a16824afd123373eacb57eb4ef1e797bを指定。独立文書レビューとCI34691900115 SUCCESSを確認し、通常mergeでab2e9e912221b13fcf3545b2cb0e004452dadb12へ統合した。読み取り確認の設定名とユーザー許可の記述は独立レビュアーの環境では未検証だったが、Codexは端末画面とユーザーの返信で直接確認している。
+
+## 初回候補8ec06ce
+
+Claude msg_7e5aeccb5ccaにより8ec06ce3727513fdb5293f79885832bf8a7cd780を受領。Codex司令塔がJDK17・所定SDKで :core:testDebugUnitTest :core:lintDebug :core:assembleDebug --console=plain を実行した。compileとassembleDebugは成功。unit testsは76件中3件失敗し全体exit 1、lint最終レポートは未完了。古いレポートから成功を推定しない。
+
+- OverlayGeometryTestの原点変換: status-bar top inset (0,84)についてexpected156/actual240。
+- OverlayGeometryTestのframe外判定: AssertionError。
+- OverlayViewGravityTestのRTL解決: expected53/actual51。
+
+msg_068595519fb4で原担当による修正をClaude司令塔に依頼した。Android Rectのplain JUnit stubとRTL fixtureを疑ったが、原因確定前の推測でありassertion緩和は依頼していない。未成功候補のpush/PR作成は保留。
+
+## 未解決の座標モデル
+
+msg_24b57bbff351で、WindowMetrics/Insets整合確認を省略した新説明のレビューを依頼した。getWindowVisibleDisplayFrameをoverrideするテストは、frameからlayoutへ値を伝える経路の確認であり、全scope・全API・FLAG_LAYOUT_IN_SCREENにおける座標系同一性の実証ではない。対応範囲を限定する案は検討可能だが、T05完了とはせず、確認すべき端末条件を残す。実装と独立レビューはClaudeが所有し、Codexは修正候補を直接再検証する。
+
+## 利用料上限前の中断
+
+ユーザーの中断指示に従いmsg_27d6ebf83e05でClaudeへ新規着手停止を通知した。Claudeは独立レビューと長時間の受信待ちを停止したことを端末画面で確認。修正ラウンドtask_41130117f375 / ctx_b9e23e8e0859にはmsg_a52f401daf40で現在地点の保存と最短の中断を直接伝えた。子のライフサイクル管理はClaudeが所有する。Codex側に実行中のGradleはない。
+
+Claude提案msg_c04af62e6d73は、WindowMetrics整合確認を省きvisible frameを唯一の情報源とし、API26/35/36のドラッグ原点をT12で検証、失敗時はActivity scope限定fallbackを検討するという案。これは未合意である。特にAPPLICATION scopeを常に現方式のままとする保証や、実装と同じ原点式だけを端末の合否基準にすることは再開時の検討事項として残す。停止中は設計承認・新たな検証・PR作成を行わない。
+
+### 最終確認（21:04 JST）
+
+Claude司令塔は最終応答後idle、受信待ちと独立レビューは停止済み。修正担当端末は21:03に session limit を表示し停止したため、worker_done完了とは扱わない。再開時はClaudeが既存dispatchの状態を確認し、重複担当を起動せず復旧する。
+
+修正checkout /Users/ai-seb/orca/workspaces/Android-OverlayViewManager/t05b-geometry のHEADは8ec06ce3727513fdb5293f79885832bf8a7cd780のまま。未コミット変更はinternal/OverlayGeometry.ktとinternal/OverlayWindowFrame.ktの2ファイル。テスト修正はまだ保存されていない。未追跡の.claude/とPR_BODY_T05B.mdはそのまま保持した。部分修正は未検証・未承認で、Codexはsourceへ追記やコミットをしていない。
