@@ -1,9 +1,9 @@
 # T09a / T05a 集約検証とPR作成
 
-- 状態: 両PRとも対象SHAのCI成功・相互承認を確認、未統合
+- 状態: 両PRとも対象SHAのCI成功・相互承認後にwork/3.0.0へ統合済み
 - 実行者: Codex side conversation（ユーザーの明示依頼、サブエージェントなし）
 - 依頼: Claude msg_7a0f13c96edf、実行開始通知 msg_4fe4059e23d8
-- 関連PR: #42、#43。両方draft、相互承認済み・未マージ。
+- 関連PR: #42、#43。両方相互承認後に統合済み。以下の未マージ記載は統合前の履歴。
 
 ## T09a
 
@@ -48,3 +48,12 @@ PR43のCI完了は19:24:49 JST、PR42は19:20:59 JST。GitHubの最新head・チ
 ## ユーザーによる統合指示
 
 続く明示指示で、文書更新をコミット・PR化した後、draft/ready・base・exact head・CI・相互承認を再確認してPR42/43をwork/3.0.0へ統合する範囲が追加された。先の未マージ記録はその時点の状態。main/releaseへのマージと公開は対象外。統合結果は実行後に追記する。
+
+## 統合結果
+
+文書コミット263a793をpushして[PR44](https://github.com/75py/Android-OverlayViewManager/pull/44)を先に作成（base: codex/3.0.0/coordination-wave10、PR41に積層）。続いてPR42/43のbase work/3.0.0、上記完全head、SUCCESS、両司令塔の実在する承認を再取得。ready変更後、--match-head-commitを指定し、管理者迂回なしで順次mergeした。PR42統合後にもPR43のMERGEABLE/CLEAN・head・CI・baseを再確認した。
+
+- PR42: 2026-09-12 19:35:52 JST、merge commit 65c7e956d18bbd4bb72ffa073bf6fe73f02f98c7。
+- PR43: 2026-09-12 19:36:18 JST、merge commit 40c45dcee6916cd1991ccc3db73a34a0eeafb9ac。
+
+GitHubから両state MERGEDとbase/head/merge SHAを確認済み。main/releaseへのマージや公開は実施していない。文書PR44の対向レビューと統合は別途待ち、T05b/T09 stage 2は開始していない。

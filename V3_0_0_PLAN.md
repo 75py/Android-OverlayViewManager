@@ -113,11 +113,11 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
-| T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 相互レビュー中（T05a PR43、4a92b95、相互承認・CI成功、未統合） |
+| T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a PR43統合済み40c45dc、T05b未着手） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05 | 未着手 |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命統合は後続 |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05 | 未着手 |
-| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 相互レビュー中（T09a PR42、5e9c142、相互承認・CI成功、未統合） |
+| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
 | T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
 | T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
@@ -469,3 +469,7 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - [ ] T05b/T04c: showの権限確認をhelperへ集約し、grant→revoke→失敗のshow/update検証とupdate事前権限確認の設計判断を補う。
 - [ ] T09 stage 2: vendor値の厳密assertion、getApiの同一定数比較の見直し、Kotlin宣言のOverlayView fixtureを補う。
 - 両実装PRはdraft・未マージ。統合時にはhead・CI・相手承認と保護ルールを再確認する。今回の文書更新はPR41を基点とする別ブランチcodex/3.0.0/validation-batch-logに分離し、PR41のheadは変更しない。
+
+### T09a / T05a統合結果（2026-09-12 19:36 JST）
+
+文書PR44を先に作成後、両実装PRをreadyへ変更し、base work/3.0.0・完全head・CI SUCCESS・相互承認・MERGEABLE/CLEANを再確認。--match-head-commit付きの通常mergeでPR42を65c7e956d18bbd4bb72ffa073bf6fe73f02f98c7（19:35:52 JST）、PR43を40c45dcee6916cd1991ccc3db73a34a0eeafb9ac（19:36:18 JST）へ統合した。保護ルール迂回なし。main/releaseへのマージ・公開なし。先の未統合記載は各checkpoint時点の履歴。T05b・T09 stage 2と文書PR44のClaudeレビューは未完了。
