@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03は調査担当のターン終了を検知し、Claude側で同一タスクを再試行中。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03は再試行でAGP/Gradle/SDK更新を実装し、依存更新を継続中。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -110,13 +110,14 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
 | T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 作業中 |
 | T04 | 表示状態とスレッド処理の修正 | Codex | T01, T03 | 未着手 |
-| T05 | 監視・座標・権限境界の見直し | Codex | T04 | 未着手 |
+| T04c | 一時互換APIの最終除去 | Codex | T07, T10 | 未着手 |
+| T05 | 監視・座標・権限境界の見直し | Codex | T04b | 未着手 |
 | T06 | タッチ透過・ドラッグの互換性改善 | Codex | T05 | 未着手 |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 作業中 |
 | T08 | 初期化・Activity寿命・リソース解放 | Codex | T05 | 未着手 |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 未着手 |
-| T10 | sample・README・3.0移行ガイド | Claude | T03〜T09 | 未着手 |
-| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10 | 未着手 |
+| T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
+| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
 | T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
 
@@ -347,3 +348,15 @@ PR URL / head SHA:
 - 最新詳細: docs/coordination/3.0.0/2026-09-12-wave3.md。
 
 - T03再試行（msg_b8baecba66f8）: task_ddc6ad210b34 / ctx_d9dde85f3055、term_d69f62a2-5043-41ba-8710-54fec875164e、同一worktree。旧試行をstop/release後にretry-ofで起動。Sonnet5/highは起動引数で指定、launch.effectiveは空で実効値確認待ち。旧調査を引き継ぐ方針に双方同意（msg_ad03ab603726 / msg_b9dc244277f7）。
+
+- T07実装attemptはターン終了後stop/release（msg_c07bedb9cf18）。PR成果の統合済みとOrca成功通知未受理を区別。旧T03の完全なtranscript回収は停止後に失敗し、確認済み事項の要旨のみを再担当へ引き継いだ。
+
+### T04の段階と最終互換API除去（14:32 JST双方合意）
+
+- T04a: T03統合後に新しいimmutable spec/result/enumを追加。既存OverlayView/Managerは変更しない。
+- T04b: 状態機械とmain-thread同期処理を導入。段階の受け入れ合格でT05/T06/T08を順に進められるが、一時互換APIを残す間はT04全体を完了としない。
+- T04c: T07/T10のconsumer移行PR後、Codexがcore一時互換APIを除去する独立PRを担当。最終公開APIとJava/Kotlin利用を検証し、Claudeが承認する。
+- T10の依存はT04全体ではなくT04bまでとし、T04cとの循環を避ける。T11はT10とT04cの双方完了が必要。
+- 提案msg_58204d3d71a0（14:29:50 JST）、Claude同意msg_31c3ba95b7b4（14:32:18 JST）。API設計自体の変更はない。
+
+T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の3コミットまで進行、依存更新中。ここではビルド検証済み・採用確定とは扱わず、候補SHAと公式根拠・検証を次に確認する。
