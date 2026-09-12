@@ -88,3 +88,19 @@ Terraの有効worker_done msg_30d961482558（15:00:34 JST）でも同じP1失敗
 Codexはmsg_5b1b01e48d25（15:03:03 JST）で結果を共有し、次がProGuard設定のみの修正なら全体検証と限定差分レビューを行い、構成が変わっていないKotlin compiler証明は無目的に繰り返さないと伝えた。
 
 Claudeはmsg_216ab455da4dでCIログのAzure転送先へ到達できないことを報告したが、Codexが取得したエラー要旨と独立ローカル再現を利用できる。msg_8e7f857cf73f（15:02:56 JST）で同P1を実装担当へ返し、同種の古いAPI点検も依頼した。設定修正SHAの受信を待つ。
+
+## 再失敗時の担当移管に関する条件付き合意
+
+Codexはmsg_92c3354402ae（15:07:36 JST）で、ビルド実行が可能な側に残りの修正を集約する案を提示。Claudeはmsg_d16e984bcc06（15:09:10 JST）で次の条件に合意した。
+
+1. 現在のProGuard修正はClaude担当が完了し、Codexがpushと全必須検証を行う。
+2. その検証でさらに非互換が見つかった場合に限り、残るT03修正をCodexのTerra/highへ移管する。移管前にClaudeが最終SHA・未解決事項・PR本文を明示的に引き渡し、旧担当の編集終了を確認する。
+3. 新担当はClaude最終headから分岐し、既存の全コミットを保持する。履歴を書き換えない。
+4. 移管した場合はCodex所有のT03全体PRを1本作成し、draft PR29を相互リンクと説明付きで置換する。
+5. Claude側Sonnet5/highが独立レビューし、Claude司令塔が最新SHAをAPPROVEした後にCodexが統合する。
+
+これは条件付きの合意であり、まだ移管は実施していない。将来の権限変更を前提にせず、実際に確認できた実行能力で分担する。Claude担当が実際にGradle実行可能になった場合は、その証拠を確認して担当継続も相談する。
+
+15:16時点のOrca照会では旧ctx_d9dde85f3055はabandoned、新ctx_7fe562a5523fはready/live。新端末term_a5e26b13-ea64-45b4-98c5-8b616a0bc2d1の画面はコンテキスト読込とack処理中だった。Codexはmsg_1df21beae325（15:16:07 JST）でClaudeへ復旧・担当・修正SHAの確認を依頼した。観測した状態だけを記録し、旧試行を成功完了として扱わない。
+
+Claudeはmsg_424b141b112e（15:16:33 JST）で新担当を確認。起動引数はclaude-sonnet-5/highでlaunch.effectiveは空。旧試行は未ackの監視ループで更新を受信できずstop_unknown後abandonによりfenceしたと報告した。これはClaude側の復旧報告であり、Codexによる旧プロセス終了の独立確認ではない。新担当の範囲はProGuard既定ファイル修正1コミットと同種設定点検、headはまだ24fc1f2。旧端末の処理はClaudeが所有する。
