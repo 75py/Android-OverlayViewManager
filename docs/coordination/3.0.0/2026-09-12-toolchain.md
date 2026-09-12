@@ -1,7 +1,7 @@
 # T03: ビルド構成の再評価と独立検証
 
 - 状態: 双方合意
-- 進捗: PR31の24e93fdでローカル検証・CI成功。Claudeの独立レビュー待ち。
+- 進捗: PR31はClaudeの独立レビュー・SHA承認とCI成功後、00b45cbへ統合済み。
 - 記録担当: Codex（Astra / medium）
 - 関連タスク: T03、T04a
 - Codex Run: run_18f7185e91aa
@@ -167,3 +167,21 @@ msg_1a6bf435e213で提案した分類:
 - 版の通知はAPI37、Robolectric4.17、Gradle9.7.1を示す。SDK36の合意済み試験範囲、対応するRobolectric4.16、AGP9.2の既定Gradle9.4.1を今回の検証対象として保持する案。「全て最新版」とは表現しない。採否はClaudeの回答待ち。
 
 15:42〜15:43 JSTの読み取りでは、Claude司令塔は受信確認コマンドを/usr/bin/python3へpipeする操作の許可待ち。画面理由はpermissions.blockReadsOutsideWorkingDirectoriesによる計算されたpathの確認不可。Codexは相手の許可画面へ回答せず、今後はPythonなしのplain orca orchestration checkを使う提案と最終SHAをキューへ保存した。送信成功を受信・承認成功とは扱わない。相手承認なしにPR31をマージしない。
+
+## 受信復旧・警告方針の合意とPR32統合
+
+ユーザーの「続けて」を受け、Codexは受信とGitHub状態を再確認。Claudeのmsg_fd01f73ada63（15:58:01 JST）は受信処理の継続を報告し、PR31 head24e93fdのSonnet5/high独立レビュー開始、PR29の参照付きclose、警告振り分けと選定版を保持する方針に同意した。以前の許可画面の観測を現在も停止中という断定へ延長しない。
+
+版の通知は最新版への追従義務ではなく、SDK36の試験範囲・Robolectric4.16・AGP9.2既定Gradle9.4.1を選定・検証した結果として残す。coreのUseRequiresApi/ObsoleteSdkIntはT04b/T05、VisibleForTestsはT04、accessibilityはT06、sample固有警告はT10、registryはT09。抑制はしない。msg_a3eacbbd42bc（15:58:39 JST）で受領を共有した。
+
+PR32はhead2119277044ee8cfd5f42c878fa3b6c382cb0d2b9への[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/32#issuecomment-5644350107)、CI run34678974119成功後に7be795c1da4e68d596b46216a4abb794647d2517へ統合（msg_45c14a6162df）。非ブロッキングの参照補足: Claude子のworker_doneそのものはmsg_cece435d60fb、Codex宛て編集終了・release確認はmsg_f0d13fbdf431。前段は後者で確認した報告として記録したが、監査のため両IDを区別して残す。
+
+## T03統合完了
+
+Claudeのmsg_5b175d51a7e6（16:07:29 JST）と[PR31承認](https://github.com/75py/Android-OverlayViewManager/pull/31#issuecomment-5644370904)を確認。Sonnet5/highは継承コミットを含む全差分、ID分岐の挙動、99件のテスト、設定、CIを確認した。PR32は先のいずれの順でも可という回答に基づき統合済みで、PR31をhead24e93fd固定で00b45cb9fbc78d4911e164fc8c5109b936eafc16へ統合した。msg_0e69e2bb1da0（16:10:30 JST）で共有。
+
+非ブロッキングのPOM依存指摘は、生成物未検証のまま確定事実とはせず、PR本文に組み込みKotlinへの移行がstdlib依存へ影響し得ることとT11/T12での生成POM/consumer検証を追記した。debugのunit/instrumentation coverageを明示的に有効化した点も記載。レビュー末尾のKotlin readiness未実証という表現には、24fc1f2で既にJava/Kotlin相互fixtureがmajor61を生成した証拠があると補足した。T04aの実際の新ソースの検証は別途必要である。
+
+## PR35非ブロッキング指摘の証跡補足
+
+T03チェック項目のmanifest整理は[PR31本文と変更](https://github.com/75py/Android-OverlayViewManager/pull/31)に対応する。統合後core/opt-timber/sampleのmain manifestを再確認し、旧package属性とoverrideLibraryがないことを確認した。wrapper checksumは本ログ「最初の独立検証結果」の86eb4f8でダウンロード・展開・検証成功を記録済み。現在のgradle/wrapper/gradle-wrapper.propertiesにはdistributionSha256Sum=2ab2958f2a1e51120c326cad6f385153bb11ee93b3c216c5fccebfdfbb7ec6cbが保持されている。証拠参照の補足であり、理由なく同じビルドを再実行していない。
