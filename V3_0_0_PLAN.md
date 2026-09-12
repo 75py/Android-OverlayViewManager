@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T03ビルド基盤とT07 Java段階をClaude側Sonnet5/highが並行作業中。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計・T02 CI導入を統合済み。T07 Java段階1を統合済み。T03は調査担当のターン終了を検知し、Claude側で同一タスクを再試行中。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -338,3 +338,12 @@ PR URL / head SHA:
 - 詳細: docs/coordination/3.0.0/2026-09-12-wave2.md。
 
 - 13:58 JST実起動（msg_add30b0b0135）: T03 task_ddc6ad210b34 / ctx_2f7b18d0b503、T07段階1 task_3bee9d099ded / ctx_5816cf1fe027。双方Sonnet5/highをlaunch.effectiveで確認。T07はJavaのバッファ・main描画・maxLinesのみ、dispose/lifecycleは未実施。
+
+### T07段階1統合とT03復旧（2026-09-12 14:19 JST）
+
+- T07 PR27: head27d4f8205b9ff07cfb47388c04173ab55f2c49f2をTerra/high（task_e055de0f3863 / ctx_d7cc040001a3）が独立レビュー。24テスト成功（15既存+9新規）、opt-timber lintエラー0・既存依存警告3。CI run34674836991成功とCodex承認後、5eca72527047b9f16ed931570635e3836f3f60efへ統合。
+- T07全体は未完了。次段階でthresholdのスレッド間可視性をvolatile/lockにより修正する（msg_2e4494b74956提案 / msg_4492b071b8f0同意）。Kotlin化はT03後、dispose/lifecycle統合はT04/T08後。今回の承認を全スレッド安全性・寿命管理の完成とは扱わない。
+- T03 ctx_2f7b18d0b503は調査後にworker_doneなしでターン終了。Codexがrendered screenで確認しmsg_b7c41f28cf73で通知、Claudeがmsg_8c33cf721900で事実を確認して所有側で復旧すると回答。編集成果はまだない。重複起動しない。
+- 最新詳細: docs/coordination/3.0.0/2026-09-12-wave3.md。
+
+- T03再試行（msg_b8baecba66f8）: task_ddc6ad210b34 / ctx_d9dde85f3055、term_d69f62a2-5043-41ba-8710-54fec875164e、同一worktree。旧試行をstop/release後にretry-ofで起動。Sonnet5/highは起動引数で指定、launch.effectiveは空で実効値確認待ち。旧調査を引き継ぐ方針に双方同意（msg_ad03ab603726 / msg_b9dc244277f7）。
