@@ -21,10 +21,12 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowSettings;
 
+import java.lang.reflect.Field;
+
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = Build.VERSION_CODES.P, manifest = Config.NONE)
 public class OverlayViewManagerTest {
-    @After public void tearDown() { OverlayViewManager.resetForTesting(); }
+    @After public void tearDown() throws Exception { managerInstanceField().set(null, null); }
     @Test public void getInstanceBeforeInit_throws() { assertThrows(IllegalStateException.class, OverlayViewManager::getInstance); }
     @Test public void sameApplicationInitIsIdempotentAndDifferentApplicationFails() {
         Application application = RuntimeEnvironment.getApplication();
@@ -77,5 +79,10 @@ public class OverlayViewManagerTest {
         assertFalse(OverlayViewManager.getInstance().canDrawOverlays());
         ShadowSettings.setCanDrawOverlays(true);
         assertTrue(OverlayViewManager.getInstance().canDrawOverlays());
+    }
+    private static Field managerInstanceField() throws NoSuchFieldException {
+        Field field = OverlayViewManager.class.getDeclaredField("instance");
+        field.setAccessible(true);
+        return field;
     }
 }

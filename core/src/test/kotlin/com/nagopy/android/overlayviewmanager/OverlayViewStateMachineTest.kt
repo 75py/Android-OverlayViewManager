@@ -3,6 +3,7 @@ package com.nagopy.android.overlayviewmanager
 import android.os.Build
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -45,6 +46,43 @@ class OverlayViewStateMachineTest {
         assertNull(overlay.lastFailure)
     }
 
+    @Test fun showWithParentedViewFailsBeforeTheBackendIsCalled() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec())
+        FrameLayout(view.context).addView(view)
+
+        val result = overlay.show()
+
+        assertEquals(OverlayFailure.ALREADY_HAS_PARENT, result.failure)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+        assertEquals(OverlayFailure.ALREADY_HAS_PARENT, overlay.lastFailure)
+        assertEquals(0, backend.addCalls)
+    }
+
+    @Test fun badTokenFromShowIsClassifiedWithoutAttaching() {
+        val backend = RecordingBackend(addFailure = WindowManager.BadTokenException("bad token"))
+        val overlay = overlay(backend)
+
+        val result = overlay.show()
+
+        assertEquals(OverlayFailure.INVALID_WINDOW_TOKEN, result.failure)
+        assertSame(backend.addFailure, result.cause)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+        assertEquals(OverlayFailure.INVALID_WINDOW_TOKEN, overlay.lastFailure)
+    }
+
+    @Test fun backendErrorPropagatesWithoutClassification() {
+        val error = AssertionError("fatal")
+        val backend = RecordingBackend(addFailure = error)
+        val overlay = overlay(backend)
+
+        assertSame(error, assertThrows(AssertionError::class.java) { overlay.show() })
+        assertEquals(1, backend.addCalls)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+        assertNull(overlay.lastFailure)
+    }
+
     @Test fun failedUpdate_keepsLastAppliedSpecAndLayoutSnapshot() {
         val backend = RecordingBackend()
         val overlay = overlay(backend)
@@ -68,8 +106,8 @@ class OverlayViewStateMachineTest {
         val result = overlay.update()
         assertFalse(result.isSuccess)
         assertEquals(applied, overlay.spec)
-        assertEquals(24, overlay.pendingSpecForTesting().x)
-        assertEquals(.5f, overlay.pendingSpecForTesting().alpha, 0f)
+        assertEquals(24, (privateField(overlay, "pendingSpec") as OverlaySpec).x)
+        assertEquals(.5f, (privateField(overlay, "pendingSpec") as OverlaySpec).alpha, 0f)
     }
 
     @Test fun equalUpdatesAndRepeatedShowAreNoOps() {
@@ -98,15 +136,15 @@ class OverlayViewStateMachineTest {
         val backend = RecordingBackend(updateFailure = IllegalArgumentException("View not attached"))
         val overlay = overlay(backend)
         overlay.show()
-        assertTrue(overlay.hasDetachListenerForTesting())
+        assertTrue(privateField(overlay, "detachListener") != null)
         val result = overlay.update(overlay.spec.copy(x = 8))
         assertFalse(result.isSuccess)
         assertEquals(OverlayFailure.NOT_ATTACHED, result.failure)
         assertEquals(OverlayState.CONFIGURED, overlay.state)
         assertEquals(OverlayFailure.NOT_ATTACHED, overlay.lastFailure)
-        assertFalse(overlay.hasDetachListenerForTesting())
+        assertNull(privateField(overlay, "detachListener"))
         assertTrue(overlay.show().isSuccess)
-        assertTrue(overlay.hasDetachListenerForTesting())
+        assertTrue(privateField(overlay, "detachListener") != null)
     }
 
     @Test fun configuredHideAndDisposeRetainAnExistingDiagnostic() {
@@ -118,7 +156,7 @@ class OverlayViewStateMachineTest {
         assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
         assertTrue(overlay.dispose().isSuccess)
         assertEquals(OverlayState.DISPOSED, overlay.state)
-        assertNull(overlay.backendForTesting())
+        assertNull(privateField(overlay, "backend"))
         assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
         assertFalse(overlay.show().isSuccess)
         assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
@@ -135,6 +173,23 @@ class OverlayViewStateMachineTest {
         assertEquals(OverlayState.DISPOSED, overlay.state)
         assertThrows(IllegalStateException::class.java) { overlay.view }
         assertEquals(overlay.spec, overlay.spec)
+    }
+
+    @Test fun notAttachedDisposeReconcilesAndReleasesOwnedReferences() {
+        val backend = RecordingBackend(removeFailure = IllegalArgumentException("View not attached"))
+        val overlay = overlay(backend)
+        overlay.show()
+
+        val result = overlay.dispose()
+
+        assertTrue(result.isSuccess)
+        assertFalse(result.changed)
+        assertNull(result.failure)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertEquals(OverlayFailure.NOT_ATTACHED, overlay.lastFailure)
+        assertNull(privateField(overlay, "backend"))
+        assertNull(privateField(overlay, "ownedView"))
+        assertThrows(IllegalStateException::class.java) { overlay.view }
     }
 
     @Test fun backgroundMutationFailsBeforeCallingTheBackend() {
@@ -168,7 +223,7 @@ class OverlayViewStateMachineTest {
         assertNull(privateField(overlay, "effectiveDragListener"))
         assertFalse(privateField(overlay, "pendingDragListenerChange") as Boolean)
         assertEquals(OverlayState.DISPOSED, overlay.state)
-        assertNull(overlay.backendForTesting())
+        assertNull(privateField(overlay, "backend"))
     }
 
     @Test fun customLegacyListenerChangeIsAppliedEvenWhenTheSpecIsOtherwiseEqual() {

@@ -22,7 +22,6 @@ import android.provider.Settings
 import android.view.View
 import android.view.WindowManager
 import androidx.annotation.MainThread
-import androidx.annotation.VisibleForTesting
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
@@ -247,15 +246,6 @@ public class OverlayView<T : View> internal constructor(
     @Deprecated("Set the listener on view instead.") @MainThread public fun setOnClickListener(listener: View.OnClickListener?): OverlayView<T> {
         requireMainThread(); view.setOnClickListener(listener); return this
     }
-
-    @VisibleForTesting
-    internal fun pendingSpecForTesting(): OverlaySpec = pendingSpec
-
-    @VisibleForTesting
-    internal fun backendForTesting(): OverlayWindowManager? = backend
-
-    @VisibleForTesting
-    internal fun hasDetachListenerForTesting(): Boolean = detachListener != null
 
     private fun setPending(transform: (OverlaySpec) -> OverlaySpec): OverlayView<T> {
         requireMutableState()

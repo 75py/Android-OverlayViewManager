@@ -108,6 +108,5 @@ public class OverlayViewManager private constructor(private val application: App
             return instance ?: throw IllegalStateException("OverlayViewManager is not initialized. Call init(Application) first.")
         }
 
-        @JvmStatic @androidx.annotation.VisibleForTesting public fun resetForTesting() { instance = null }
     }
 }
