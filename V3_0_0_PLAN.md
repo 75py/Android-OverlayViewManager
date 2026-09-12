@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **再開して作業継続中**。T01設計・T02 CI・T03ツールチェーン更新・T04a不変設定・結果型・T07 Java段階2まで統合済み。T04b（PR40）・T07 Kotlin段階（PR37）は統合済み。利用制限への対応で以後の実装・検証をClaude Code中心へ移管中。
+- 状態: **再開して作業継続中**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06候補eb8e9f1はcore101 tests・lint・build成功、PR49の最終レビュー・CI確認中。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -113,10 +113,10 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
-| T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a PR43統合済み40c45dc、T05b未着手） |
-| T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05 | 未着手 |
+| T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
+| T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 相互レビュー中（PR49 eb8e9f1、101 tests成功、端末検証はT12） |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命統合は後続 |
-| T08 | 初期化・Activity寿命・リソース解放 | Claude | T05 | 未着手 |
+| T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 合意済み（F1〜F6、実装はT06統合後） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
 | T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
@@ -508,3 +508,17 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - PR46 head e246370を相互承認・最終CI成功後にbeafd014へ統合。PR47の計画・ログも統合済み。T05端末検証はT12のrelease-blocking項目として未完了。
 - Claude Sonnet5/highがt06-touch-opacity、task_5bd2567d9bc3でT06を開始。実装・独立レビューをClaude中心としCodexは集約検証と対向承認・統合を担当。
 - ユーザーの指示で、Claudeの許可待ちはCodexが内容を確認し妥当なら代理許可できる運用へ変更。詳細はAGENTS.mdとdocs/coordination/3.0.0/2026-09-12-t06-start.md。
+
+### 2026-09-12 22:44 JST: T06初回検証
+
+- 候補3fcdb36はcore build成功、101 tests中11件のgestureテスト失敗。opacity17件は成功。元のClaude担当へfixture/dispatch assertionの見直しを依頼し、製品動作と後続assertionの検証を維持する。
+- T06のpush・PR・承認は保留。T05bまでの統合状態は変更しない。
+
+### 2026-09-12 22:58 JST: T06修正版の再検証
+
+- 候補1f25a82は101 tests中2件のクリック検証が失敗。初回のdispatch判定に関する失敗は解消したが、fixture寸法・座標・attachmentを元担当が調査する。期待値を維持し、成功確認までPR作成は保留。
+
+### 2026-09-12 23:05 JST: T06検証成功・T08範囲合意
+
+- 候補eb8e9f1のgesture限定試験とcore全101 tests成功。lintエラー0/警告13、core assemble成功。レビュー用ブランチへpushしdraft PRへ進む。CI・最終SHA承認は未完了。
+- T08はF1〜F6を明示合意。Activity破棄時の1回のremove、失敗分類維持、参照・cache・listenerの決定的解放検証が対象。実装はT06統合後。詳細と議論は2026-09-12-t06-start.md。
