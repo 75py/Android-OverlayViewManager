@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01修正・再レビュー、T02許可待ち確認中。
+- 状態: **ユーザー指示で再開**（2026-09-12 13:17 JST）。T01設計を統合済み。T02のローカル必須検証89件・lintエラー0を確認し、PR・CI待ち。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -106,10 +106,10 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | ID | 作業 | 初期担当案 | 依存 | 状態 |
 | --- | --- | --- | --- | --- |
 | T00 | 司令塔起動・作業体制と担当の合意 | 両司令塔 | 開始指示 | 統合済み（PR #21、追記あり） |
-| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 修正・相互レビュー中（PR #22） |
-| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 子の許可待ち、未コミット変更保持 |
+| T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 統合済み |
+| T02 | CI導入・既存lintエラー解消 | Claude | T00 | 作業中 |
 | T03 | ビルド・依存・SDKの更新 | Claude | T01, T02 | 未着手 |
-| T04 | 表示状態とスレッド処理の修正 | Codex | T01 | 未着手 |
+| T04 | 表示状態とスレッド処理の修正 | Codex | T01, T03 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Codex | T04 | 未着手 |
 | T06 | タッチ透過・ドラッグの互換性改善 | Codex | T05 | 未着手 |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 未着手 |
@@ -308,3 +308,24 @@ PR URL / head SHA:
 - PR22 a1fcfebに未反映の既知指摘をCodexが確認。Luna/high（launch.effective確認）のtask_0939bd1375f5 / ctx_8da0aa6c1a15が限定修正。spec getter main-thread、明示的spec/Java overload、NOT_ATTACHED診断、移行表の不足を対象とする。新設計は導入しない。
 - T02は同一ctx_bebb1ab66ddcのBash許可待ちが続き、進行中扱いだが実行は停止中。ユーザー側操作が必要。重複Dispatch・許可代答はしない。
 - ClaudeはFable5.1/highで復帰。PR23の記録確認は継続、最新再開追記後のSHAを承認対象にする。
+
+## 13:25 JST: 段階移行の合意
+
+- T04依存にT03を追加。T04aはcoreの新しいspec/result/state/failure型とJava/Kotlin consumerコンパイル試験のみ、既存OverlayView/OverlayViewManagerへ触れない。
+- T04b以降で状態機械・寿命・ドラッグを段階移行。旧API除去はT07/T10のconsumer更新と同期し、最終版に互換shimを残さず各途中PRはビルド可能に保つ。
+- T07はT01承認後にJavaのスレッド/maxLines修正を先行可能。新core API依存のdisposeはT04/T08後へ分ける。GradleはT02と直列化する。
+- 合意元: Codex msg_e9a0f7964a8b、Claude msg_81f062bf63c9、Codex msg_d08b59b6b18d、Claude msg_ca3fc083ed95。
+- PR23 head64f959fへの[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/23#issuecomment-5643424389)を確認し、506f996474423482b33d14eb80dcaaa278633fa4へ統合。
+
+## 13:35 JST: T01統合・T02検証移管
+
+- T01: Luna/high修正head6a2ce743e724358a1da7548c8cc07a5abf49cf0aへの[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/22#issuecomment-5643464042)を確認。PR22統合SHA=c8c2660df3a44b14831ab307b0ee4f0b135c0561。文書差分検査成功。Lunaのworker_doneは実受信してsettlement/release済み。
+- T02: ユーザーが許可応答し作業再開した後、Claude側JDK読み取り・SSH制約でローカル検証とpushが失敗。ブランチclaude/3.0.0/t02-ci-lintのbf3e42bb48a60d87d5cd838263f4cdad408639cb（12706b6 CI＋bf3e42b sample修正）をCodexが通常権限経路でpush。
+- T02独立レビュー・検証: Terra/high、task_2be9b58c2828 / ctx_382b023d4c6e、別worktree codex-3.0.0-t02-review、bf3e42b固定。Gradle共有資源はこの担当へ移管。結果待ち、承認は未実施。
+- Claudeが同SHAのdraft PR/remote CIを作成担当。コード変更時は再検証範囲を調整する。
+
+### T02独立検証（2026-09-12 13:42 JST）
+
+- Terra/high（task_2be9b58c2828 / ctx_382b023d4c6e）がbf3e42bb48a60d87d5cd838263f4cdad408639cbを検証。必須ビルド・89テスト・core/sample lint成功（エラー0、警告9/124）。168タスクを再実行し、生成Data Bindingコードもレビューした。
+- CIの明示的read権限と既存HTMLのonDestroy順序差を改善提案。Codex司令塔は現在の振る舞いの回帰とは判定せず、限定修正をClaude側へ依頼（msg_aab84c40f1c7）。PR・GitHub Actionsの結果を待ち、承認は最新headへ別途行う。
+- ローカルGradle資源を解放。検証担当は最終回答まで完了したがworker_doneがruntime不達で届かず、transcript確認後に当該端末のみworker-stop。成果とworktreeは保持。
