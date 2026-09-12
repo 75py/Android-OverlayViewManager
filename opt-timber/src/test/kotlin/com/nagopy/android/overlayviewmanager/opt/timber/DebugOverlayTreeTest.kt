@@ -29,11 +29,108 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when` as whenever
 import org.mockito.MockitoAnnotations
+import java.lang.reflect.Field
+import java.util.ArrayDeque
 import java.util.ArrayList
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+
+/**
+ * Reflection helpers for `DebugOverlayTree`'s private construction/test
+ * seams. Kotlin's visibility model has no equivalent to Java's
+ * package-private, so unlike the previous same-package Java test, this
+ * Kotlin test cannot reach `private` members directly; these helpers use
+ * `java.lang.reflect` with `setAccessible(true)` instead, the same
+ * technique any other caller trying (and failing) to reach these members
+ * without reflection would need.
+ */
+private fun newDebugOverlayTree(): DebugOverlayTree {
+    val constructor = DebugOverlayTree::class.java.getDeclaredConstructor()
+    constructor.isAccessible = true
+    return constructor.newInstance()
+}
+
+private fun reflectField(name: String): Field {
+    val field = DebugOverlayTree::class.java.getDeclaredField(name)
+    field.isAccessible = true
+    return field
+}
+
+private fun reflectCompanionField(name: String): Field {
+    val field = DebugOverlayTree.Companion.javaClass.getDeclaredField(name)
+    field.isAccessible = true
+    return field
+}
+
+@Suppress("UNCHECKED_CAST")
+private var DebugOverlayTree.reflectedOverlayView: OverlayView<TextView>?
+    get() = reflectField("overlayView").get(this) as OverlayView<TextView>?
+    set(value) = reflectField("overlayView").set(this, value)
+
+@Suppress("UNCHECKED_CAST")
+private var DebugOverlayTree.reflectedMessages: ArrayDeque<String>?
+    get() = reflectField("messages").get(this) as ArrayDeque<String>?
+    set(value) = reflectField("messages").set(this, value)
+
+@Suppress("UNCHECKED_CAST")
+private var DebugOverlayTree.reflectedRegisteredActivities: WeakReferenceCache<Activity>?
+    get() = reflectField("registeredActivities").get(this) as WeakReferenceCache<Activity>?
+    set(value) = reflectField("registeredActivities").set(this, value)
+
+@Suppress("UNCHECKED_CAST")
+private var DebugOverlayTree.reflectedRunningActivities: WeakReferenceCache<Activity>?
+    get() = reflectField("runningActivities").get(this) as WeakReferenceCache<Activity>?
+    set(value) = reflectField("runningActivities").set(this, value)
+
+@Suppress("UNCHECKED_CAST")
+private var DebugOverlayTree.reflectedRegisteredAndRunningActivities: WeakReferenceCache<Activity>?
+    get() = reflectField("registeredAndRunningActivities").get(this) as WeakReferenceCache<Activity>?
+    set(value) = reflectField("registeredAndRunningActivities").set(this, value)
+
+private var DebugOverlayTree.reflectedThreshold: Int
+    get() = reflectField("threshold").getInt(this)
+    set(value) = reflectField("threshold").setInt(this, value)
+
+private val DebugOverlayTree.reflectedMaxLines: Int
+    get() = reflectField("maxLines").getInt(this)
+
+@Suppress("UNCHECKED_CAST")
+private val DebugOverlayTree.reflectedActivityLifecycleCallbacks: Application.ActivityLifecycleCallbacks
+    get() = reflectField("activityLifecycleCallbacks").get(this) as Application.ActivityLifecycleCallbacks
+
+private var reflectedInstance: DebugOverlayTree
+    get() = reflectCompanionField("INSTANCE").get(DebugOverlayTree.Companion) as DebugOverlayTree
+    set(value) = reflectCompanionField("INSTANCE").set(DebugOverlayTree.Companion, value)
+
+// `const val` in a companion object is placed as a static field on the
+// outer class itself (not the Companion class), unlike a regular
+// companion `val`/`var` such as INSTANCE above.
+private val reflectedDefaultMaxLines: Int
+    get() {
+        val field = DebugOverlayTree::class.java.getDeclaredField("DEFAULT_MAX_LINES")
+        field.isAccessible = true
+        return field.getInt(null)
+    }
+
+// `initialize` and `postToMainThread` stay `internal` (not `private`) in
+// the production class specifically so Mockito can generate a subclass
+// override for `verify()`/`doAnswer()`; being in the same Gradle module,
+// this Kotlin test can call `initialize` directly like any other internal
+// member, no reflection needed.
+
+private fun DebugOverlayTree.callLog(priority: Int, tag: String?, message: String, t: Throwable?) {
+    val method = DebugOverlayTree::class.java.getDeclaredMethod(
+        "log",
+        Int::class.javaPrimitiveType,
+        String::class.java,
+        String::class.java,
+        Throwable::class.java,
+    )
+    method.isAccessible = true
+    method.invoke(this, priority, tag, message, t)
+}
 
 class DebugOverlayTreeTest {
 
@@ -75,10 +172,10 @@ class DebugOverlayTreeTest {
         OverlayWindowManager.setApplicationInstance(overlayWindowManager)
         OverlayWindowManager.initApplicationInstance(windowManager)
 
-        debugOverlayTree = DebugOverlayTree()
-        assertThat(debugOverlayTree.overlayView, isEqualTo(nullValue()))
+        debugOverlayTree = newDebugOverlayTree()
+        assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(nullValue()))
 
-        whenever(overlayView.getView()).thenReturn(textView)
+        whenever(overlayView.view).thenReturn(textView)
     }
 
     @After
@@ -87,20 +184,20 @@ class DebugOverlayTreeTest {
 
     @Test(expected = IllegalStateException::class)
     fun getInstance_noView() {
-        DebugOverlayTree.INSTANCE.overlayView = null
+        reflectedInstance.reflectedOverlayView = null
         DebugOverlayTree.getInstance()
     }
 
     @Test
     fun getInstance() {
-        DebugOverlayTree.INSTANCE.overlayView = overlayView
+        reflectedInstance.reflectedOverlayView = overlayView
         DebugOverlayTree.getInstance()
     }
 
     @Test
     fun init() {
         val mockTree = mock(DebugOverlayTree::class.java)
-        DebugOverlayTree.INSTANCE = mockTree
+        reflectedInstance = mockTree
         DebugOverlayTree.init(application)
 
         verify(mockTree, times(1)).initialize(application)
@@ -110,36 +207,36 @@ class DebugOverlayTreeTest {
     fun initialize() {
         debugOverlayTree.initialize(application)
 
-        assertThat(debugOverlayTree.messages, isEqualTo(notNullValue()))
-        assertThat(debugOverlayTree.threshold, isEqualTo(Log.DEBUG))
-        assertThat(debugOverlayTree.maxLines, isEqualTo(5))
-        assertThat(debugOverlayTree.overlayView, isEqualTo(notNullValue()))
-        assertThat(debugOverlayTree.registeredActivities, isEqualTo(notNullValue()))
-        verify(application, times(1)).registerActivityLifecycleCallbacks(debugOverlayTree.activityLifecycleCallbacks)
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(notNullValue()))
+        assertThat(debugOverlayTree.reflectedThreshold, isEqualTo(Log.DEBUG))
+        assertThat(debugOverlayTree.reflectedMaxLines, isEqualTo(5))
+        assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(notNullValue()))
+        assertThat(debugOverlayTree.reflectedRegisteredActivities, isEqualTo(notNullValue()))
+        verify(application, times(1)).registerActivityLifecycleCallbacks(debugOverlayTree.reflectedActivityLifecycleCallbacks)
     }
 
     @Test
     fun setThreshold() {
-        debugOverlayTree.threshold = 0
+        debugOverlayTree.reflectedThreshold = 0
 
         debugOverlayTree.setThreshold(1)
-        assertThat(debugOverlayTree.threshold, isEqualTo(1))
+        assertThat(debugOverlayTree.reflectedThreshold, isEqualTo(1))
     }
 
     @Test
     fun setMaxLines() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.setMaxLines(1)
 
-        assertThat(debugOverlayTree.maxLines, isEqualTo(1))
+        assertThat(debugOverlayTree.reflectedMaxLines, isEqualTo(1))
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun setMaxLines_zero_throws() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.setMaxLines(0)
     }
@@ -147,7 +244,7 @@ class DebugOverlayTreeTest {
     @Test(expected = IllegalArgumentException::class)
     fun setMaxLines_negative_throws() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
         debugOverlayTree.setMaxLines(-1)
     }
@@ -155,7 +252,7 @@ class DebugOverlayTreeTest {
     @Test
     fun setMaxLines_invalid_doesNotChangeState() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
         try {
             debugOverlayTree.setMaxLines(0)
@@ -164,60 +261,60 @@ class DebugOverlayTreeTest {
             // no-op
         }
 
-        assertThat(debugOverlayTree.maxLines, isEqualTo(DebugOverlayTree.DEFAULT_MAX_LINES))
+        assertThat(debugOverlayTree.reflectedMaxLines, isEqualTo(reflectedDefaultMaxLines))
     }
 
     @Test
     fun setMaxLines_shrink_trimsBufferAndRerenders() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
         for (i in 1..5) {
-            debugOverlayTree.logForTest(Log.DEBUG, "tag", "message$i", null)
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "message$i", null)
         }
         reset(textView)
 
         debugOverlayTree.setMaxLines(2)
 
-        assertThat(debugOverlayTree.messages!!.size, isEqualTo(2))
+        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(2))
         verify(textView, times(1)).setText("tag: message4\ntag: message5")
     }
 
     @Test
     fun setMaxLines_equal_doesNotTrimOrRerender() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
         for (i in 1..5) {
-            debugOverlayTree.logForTest(Log.DEBUG, "tag", "message$i", null)
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "message$i", null)
         }
         reset(textView)
 
         debugOverlayTree.setMaxLines(5)
 
-        assertThat(debugOverlayTree.messages!!.size, isEqualTo(5))
+        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(5))
         verify(textView, never()).setText(anyString())
     }
 
     @Test
     fun setMaxLines_grow_doesNotTrimExistingBuffer() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
         for (i in 1..5) {
-            debugOverlayTree.logForTest(Log.DEBUG, "tag", "message$i", null)
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "message$i", null)
         }
         reset(textView)
 
         debugOverlayTree.setMaxLines(10)
 
-        assertThat(debugOverlayTree.maxLines, isEqualTo(10))
-        assertThat(debugOverlayTree.messages!!.size, isEqualTo(5))
+        assertThat(debugOverlayTree.reflectedMaxLines, isEqualTo(10))
+        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(5))
         verify(textView, never()).setText(anyString())
     }
 
     @Test
     fun register_notRunning() {
-        debugOverlayTree.registeredActivities = registeredActivitiesMock
-        debugOverlayTree.runningActivities = runningActivitiesMock
-        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock
+        debugOverlayTree.reflectedRegisteredActivities = registeredActivitiesMock
+        debugOverlayTree.reflectedRunningActivities = runningActivitiesMock
+        debugOverlayTree.reflectedRegisteredAndRunningActivities = registeredAndRunningActivitiesMock
         whenever(runningActivitiesMock.contains(activity)).thenReturn(false)
 
         debugOverlayTree.register(activity)
@@ -230,10 +327,10 @@ class DebugOverlayTreeTest {
 
     @Test
     fun register_running() {
-        debugOverlayTree.overlayView = overlayView
-        debugOverlayTree.registeredActivities = registeredActivitiesMock
-        debugOverlayTree.runningActivities = runningActivitiesMock
-        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock
+        debugOverlayTree.reflectedOverlayView = overlayView
+        debugOverlayTree.reflectedRegisteredActivities = registeredActivitiesMock
+        debugOverlayTree.reflectedRunningActivities = runningActivitiesMock
+        debugOverlayTree.reflectedRegisteredAndRunningActivities = registeredAndRunningActivitiesMock
         whenever(runningActivitiesMock.contains(activity)).thenReturn(true)
 
         debugOverlayTree.register(activity)
@@ -247,9 +344,9 @@ class DebugOverlayTreeTest {
     @Test
     fun log_threshold() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
-        debugOverlayTree.logForTest(Log.VERBOSE, "tag", "message", null)
+        debugOverlayTree.callLog(Log.VERBOSE, "tag", "message", null)
 
         verify(textView, never()).setText(anyString())
     }
@@ -257,9 +354,9 @@ class DebugOverlayTreeTest {
     @Test
     fun log() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
-        debugOverlayTree.logForTest(Log.DEBUG, "tag", "message", null)
+        debugOverlayTree.callLog(Log.DEBUG, "tag", "message", null)
 
         verify(textView, times(1)).setText("tag: message")
     }
@@ -267,10 +364,10 @@ class DebugOverlayTreeTest {
     @Test
     fun log_multiLine() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
-        debugOverlayTree.messages!!.add("tag: message")
+        debugOverlayTree.reflectedOverlayView = overlayView
+        debugOverlayTree.reflectedMessages!!.add("tag: message")
 
-        debugOverlayTree.logForTest(Log.DEBUG, "tag", "message2", null)
+        debugOverlayTree.callLog(Log.DEBUG, "tag", "message2", null)
 
         verify(textView, times(1)).setText("tag: message\ntag: message2")
     }
@@ -278,14 +375,14 @@ class DebugOverlayTreeTest {
     @Test
     fun log_multiLine_max() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
-        debugOverlayTree.messages!!.add("tag: message1")
-        debugOverlayTree.messages!!.add("tag: message2")
-        debugOverlayTree.messages!!.add("tag: message3")
-        debugOverlayTree.messages!!.add("tag: message4")
-        debugOverlayTree.messages!!.add("tag: message5")
+        debugOverlayTree.reflectedOverlayView = overlayView
+        debugOverlayTree.reflectedMessages!!.add("tag: message1")
+        debugOverlayTree.reflectedMessages!!.add("tag: message2")
+        debugOverlayTree.reflectedMessages!!.add("tag: message3")
+        debugOverlayTree.reflectedMessages!!.add("tag: message4")
+        debugOverlayTree.reflectedMessages!!.add("tag: message5")
 
-        debugOverlayTree.logForTest(Log.DEBUG, "tag", "message6", null)
+        debugOverlayTree.callLog(Log.DEBUG, "tag", "message6", null)
 
         verify(textView, times(1)).setText(
             "tag: message2\n" +
@@ -298,14 +395,14 @@ class DebugOverlayTreeTest {
 
     @Test
     fun simpleActivityLifecycleCallbacks_onActivityStarted() {
-        debugOverlayTree.registeredActivities = registeredActivitiesMock
-        debugOverlayTree.runningActivities = runningActivitiesMock
-        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedRegisteredActivities = registeredActivitiesMock
+        debugOverlayTree.reflectedRunningActivities = runningActivitiesMock
+        debugOverlayTree.reflectedRegisteredAndRunningActivities = registeredAndRunningActivitiesMock
+        debugOverlayTree.reflectedOverlayView = overlayView
         run {
             whenever(registeredActivitiesMock.contains(activity)).thenReturn(false)
 
-            debugOverlayTree.activityLifecycleCallbacks.onActivityStarted(activity)
+            debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStarted(activity)
 
             verify(registeredAndRunningActivitiesMock, never()).add(activity)
             verify(overlayView, never()).show()
@@ -314,7 +411,7 @@ class DebugOverlayTreeTest {
         run {
             whenever(registeredActivitiesMock.contains(activity)).thenReturn(true)
 
-            debugOverlayTree.activityLifecycleCallbacks.onActivityStarted(activity)
+            debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStarted(activity)
 
             verify(runningActivitiesMock, times(1)).add(activity)
             verify(overlayView, times(1)).show()
@@ -323,15 +420,15 @@ class DebugOverlayTreeTest {
 
     @Test
     fun simpleActivityLifecycleCallbacks_onActivityStopped() {
-        debugOverlayTree.overlayView = overlayView
-        debugOverlayTree.registeredActivities = registeredActivitiesMock
-        debugOverlayTree.runningActivities = runningActivitiesMock
-        debugOverlayTree.registeredAndRunningActivities = registeredAndRunningActivitiesMock
+        debugOverlayTree.reflectedOverlayView = overlayView
+        debugOverlayTree.reflectedRegisteredActivities = registeredActivitiesMock
+        debugOverlayTree.reflectedRunningActivities = runningActivitiesMock
+        debugOverlayTree.reflectedRegisteredAndRunningActivities = registeredAndRunningActivitiesMock
         run {
             whenever(registeredActivitiesMock.contains(activity)).thenReturn(false)
             whenever(registeredActivitiesMock.isEmpty()).thenReturn(false)
 
-            debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity)
+            debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStopped(activity)
 
             verify(registeredAndRunningActivitiesMock, never()).remove(activity)
             verify(overlayView, never()).hide()
@@ -344,7 +441,7 @@ class DebugOverlayTreeTest {
                 whenever(registeredActivitiesMock.isEmpty()).thenReturn(false)
                 whenever(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(false)
 
-                debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity)
+                debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStopped(activity)
 
                 verify(registeredAndRunningActivitiesMock, times(1)).isEmpty()
                 verify(overlayView, never()).hide()
@@ -356,7 +453,7 @@ class DebugOverlayTreeTest {
                 whenever(registeredActivitiesMock.isEmpty()).thenReturn(false)
                 whenever(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(true)
 
-                debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity)
+                debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStopped(activity)
 
                 verify(registeredAndRunningActivitiesMock, times(1)).isEmpty()
                 verify(overlayView, times(1)).hide()
@@ -368,7 +465,7 @@ class DebugOverlayTreeTest {
                 whenever(registeredActivitiesMock.isEmpty()).thenReturn(true)
                 whenever(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(false)
 
-                debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity)
+                debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStopped(activity)
 
                 verify(registeredAndRunningActivitiesMock, times(1)).isEmpty()
                 verify(overlayView, never()).hide()
@@ -380,7 +477,7 @@ class DebugOverlayTreeTest {
                 whenever(registeredActivitiesMock.isEmpty()).thenReturn(true)
                 whenever(registeredAndRunningActivitiesMock.isEmpty()).thenReturn(true)
 
-                debugOverlayTree.activityLifecycleCallbacks.onActivityStopped(activity)
+                debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStopped(activity)
 
                 verify(registeredAndRunningActivitiesMock, times(1)).isEmpty()
                 verify(overlayView, times(1)).hide()
@@ -393,7 +490,7 @@ class DebugOverlayTreeTest {
     @Test
     fun log_rendersOnlyThroughMainThreadPost_neverDirectly() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
         val spied = spy(debugOverlayTree)
         val posted: MutableList<Runnable> = Collections.synchronizedList(ArrayList())
         doAnswer { invocation ->
@@ -401,7 +498,7 @@ class DebugOverlayTreeTest {
             null
         }.`when`(spied).postToMainThread(any(Runnable::class.java))
 
-        spied.logForTest(Log.DEBUG, "tag", "message", null)
+        spied.callLog(Log.DEBUG, "tag", "message", null)
 
         verify(textView, never()).setText(anyString())
         assertThat(posted.size, isEqualTo(1))
@@ -414,7 +511,7 @@ class DebugOverlayTreeTest {
     @Test
     fun log_highFrequencyLogging_coalescesToSinglePendingRender() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
         val spied = spy(debugOverlayTree)
         val posted: MutableList<Runnable> = Collections.synchronizedList(ArrayList())
         doAnswer { invocation ->
@@ -423,7 +520,7 @@ class DebugOverlayTreeTest {
         }.`when`(spied).postToMainThread(any(Runnable::class.java))
 
         for (i in 0 until 500) {
-            spied.logForTest(Log.DEBUG, "tag", "message$i", null)
+            spied.callLog(Log.DEBUG, "tag", "message$i", null)
         }
 
         assertThat("logging must coalesce onto a single pending render", posted.size, isEqualTo(1))
@@ -439,7 +536,7 @@ class DebugOverlayTreeTest {
     @Test
     fun log_concurrentThreads_doesNotCorruptBufferOrThrow() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
         val threadCount = 8
         val perThread = 200
@@ -452,7 +549,7 @@ class DebugOverlayTreeTest {
                 try {
                     startLatch.await()
                     for (i in 0 until perThread) {
-                        debugOverlayTree.logForTest(Log.DEBUG, "t$t", "m$i", null)
+                        debugOverlayTree.callLog(Log.DEBUG, "t$t", "m$i", null)
                     }
                 } catch (e: Throwable) {
                     errors.add(e)
@@ -466,10 +563,10 @@ class DebugOverlayTreeTest {
 
         assertThat(doneLatch.await(10, TimeUnit.SECONDS), isEqualTo(true))
         assertThat(errors.isEmpty(), isEqualTo(true))
-        assertThat(debugOverlayTree.messages!!.size, isEqualTo(debugOverlayTree.maxLines))
+        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(debugOverlayTree.reflectedMaxLines))
 
         val linePattern = Pattern.compile("^t\\d+: m\\d+$")
-        for (line in debugOverlayTree.messages!!) {
+        for (line in debugOverlayTree.reflectedMessages!!) {
             assertThat(linePattern.matcher(line).matches(), isEqualTo(true))
         }
     }
@@ -477,7 +574,7 @@ class DebugOverlayTreeTest {
     @Test
     fun setThreshold_onOtherThread_isVisibleWhenLoggingFromAnotherThread() {
         debugOverlayTree.initialize(application)
-        debugOverlayTree.overlayView = overlayView
+        debugOverlayTree.reflectedOverlayView = overlayView
 
         val errors: MutableList<Throwable> = Collections.synchronizedList(ArrayList())
         val thresholdSetLatch = CountDownLatch(1)
@@ -498,8 +595,8 @@ class DebugOverlayTreeTest {
         val loggingDoneLatch = CountDownLatch(1)
         val loggerThread = Thread {
             try {
-                debugOverlayTree.logForTest(Log.DEBUG, "tag", "filtered out", null)
-                debugOverlayTree.logForTest(Log.ERROR, "tag", "passes threshold", null)
+                debugOverlayTree.callLog(Log.DEBUG, "tag", "filtered out", null)
+                debugOverlayTree.callLog(Log.ERROR, "tag", "passes threshold", null)
             } catch (e: Throwable) {
                 errors.add(e)
             } finally {
@@ -517,9 +614,9 @@ class DebugOverlayTreeTest {
     @Test
     fun simpleActivityLifecycleCallbacks_onActivityDestroyed() {
         run {
-            debugOverlayTree.registeredActivities = registeredActivitiesMock
+            debugOverlayTree.reflectedRegisteredActivities = registeredActivitiesMock
 
-            debugOverlayTree.activityLifecycleCallbacks.onActivityDestroyed(activity)
+            debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityDestroyed(activity)
 
             verify(registeredActivitiesMock, times(1)).remove(activity)
         }

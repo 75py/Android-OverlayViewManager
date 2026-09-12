@@ -25,7 +25,6 @@ import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.TextView
-import androidx.annotation.VisibleForTesting
 import com.nagopy.android.overlayviewmanager.OverlayView
 import com.nagopy.android.overlayviewmanager.OverlayViewManager
 import com.nagopy.android.overlayviewmanager.internal.Logger
@@ -38,12 +37,7 @@ import timber.log.Timber
 /**
  * [Option] Implementation of [Timber.Tree].
  */
-open class DebugOverlayTree
-/**
- * Internal test seam; not supported API.
- */
-@VisibleForTesting
-internal constructor() : Timber.DebugTree() {
+open class DebugOverlayTree private constructor() : Timber.DebugTree() {
 
     /**
      * Guards [messages] and [maxLines] so that [log] (called from arbitrary
@@ -61,18 +55,14 @@ internal constructor() : Timber.DebugTree() {
     /**
      * Read from the logging thread by [postToMainThread]. Safe without
      * additional locking because it is assigned only once, in this private,
-     * never-reassigned field initializer, which runs while [INSTANCE] is
-     * created by the class's static initializer; the JLS guarantees that
-     * write is visible to every thread that subsequently observes an
-     * initialized [DebugOverlayTree] class (JLS 12.4.2).
+     * never-reassigned field initializer, which runs while the singleton
+     * instance is created by the class's static initializer; the JLS
+     * guarantees that write is visible to every thread that subsequently
+     * observes an initialized [DebugOverlayTree] class (JLS 12.4.2).
      */
     private val mainHandler: Handler = Handler(Looper.getMainLooper())
 
-    /**
-     * Internal test seam; not supported API.
-     */
-    @VisibleForTesting
-    internal var messages: ArrayDeque<String>? = null
+    private var messages: ArrayDeque<String>? = null
 
     /**
      * Written by [initialize] (called once from [init], on whichever thread
@@ -90,29 +80,14 @@ internal constructor() : Timber.DebugTree() {
      * protecting from is [log], which runs on whatever thread Timber is
      * logging from: [log] never reads or writes this field, so the logging
      * thread can never observe a torn or stale reference here.
-     *
-     * Internal test seam; not supported API.
      */
-    @VisibleForTesting
-    internal var overlayView: OverlayView<TextView>? = null
+    private var overlayView: OverlayView<TextView>? = null
 
-    /**
-     * Internal test seam; not supported API.
-     */
-    @VisibleForTesting
-    internal var registeredActivities: WeakReferenceCache<Activity>? = null
+    private var registeredActivities: WeakReferenceCache<Activity>? = null
 
-    /**
-     * Internal test seam; not supported API.
-     */
-    @VisibleForTesting
-    internal var runningActivities: WeakReferenceCache<Activity>? = null
+    private var runningActivities: WeakReferenceCache<Activity>? = null
 
-    /**
-     * Internal test seam; not supported API.
-     */
-    @VisibleForTesting
-    internal var registeredAndRunningActivities: WeakReferenceCache<Activity>? = null
+    private var registeredAndRunningActivities: WeakReferenceCache<Activity>? = null
 
     /**
      * Minimum log priority accepted by [log]. [setThreshold] is typically
@@ -122,32 +97,17 @@ internal constructor() : Timber.DebugTree() {
      * than guarded by [bufferLock] so the threshold check in [log] stays
      * lock-free on its fast path (the common case where a line is
      * filtered out before the buffer is ever touched).
-     *
-     * Internal test seam; not supported API.
      */
     @Volatile
-    @VisibleForTesting
-    internal var threshold: Int = 0
+    private var threshold: Int = 0
 
-    /**
-     * Internal test seam; not supported API.
-     */
-    @VisibleForTesting
-    internal var maxLines: Int = 0
+    private var maxLines: Int = 0
 
     companion object {
 
-        /**
-         * Internal test seam; not supported API.
-         */
-        @VisibleForTesting
-        internal const val DEFAULT_MAX_LINES: Int = 5
+        private const val DEFAULT_MAX_LINES: Int = 5
 
-        /**
-         * Internal test seam; not supported API.
-         */
-        @VisibleForTesting
-        internal var INSTANCE: DebugOverlayTree = DebugOverlayTree()
+        private var INSTANCE: DebugOverlayTree = DebugOverlayTree()
 
         /**
          * Initialize and return the [Timber.Tree] implementation.
@@ -185,11 +145,14 @@ internal constructor() : Timber.DebugTree() {
     /**
      * Inner method. Initialize members.
      *
-     * Internal test seam; not supported API.
+     * Kept `internal` rather than `private`: the [init] unit test replaces
+     * the singleton with a Mockito mock and verifies this method was
+     * called on it, which requires Mockito to generate a subclass override
+     * -- impossible for a `private` method (no vtable entry to override,
+     * even via reflection). Not supported API.
      *
      * @param application Application
      */
-    @VisibleForTesting
     internal open fun initialize(application: Application) {
         messages = ArrayDeque()
         threshold = Log.DEBUG
@@ -198,8 +161,8 @@ internal constructor() : Timber.DebugTree() {
             .setAlpha(0.4f)
             .setGravity(Gravity.BOTTOM)
             .setWidth(MATCH_PARENT)
-        overlayView!!.getView().setTextColor(Color.WHITE)
-        overlayView!!.getView().setBackgroundColor(Color.BLACK)
+        overlayView!!.view.setTextColor(Color.WHITE)
+        overlayView!!.view.setBackgroundColor(Color.BLACK)
 
         registeredActivities = WeakReferenceCache()
         runningActivities = WeakReferenceCache()
@@ -266,19 +229,6 @@ internal constructor() : Timber.DebugTree() {
     }
 
     /**
-     * Forwards to the protected [log] override. Kotlin's `protected` does
-     * not grant same-package access the way Java's did, so unlike the
-     * previous Java test (same package as this class), the Kotlin test
-     * cannot call [log] directly; this seam bridges that gap.
-     *
-     * Internal test seam; not supported API.
-     */
-    @VisibleForTesting
-    internal fun logForTest(priority: Int, tag: String?, message: String, t: Throwable?) {
-        log(priority, tag, message, t)
-    }
-
-    /**
      * Drop the oldest lines until [messages] fits within [maxLines].
      * Callers must hold [bufferLock].
      *
@@ -327,7 +277,7 @@ internal constructor() : Timber.DebugTree() {
             }
             text = out.toString()
         }
-        overlayView!!.getView().setText(text)
+        overlayView!!.view.setText(text)
     }
 
     /**
@@ -336,11 +286,16 @@ internal constructor() : Timber.DebugTree() {
      * [Looper.getMainLooper] returns null and the action runs
      * synchronously on the calling thread.
      *
-     * Internal test seam; not supported API.
+     * Kept `internal` rather than `private`: the coalescing tests must
+     * intercept this call (Mockito `spy`/`doAnswer`) to hold a render
+     * pending across a burst of [log] calls, since in this JVM unit-test
+     * environment [Looper.getMainLooper] is always null and a real
+     * invocation would run synchronously, making the coalescing behavior
+     * unobservable. Mockito requires an overridable method to intercept,
+     * which a fully `private` method cannot support; not supported API.
      *
      * @param action Action to run on the main thread
      */
-    @VisibleForTesting
     internal open fun postToMainThread(action: Runnable) {
         val mainLooper = Looper.getMainLooper() // Unit tests return null
         if (mainLooper != null && Thread.currentThread() != mainLooper.thread) {
@@ -350,11 +305,7 @@ internal constructor() : Timber.DebugTree() {
         }
     }
 
-    /**
-     * Internal test seam; not supported API.
-     */
-    @VisibleForTesting
-    internal val activityLifecycleCallbacks: Application.ActivityLifecycleCallbacks = object : SimpleActivityLifecycleCallbacks() {
+    private var activityLifecycleCallbacks: Application.ActivityLifecycleCallbacks = object : SimpleActivityLifecycleCallbacks() {
 
         override fun onActivityStarted(activity: Activity) {
             Logger.d("onActivityStarted %s", activity)
