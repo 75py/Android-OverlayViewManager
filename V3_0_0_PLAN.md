@@ -481,3 +481,24 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - T05bはClaudeのSonnet5/high担当がt05b-geometryで実装中。原点変換とpermission revoke回帰が対象。候補・検証・承認は未完了。
 - T10→T04cの順序を維持。新しいCodex子を起動せず、必要時のローカル検証は司令塔が直接実行する。
 - 詳細: docs/coordination/3.0.0/2026-09-12-coordinator-recovery.md。
+
+### 2026-09-12 21:03 JST: 利用料上限前の中断
+
+- ユーザーの明示指示で両司令塔・子担当の新規作業を停止。PR45はab2e9e9へ統合済み。
+- T05b初回候補8ec06ceはcore build成功、76 unit tests中3失敗、lint最終結果未完了。実装PRは未作成・未承認。
+- Claude修正ラウンドtask_41130117f375 / ctx_b9e23e8e0859へ現在地点の保存・中断を依頼。成果は再開後に確認する。独立レビューは中断され未完了。
+- API30+ cross-checkの代替案msg_c04af62e6d73は未合意。端末検証へ繰り延べる案とscope別fallbackの妥当性を再開時に協議し、T05を完了扱いしない。
+- 再開順: Claude担当の保存済みSHA/差分を確認 → 3テスト修正と座標モデル合意 → 独立レビューと必要なGradle再検証 → 実装PR・現SHA対向承認・CI → 通常merge。T06以降にはまだ着手しない。
+- 記録: docs/coordination/3.0.0/2026-09-12-t05b-validation.md。中断ログはcoordination-wave12に保存し、この中断中にレビュー依頼・統合を進めない。
+
+### 2026-09-12 21:31 JST: 再開
+
+- ユーザーの再開指示で既存Claude担当を復帰。中断中に新しい検証・PR・承認は行っていない。
+- T05bは3テスト修正と独立レビューを再開。Codexは指定Gradle検証と対向承認・統合を担当する。
+- T12に繰り延べるT05端末検証はreleaseを妨げる未完了項目として維持する。両scope、非ゼロ原点、RTL、edge-to-edge、allowOutsideBoundsの各条件で、ACTION_DOWN時に飛ばず、実際のscreen上の移動量がgestureに一致することを確認する。同じ原点減算式の再assertionだけでは受け入れない。
+- 失敗時の修正方式をActivity限定fallbackへ先に固定せず、実際の結果で協議する。T05完了とはまだ扱わない。
+
+### 2026-09-12 21:38 JST: T05b再検証成功
+
+- draft PR46 head867d85c: core75 tests全成功、lintエラー0/警告13、core assemble成功。独立レビュー・最終SHA承認・CIは未完了。
+- T05端末検証はrelease-blockingとしてT12へ持ち越す合意を維持。未完了事項と初回失敗は検証ログに保存した。

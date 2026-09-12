@@ -1,0 +1,47 @@
+# T05b候補の検証と座標モデルの再確認
+
+- 記録担当: Codex（Astra / medium）
+- 状態: 中断
+- Claude実装・独立レビュー: Sonnet 5 / high（Claude司令塔報告）
+
+## PR45統合
+
+Claude承認5645719685はhead f5987196a16824afd123373eacb57eb4ef1e797bを指定。独立文書レビューとCI34691900115 SUCCESSを確認し、通常mergeでab2e9e912221b13fcf3545b2cb0e004452dadb12へ統合した。読み取り確認の設定名とユーザー許可の記述は独立レビュアーの環境では未検証だったが、Codexは端末画面とユーザーの返信で直接確認している。
+
+## 初回候補8ec06ce
+
+Claude msg_7e5aeccb5ccaにより8ec06ce3727513fdb5293f79885832bf8a7cd780を受領。Codex司令塔がJDK17・所定SDKで :core:testDebugUnitTest :core:lintDebug :core:assembleDebug --console=plain を実行した。compileとassembleDebugは成功。unit testsは76件中3件失敗し全体exit 1、lint最終レポートは未完了。古いレポートから成功を推定しない。
+
+- OverlayGeometryTestの原点変換: status-bar top inset (0,84)についてexpected156/actual240。
+- OverlayGeometryTestのframe外判定: AssertionError。
+- OverlayViewGravityTestのRTL解決: expected53/actual51。
+
+msg_068595519fb4で原担当による修正をClaude司令塔に依頼した。Android Rectのplain JUnit stubとRTL fixtureを疑ったが、原因確定前の推測でありassertion緩和は依頼していない。未成功候補のpush/PR作成は保留。
+
+## 未解決の座標モデル
+
+msg_24b57bbff351で、WindowMetrics/Insets整合確認を省略した新説明のレビューを依頼した。getWindowVisibleDisplayFrameをoverrideするテストは、frameからlayoutへ値を伝える経路の確認であり、全scope・全API・FLAG_LAYOUT_IN_SCREENにおける座標系同一性の実証ではない。対応範囲を限定する案は検討可能だが、T05完了とはせず、確認すべき端末条件を残す。実装と独立レビューはClaudeが所有し、Codexは修正候補を直接再検証する。
+
+## 利用料上限前の中断
+
+ユーザーの中断指示に従いmsg_27d6ebf83e05でClaudeへ新規着手停止を通知した。Claudeは独立レビューと長時間の受信待ちを停止したことを端末画面で確認。修正ラウンドtask_41130117f375 / ctx_b9e23e8e0859にはmsg_a52f401daf40で現在地点の保存と最短の中断を直接伝えた。子のライフサイクル管理はClaudeが所有する。Codex側に実行中のGradleはない。
+
+Claude提案msg_c04af62e6d73は、WindowMetrics整合確認を省きvisible frameを唯一の情報源とし、API26/35/36のドラッグ原点をT12で検証、失敗時はActivity scope限定fallbackを検討するという案。これは未合意である。特にAPPLICATION scopeを常に現方式のままとする保証や、実装と同じ原点式だけを端末の合否基準にすることは再開時の検討事項として残す。停止中は設計承認・新たな検証・PR作成を行わない。
+
+### 最終確認（21:04 JST）
+
+Claude司令塔は最終応答後idle、受信待ちと独立レビューは停止済み。修正担当端末は21:03に session limit を表示し停止したため、worker_done完了とは扱わない。再開時はClaudeが既存dispatchの状態を確認し、重複担当を起動せず復旧する。
+
+修正checkout /Users/ai-seb/orca/workspaces/Android-OverlayViewManager/t05b-geometry のHEADは8ec06ce3727513fdb5293f79885832bf8a7cd780のまま。未コミット変更はinternal/OverlayGeometry.ktとinternal/OverlayWindowFrame.ktの2ファイル。テスト修正はまだ保存されていない。未追跡の.claude/とPR_BODY_T05B.mdはそのまま保持した。部分修正は未検証・未承認で、Codexはsourceへ追記やコミットをしていない。
+
+## 21:31 JST 再開
+
+msg_93be386e07e0でClaudeが同じ担当を復帰することと、中断中の変更2ファイル・未検証状態を確認。msg_f0bc9d53858eでCodexはAPI30+ cross-check代替提案を条件付き修正した。KDoc縮小とT12への検証繰延は認めるがrelease-blockingを維持し、実画面上のno-jump/displacementを両scope・各flags等で観察する。APPLICATION現方式の無条件維持やActivity限定fallbackは事前合意しない。以後のSHA固定レビュー・CIの条件は維持する。
+
+msg_e03607c9c9d0でClaudeは上記修正条件を受諾した。同時にセッション再起動による新端末term_f3d0c2e3-8507-47fd-a547-fcd4e82955eaへのRun再bindを通知し、Codexは新端末を画面で確認した。以後のClaude連絡先は同じrun:run_3ae778449744を継続し、旧term_370f23caへ重複送信しない。
+
+## 修正候補867d85cの検証
+
+msg_8e4190a03f37の候補867d85c33d42ce2d77247e7b47b1a790c9d2c07eを同じGradleコマンドで再検証しexit0。XMLは75 tests、failure/error/skipped各0。未使用isWithinFrameとその専用testの除去により初回76から1件減った。lint XMLはerror0/warning13、assembleDebug成功。msg_633e90c817adでClaudeへ実数を通知し、claude/3.0.0/t05b-geometryへpushしてdraft PR46を作成した。本文は最終動作・実測検証・合意済み未完了端末条件を中心に簡潔化した。CI34694161457と独立レビュー待ちで、まだ承認・統合していない。
+
+msg_f697b0f7f5f9でOverlayWindowFrame KDocの「全テストがRobolectric SDK28」とscopeがview.context種別を決めるという不正確な説明の補正を依頼。独立レビュー指摘があればまとめて直し、文言だけの変更で同じローカル検証を繰り返さない。
