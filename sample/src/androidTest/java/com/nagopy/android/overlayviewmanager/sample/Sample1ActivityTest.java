@@ -14,7 +14,6 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
-import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -86,8 +85,6 @@ public class Sample1ActivityTest {
         appCompatButton2.perform(click());
 
         waitALittle();
-        ScreenMonitor.getInstance().cancelForce();
-
         ViewInteraction textView4 = onView(
                 allOf(withId(R.id.sample_text_view), withText("click:0"), isDisplayed()))
                 .inRoot(RootMatchers.withDecorView(not(is(activity.getWindow().getDecorView()))));
@@ -99,8 +96,6 @@ public class Sample1ActivityTest {
         textView4.perform(click());
 
         waitALittle();
-        ScreenMonitor.getInstance().cancelForce();
-
         ViewInteraction textView6 = onView(
                 allOf(withId(R.id.sample_text_view), withText("click:1"), isDisplayed()))
                 .inRoot(RootMatchers.withDecorView(not(is(activity.getWindow().getDecorView()))));
@@ -112,8 +107,6 @@ public class Sample1ActivityTest {
 
         for (int i = 0; i < 10; i++) {
             waitALittle();
-            ScreenMonitor.getInstance().cancelForce();
-
             int[] location = new int[2];
             activity.overlayView.getView().getLocationOnScreen(location);
             int w = activity.overlayView.getView().getMeasuredWidth();

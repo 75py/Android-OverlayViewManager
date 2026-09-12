@@ -9,11 +9,13 @@ import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSettings
 
 /** Covers the temporary listener bridge without reintroducing mutable LayoutParams access. */
 @RunWith(RobolectricTestRunner::class)
@@ -68,6 +70,29 @@ class DraggableOnTouchListenerTest {
         assertEquals(.75f, overlay.spec.alpha, 0f)
     }
 
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.M], manifest = Config.NONE)
+    fun deniedPermission_activityDraggableShowGestureAndHideUseOnlyItsTargetWindowManager() {
+        ShadowSettings.setCanDrawOverlays(false)
+        val view = PositionedView(100, 240, 24)
+        val backend = RecordingBackend()
+        val overlay = OverlayView(
+            view,
+            OverlayScope.ACTIVITY,
+            backend,
+            OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE),
+        )
+
+        assertTrue(overlay.show().isSuccess)
+        dispatch(view, MotionEvent.ACTION_DOWN, 110f, 260f)
+        dispatch(view, MotionEvent.ACTION_UP, 110f, 260f)
+        assertTrue(overlay.hide().isSuccess)
+
+        assertEquals(1, backend.showCalls)
+        assertEquals(2, backend.updateCalls)
+        assertEquals(1, backend.hideCalls)
+    }
+
     private fun dispatch(view: View, action: Int, x: Float, y: Float) {
         MotionEvent.obtain(0, 0, action, x, y, 0).also {
             assertFalse(view.dispatchTouchEvent(it))
@@ -96,9 +121,11 @@ class DraggableOnTouchListenerTest {
     }
 
     private class RecordingBackend : OverlayWindowManager() {
+        var showCalls = 0
         var updateCalls = 0
-        override fun show(view: View, params: WindowManager.LayoutParams) = Unit
+        var hideCalls = 0
+        override fun show(view: View, params: WindowManager.LayoutParams) { showCalls++ }
         override fun update(view: View, params: WindowManager.LayoutParams) { updateCalls++ }
-        override fun hide(view: View) = Unit
+        override fun hide(view: View) { hideCalls++ }
     }
 }

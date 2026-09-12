@@ -28,7 +28,11 @@ import androidx.fragment.app.DialogFragment;
 
 /**
  * Permission request dialog.
+ *
+ * @deprecated Temporary 2.x bridge retained until sample and consumer migration. The host
+ * application should own its permission rationale UI and use {@link OverlayPermission} instead.
  */
+@Deprecated
 public class PermissionRequestDialogFragment extends DialogFragment {
 
     @VisibleForTesting
