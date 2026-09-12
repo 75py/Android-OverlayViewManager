@@ -276,21 +276,16 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
 
     /**
      * Run [action] on the main thread, posting it if called from another
-     * thread. Unit tests run without a real [Looper], so
-     * [Looper.getMainLooper] returns null and the action runs
-     * synchronously on the calling thread.
-     *
-     * Kept `internal` rather than `private`: the coalescing tests must
-     * intercept this call (Mockito `spy`/`doAnswer`) to hold a render
-     * pending across a burst of [log] calls, since in this JVM unit-test
-     * environment [Looper.getMainLooper] is always null and a real
-     * invocation would run synchronously, making the coalescing behavior
-     * unobservable. Mockito requires an overridable method to intercept,
-     * which a fully `private` method cannot support; not supported API.
+     * thread. Unit tests without a real [Looper] would see
+     * [Looper.getMainLooper] return null and run the action synchronously
+     * on the calling thread; the test suite uses Robolectric, which
+     * provides a real (shadowed) main [Looper], so a call from a
+     * background thread genuinely posts and can be observed as pending
+     * until the test drains the shadow looper.
      *
      * @param action Action to run on the main thread
      */
-    internal open fun postToMainThread(action: Runnable) {
+    private fun postToMainThread(action: Runnable) {
         val mainLooper = Looper.getMainLooper() // Unit tests return null
         if (mainLooper != null && Thread.currentThread() != mainLooper.thread) {
             mainHandler.post(action)
