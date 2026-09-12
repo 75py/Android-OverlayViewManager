@@ -4,7 +4,6 @@
  */
 package com.nagopy.android.overlayviewmanager
 
-import android.app.Application
 import android.os.Build
 import android.provider.Settings
 import org.junit.After
@@ -78,7 +77,7 @@ class OverlayPermissionTest {
     @Test
     fun settingsIntent_hasPackageActionAndDataWithoutReusingAnIntent() {
         val permission = permission()
-        val context = RuntimeEnvironment.getApplication<Application>()
+        val context = RuntimeEnvironment.getApplication()
         val first = permission.settingsIntent(context)
         val second = permission.settingsIntent(context)
 
