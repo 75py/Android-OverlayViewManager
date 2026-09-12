@@ -319,9 +319,15 @@ class OverlayViewStateMachineTest {
         val view = View(RuntimeEnvironment.getApplication())
         val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
         overlay.show()
+        val slop = android.view.ViewConfiguration.get(view.context).scaledTouchSlop
         val down = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_DOWN, 12f, 20f, 0)
         view.dispatchTouchEvent(down)
         down.recycle()
+        // The bridge installs immediately, but T06 gates the first backend call on touch slop.
+        assertEquals(0, backend.updateCalls)
+        val move = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_MOVE, 12f + slop + 10, 20f, 0)
+        view.dispatchTouchEvent(move)
+        move.recycle()
         assertEquals(1, backend.updateCalls)
         assertEquals(OverlayTouchMode.DRAGGABLE, overlay.spec.touchMode)
     }
