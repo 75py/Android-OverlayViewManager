@@ -105,3 +105,7 @@ msg_72c84115cab7 / delivery_0f90c6dc2946を処理。PR56のhead1ca27f344d42626ed
 診断候補8030fca0611a548ec413e4e802619fc242bd943eはassertionへのlastFailure表示追加のみ。専用5580でconnectedDebugAndroidTestだけを再実行し、3件中2件失敗、errors/skips 0。Sample1:92とAllOptions:149はいずれもlastFailure=null、期待ATTACHEDに対してCONFIGURED。ログ/private/tmp/overlay-t10a-connected-8030fca.log。
 
 手動確認ではテスト後にsampleが存在しなかったため既存APKを再インストール。Sample1は非exportedで直接am startできず、公開SampleStartActivityからUIで遷移した。UI階層はSHOW / HIDEが[0,0][1080,126]、Activity見出しが[42,101][804,172]。スクリーンショット/private/tmp/overlay-t10a-smoke/sample1-manual-665d169.pngは青いバーと白い本文だけで、表示ボタンは隠れていた。指定中心へのtapで赤いoverlayは現れず。ホストのedge-to-edge/insetsにより操作が遮られた可能性が高いが、ライブラリshow失敗と断定しない。msg_037346462141で証拠と修正依頼をClaudeへ渡し、Gradle専有を解除した。通知をack。sample修正・再検証は未完了。
+
+## T10レイアウト実測の引継ぎ
+
+msg_8b9d88647fa2 / delivery_3053526e4125の追加診断依頼を処理。専用5580で再インストールしたsampleの公開入口からSample1へ遷移し、/private/tmp/overlay-t10a-smoke/sample1-ui.xmlとwindow-displays.txtへ保存。android:id/contentと直下LinearLayoutは[0,0][1080,1920]、buttonは[0,0][1080,126]、webViewは[0,126][1080,147]。action_bar_containerは[0,0][1080,210]、action_barは[0,63][1080,210]で、ボタン全体と重なる。画面1080x1920・density420、statusBarsは高さ63、navigationBarsはy1857〜1920、cutoutなし。実測値とファイルをClaudeへ送信し、sample修正担当を維持。Codexはソース未変更、追加テスト未実行。通知をackし、修正候補の返却待ち。
