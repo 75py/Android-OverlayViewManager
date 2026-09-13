@@ -551,3 +551,8 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 - 再開後、担当はWIP `4c080f8` → `8aa29f5` → `6e243c3` と進み、世代別render回帰テスト、初期化の同期、dispose入口のmain-thread検査を含む変更を保存した。最終worktreeは `codex/t07-lifecycle` の `6e243c3`、tracked差分なし、`.claude/`のみ未追跡でユーザー所有のため触れていない。
 - 古い停止操作により、既存Dispatch `ctx_72258eaf9359` は capability revoked 後に `stop_unknown` を経て `abandoned/failed`（completed `2026-09-13 02:49:24 JST`相当）となった。Orcaのworker authorityは再開中に失われ、terminal `term_b4d72bee-a9a2-447b-99b6-b125837cf663` は外部管理のまま `live`。停止・終了は確認できない。
 - Orca recovery規約により、live terminalを残したまま同じT07のreplacement worker／retryを起動しない。T07はWIPを保持したblocked状態とし、端末停止または新しい担当への安全なauthority移管が確認できるまで、検証・PR・レビュー・統合を行わない。
+
+
+### 2026-09-13 Claude coordinator effort update
+
+ユーザーの最新指示により、以後のClaude司令塔はFable 5.1 / mediumとする。旧high指定より優先する。復旧端末term_66423650-ee22-4e09-a6ba-65ed19561512で表示と引継ぎturn_startedを確認済み。

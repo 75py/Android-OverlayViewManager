@@ -137,3 +137,9 @@ T10を完了扱いとし、ClaudeへT04cの開始を依頼。最新workから新
 ## Claude受領未確認のチェックポイント
 
 計画・ログのdraft PR58をhead48c1da0で共有し、msg_a623a8fdc53aで対向レビューを依頼。Orca受信箱は空。term_57cc4804-a813-4bd9-a03b-f8a7fc9c92b3のterminal readはstatus exited、tailなしを返した。端末一覧には以前のClaude端末が残るが、別の監視端末にも実処理停止済みとの表示があり、稼働する司令塔やT04c受領を確認できない。メッセージのenqueueを着手確認と誤認しない。T04cとPR58レビューは返答待ち、旧端末を無断で再利用・停止していない。PR58のレビュー対象SHAは変更せず、本記録をwave19へ分離した。
+
+## Claude司令塔の復旧とmediumへの変更
+
+ユーザーが司令塔起動と継続を明示指示し、続いてhighではなくmediumへ訂正。新端末term_66423650-ee22-4e09-a6ba-65ed19561512を作成。最初の起動文字列はモデル名の角括弧がzsh glob解釈され未起動だったため、同端末で引用を修正してclaude --model 'claude-fable-5-1[1m]' --effort mediumを実行。画面にFable5.1 with medium effortを確認。権限回避オプションは追加していない。
+
+統合済みT07/T10、PR58の現SHAレビュー、T04cの隔離worktree・API整理・検証計画、所有境界、main/tag/publish禁止を引き継いだ。request62df7078-6f04-417e-bce6-2e82485896d7はinput_acceptedとturn_startedを確認。新しい調整Runと作業受領の返信は待ち。最新のmedium指示は古いhigh記述を上書きする。
