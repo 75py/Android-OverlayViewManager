@@ -592,8 +592,8 @@ class DebugOverlayTreeTest {
         debugOverlayTree.reflectedOverlayView = overlayView
 
         // All 500 calls run on one background thread before the shadow
-        // looper is drained, so only the first can win the renderPending
-        // gate in scheduleRender(); the rest coalesce onto it. If
+        // looper is drained, so only the first claims the pending render
+        // slot for the current generation; the rest coalesce onto it. If
         // coalescing failed, draining below would call setText more than
         // once and fail the times(1) verification.
         val loggingThread = Thread {
