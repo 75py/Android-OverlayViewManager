@@ -110,8 +110,7 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
     /**
      * The [Application] this tree is initialized for. `null` when uninitialized. Used by
      * [initializeIfNeeded] to recognize a same-Application re-[init] as a no-op and reject a
-     * different-Application [init] while already initialized, per the FROZEN T07 LIFECYCLE
-     * CONTRACT L3. Cleared by a successful [dispose].
+     * different-Application [init] while already initialized. Cleared by a successful [dispose].
      */
     private var application: Application? = null
 
@@ -147,7 +146,7 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
 
         /**
          * Initialize and return the [Timber.Tree] implementation.
-         * Usage: `Timber.plant(DebugOverlayTree.initApplicationInstance(this /* Application */));`
+         * Usage: `Timber.plant(DebugOverlayTree.init(this /* Application */));`
          *
          * Calling this again with the same [application] is a no-op that returns the already-live
          * instance without re-registering lifecycle callbacks or creating another overlay view.
@@ -175,7 +174,7 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
         fun getInstance(): DebugOverlayTree {
             if (INSTANCE.overlayView == null) {
                 throw IllegalStateException(
-                    "DebugOverlayTree is not initialized. Please call initApplicationInstance(Context).",
+                    "DebugOverlayTree is not initialized. Please call init(Application) first.",
                 )
             }
             return INSTANCE
@@ -187,10 +186,10 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
     }
 
     /**
-     * Decides whether [application] requires a fresh [initialize], per the FROZEN T07 LIFECYCLE
-     * CONTRACT L3: same-Application re-init is a harmless no-op, a different Application while
-     * initialized throws without mutating any state, and re-init after [dispose] (when
-     * [DebugOverlayTree.application] is `null`) always initializes cleanly.
+     * Decides whether [application] requires a fresh [initialize]: a same-Application re-init is
+     * a harmless no-op, a different Application while initialized throws without mutating any
+     * state, and re-init after [dispose] (when [DebugOverlayTree.application] is `null`) always
+     * initializes cleanly.
      */
     private fun initializeIfNeeded(application: Application) {
         val current = this.application
@@ -243,8 +242,8 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
      * Releases the overlay handle, lifecycle callbacks, message buffer and Activity caches,
      * returning this tree to the uninitialized state ([getInstance] throws again afterward).
      *
-     * Transactional per the FROZEN T07 LIFECYCLE CONTRACT L2: this first disposes the overlay
-     * handle. If that fails, this returns the failure unchanged and leaves the handle, callbacks,
+     * Transactional: this first disposes the overlay handle. If that fails, this returns the
+     * failure unchanged and leaves the handle, callbacks,
      * caches and buffer untouched so the host can retry by calling [dispose] again -- dropping the
      * only handle on a failed disposal would leak an attached window with no way to retry. Only a
      * successful handle disposal unregisters the lifecycle callbacks and clears everything.
@@ -372,16 +371,27 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
         return removed
     }
 
+    /**
+     * A single stateless closure, reused for every post: it carries no generation of its own and
+     * always reads the live [generation]/[pendingRenderGeneration]/[messages] at the moment it
+     * actually runs, never a value captured at schedule time. This is why coalescing two posts of
+     * the SAME object (e.g. one queued before a dispose+re-init, one queued after) is safe: which
+     * of the two dequeued invocations happens to observe [generation] `==` [pendingRenderGeneration]
+     * -- and therefore performs the render -- is irrelevant, because [render] always renders the
+     * CURRENT buffer, not whatever buffer existed when that particular post was made. Exactly one
+     * of any pair of posts renders (the first to reach [render] while the match still holds); the
+     * other is a no-op because the first already cleared [pendingRenderGeneration].
+     */
     private val renderRunnable: Runnable = Runnable { render() }
 
     /**
      * Build the text for the current buffer and apply it to the TextView. Only ever invoked on
      * the main thread via [renderRunnable]. A no-op if [messages] is `null` (uninitialized or
      * disposed since this render was scheduled) or if [generation] no longer matches
-     * [pendingRenderGeneration] (a dispose and re-init happened in between, or another render
-     * already serviced this generation): either way this must never render stale messages into a
-     * new lifecycle generation's overlay, and must never render the same generation twice for one
-     * schedule.
+     * [pendingRenderGeneration] (a dispose and re-init happened in between, or another invocation
+     * of the same shared [renderRunnable] already serviced this generation): either way this must
+     * never render stale messages into a new lifecycle generation's overlay, and must never render
+     * the same generation twice for one schedule.
      */
     private fun render() {
         var text: String? = null

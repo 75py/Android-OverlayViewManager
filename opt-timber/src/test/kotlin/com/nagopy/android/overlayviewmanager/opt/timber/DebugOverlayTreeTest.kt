@@ -1057,10 +1057,13 @@ class DebugOverlayTreeTest {
      *
      * The queue order is made explicit and deterministic here: every log() call runs on its own
      * background thread and is `join()`-ed before the next step proceeds, so by the time this
-     * test reaches the intermediate assertion, BOTH the stale (pre-dispose) and the fresh
-     * (post-reinit) render Runnables are known to be sitting, undrained, in the main-thread queue
-     * -- neither has run yet, which the intermediate assertion below confirms. Only the final
-     * `shadowOf(...).idle()` call drains that queue, in FIFO order (stale first, fresh second).
+     * test reaches the intermediate assertion, the SAME shared render Runnable (see
+     * [renderRunnable]) is known to have been posted twice -- once before dispose, once after
+     * re-init -- and neither post has been drained yet, which the intermediate assertion below
+     * confirms. Only the final `shadowOf(...).idle()` call drains the queue, dequeuing both posts
+     * in FIFO order; per [renderRunnable]'s contract, whichever one runs first renders the CURRENT
+     * (fresh) buffer and the other is then a no-op, so the final content is deterministic
+     * regardless of which post happens to "win".
      */
     @Test
     fun log_newMessageBeforeStaleRenderDrains_rendersExactlyTheFreshMessageOnce() {
@@ -1097,7 +1100,8 @@ class DebugOverlayTreeTest {
         // 1) and fresh (step 4) render Runnables are still queued, undrained, on the main thread.
         assertThat(newHandle.view.text.toString(), isEqualTo(""))
 
-        // Step 6: drain the whole queue in one pass -- both Runnables run, in FIFO order.
+        // Step 6: drain the whole queue in one pass -- both posts run, in FIFO order; the first
+        // to run renders the current (fresh) buffer, the second is then a no-op.
         shadowOf(Looper.getMainLooper()).idle()
 
         assertThat(newHandle.view.text.toString(), isEqualTo("tag: fresh message"))
