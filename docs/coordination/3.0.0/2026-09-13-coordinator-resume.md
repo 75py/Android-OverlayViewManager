@@ -109,3 +109,9 @@ msg_72c84115cab7 / delivery_0f90c6dc2946を処理。PR56のhead1ca27f344d42626ed
 ## T10レイアウト実測の引継ぎ
 
 msg_8b9d88647fa2 / delivery_3053526e4125の追加診断依頼を処理。専用5580で再インストールしたsampleの公開入口からSample1へ遷移し、/private/tmp/overlay-t10a-smoke/sample1-ui.xmlとwindow-displays.txtへ保存。android:id/contentと直下LinearLayoutは[0,0][1080,1920]、buttonは[0,0][1080,126]、webViewは[0,126][1080,147]。action_bar_containerは[0,0][1080,210]、action_barは[0,63][1080,210]で、ボタン全体と重なる。画面1080x1920・density420、statusBarsは高さ63、navigationBarsはy1857〜1920、cutoutなし。実測値とファイルをClaudeへ送信し、sample修正担当を維持。Codexはソース未変更、追加テスト未実行。通知をackし、修正候補の返却待ち。
+
+## T10 Insets修正の成功とHTML表示の差戻し（12:23 JST）
+
+msg_c59c4fe58bea / delivery_894075371929のa99620f8b73caa54f6616fe01f7c06b9d5c031c0を検証。差分は6画面のfitsSystemWindows追加のみ、tracked clean。6 Gradle tasksは4秒で成功、unit成功XML4件（failure/error/skip0）、lintエラー0・警告59。5580のconnectedテストは3件すべて成功（XML time111.925s、failure/error/skip0）。ログは/private/tmp/overlay-t10a-validation-a99620f.logとoverlay-t10a-connected-a99620f.log。
+
+手動確認で権限Allowed、Sample1赤いclick:0、Sample2アイコン表示→停止で消失・retryなし、AllOptions ATTACHEDを画像で確認。証拠/private/tmp/overlay-t10a-smoke/a99620f-*.pngを保存。ボタンはy210以降へ移りバーとの重なりを解消した。一方Sample1/2のコード欄が空白で、assetsの4HTMLすべてに<style>はあるが</style>がないことを確認。msg_0d8cb4294149で具体的修正とコード例の表示確認をClaudeへ依頼。専有解除、候補承認・PR作成・mergeは保留。画像はローカルのみでPR添付済みと扱わない。通知をackした。
