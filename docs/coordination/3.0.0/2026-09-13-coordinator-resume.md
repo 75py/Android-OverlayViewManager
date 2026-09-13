@@ -51,3 +51,11 @@ Codexが候補SHAを確認し、JDK17/既知SDKで依頼されたGradleを実行
 ## 最終候補のコメント修正
 
 Claude msg_6477ff749aca / msg_ec0265de8f3eでc13acee8884bb3426142bf2e53c6f0ff542d4503を受領。a39813aとの差分はtestコメント2行のみで、削除済みメンバへの参照を訂正するもの。連絡が交差したため新しいPRを増やさずPR54をfast-forwardした。指定の5 Gradle tasksを最終HEADで確認しBUILD SUCCESSFUL（2秒、135 tasksのうち4 executed/131 up-to-date）。40 testsの成功XMLは前回から有効な結果として再利用され、テストを新たに全件再実行したとは扱わない。CIは新HEADで確認する。PR本文とタイトルを最終状態へ更新した。
+
+## T07統合とT10開始指示（10:04 JST）
+
+PR54はhead c13acee8884bb3426142bf2e53c6f0ff542d4503、Codex承認5649833960、Claude承認5649837582（msg_6477ff749acaの依頼文をCI成功後に代理投稿）、CI34729426721 SUCCESSを確認。ready化後、MERGEABLE/CLEANと同SHA・base work/3.0.0を再確認し通常merge。統合SHAは6c9e2aa120bb85f3b49fd9d9f2da43288e6f8e89、10:04:16 JST。共有checkoutもfast-forwardした。
+
+msg_1ecbcd072166でClaudeへ統合を通知し、既存C1/K1–K7の下でT10a/sampleとT10b/docsを直接作業するよう依頼。具体的worktree/branchの開始記録は受領待ち。Kotlin組み込み方式・sample/assets同一所有・版数未変更・T04cはT10後・専用AVDによるsmokeとスクリーンショット・無関係なemulator5554は触らない制約を再掲した。
+
+追加の代理許可: delivery_3f500779b858のack/受信待ち/JSON整形コマンド、およびcore公開APIの指定ファイルをgrep表示するだけのコマンドを全体確認してraw Enterで許可。worker-releaseや設定緩和は含まない。PR55（head6addac4、CI34729477343 SUCCESS）はClaude承認待ちで、headを固定して以後の記録をcoordination-wave18へ分離した。
