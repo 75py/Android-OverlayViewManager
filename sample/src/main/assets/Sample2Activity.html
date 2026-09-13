@@ -19,68 +19,151 @@
 pre {
     white-space: pre-wrap;
 }
-
 </style>
 <ul>
-    <li>OverlayView with android.app.Service
-    <li>Show ImageView during the Service is running
-    <li>Start Sample2Activity on click the overlay view
+    <li>Application-scoped OverlayView shown while an android.app.Service is running; needs "display over other apps"
+    <li>The handle is owned by an application-level controller, not by the Service: a failed dispose() keeps the handle so the user can retry it from this screen
+    <li>Tapping the draggable overlay starts Sample2Activity
 </ul>
 <pre class="prettyprint">
-public class Sample2Activity extends AppCompatActivity {
+final class Sample2OverlayController {
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sample2);
+    /** Notified on the main thread whenever hasRetainedFailedDisposal() may have changed. */
+    interface Listener {
+        void onRetainedHandleChanged(boolean retainedAfterFailedDisposal);
     }
 
-    public void onClick(View view) {
-        if (isServiceRunning()) {
-            stopService(new Intent(this, Sample2Service.class));
-        } else {
-            startService(new Intent(this, Sample2Service.class));
+    private static final Sample2OverlayController INSTANCE = new Sample2OverlayController();
+
+    static Sample2OverlayController get() {
+        return INSTANCE;
+    }
+
+    @Nullable
+    private OverlayView&lt;ImageView&gt; overlayView;
+    private boolean retainedAfterFailedDisposal;
+    @Nullable
+    private Listener listener;
+
+    /** Creates the handle on first use with the application context and shows it. */
+    @MainThread
+    OverlayResult show(Context context) {
+        OverlayView&lt;ImageView&gt; handle = overlayView;
+        if (handle == null) {
+            Context appContext = context.getApplicationContext();
+            ImageView imageView = new ImageView(appContext);
+            imageView.setImageResource(R.mipmap.ic_launcher);
+            // Ordinary click delivery stays on the View itself, even while DRAGGABLE.
+            imageView.setOnClickListener(v -&gt; appContext.startActivity(
+                    new Intent(appContext, Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
+            handle = OverlayViewManager.getInstance().newOverlayView(
+                    imageView,
+                    new OverlaySpec.Builder().setTouchMode(OverlayTouchMode.DRAGGABLE).build());
+            overlayView = handle;
+        }
+        OverlayResult result = handle.show();
+        setRetained(false);
+        return result;
+    }
+
+    /** On failure the SAME handle is kept, still attached, so that a later explicit call can retry. */
+    @MainThread
+    OverlayResult dispose() {
+        OverlayView&lt;ImageView&gt; handle = overlayView;
+        if (handle == null) {
+            return new OverlayResult(OverlayState.DISPOSED, false, null, null);
+        }
+        OverlayResult result = handle.dispose();
+        if (result.isSuccess()) {
+            overlayView = null;
+        }
+        setRetained(!result.isSuccess());
+        return result;
+    }
+
+    boolean hasRetainedFailedDisposal() {
+        return retainedAfterFailedDisposal;
+    }
+
+    @MainThread
+    void setListener(@Nullable Listener listener) {
+        this.listener = listener;
+    }
+
+    private void setRetained(boolean retained) {
+        retainedAfterFailedDisposal = retained;
+        Listener current = listener;
+        if (current != null) {
+            current.onRetainedHandleChanged(retained);
         }
     }
 }
-
-public class Sample2Service extends Service {
-
-    OverlayView<ImageView> overlayView;
+</pre>
+<pre class="prettyprint">
+public static class Sample2Service extends Service {
 
     @Override
     public void onCreate() {
         super.onCreate();
-        overlayView = OverlayView.create(createImageView())
-                .setTouchable(true)
-                .setDraggable(true)
-                .setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        startActivity(new Intent(getApplicationContext(), Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                    }
-                }).show();
+        // Application-scoped overlays always require the permission. The host decides what to
+        // do when it is missing; this sample simply stops instead of asking the user again.
+        if (!OverlayViewManager.getInstance().overlayPermission().isGranted(this)) {
+            Timber.w("Overlay permission is not granted; Sample2Service stops without showing anything.");
+            stopSelf();
+            return;
+        }
+        OverlayResult shown = Sample2OverlayController.get().show(this);
+        if (!shown.isSuccess()) {
+            // e.g. PERMISSION_DENIED if the permission was revoked between the check and show().
+            Timber.w(shown.getCause(), "Sample2Service show() failed: %s", shown.getFailure());
+            stopSelf();
+        }
     }
 
     @Override
     public void onDestroy() {
-        overlayView.hide();
+        OverlayResult disposed = Sample2OverlayController.get().dispose();
+        if (!disposed.isSuccess()) {
+            // The controller keeps the handle; Sample2Activity offers the explicit retry.
+            Timber.w(disposed.getCause(), "Sample2Service dispose() failed: %s; handle retained for retry", disposed.getFailure());
+        }
         super.onDestroy();
-    }
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
-
-    ImageView createImageView() {
-        ImageView imageView = new ImageView(this);
-        imageView.setId(R.id.sample_text_view);
-        imageView.setImageResource(R.mipmap.ic_launcher);
-        return imageView;
     }
 }
 </pre>
+<pre class="prettyprint">
+// Sample2Activity implements Sample2OverlayController.Listener. The Start / Stop button toggles
+// the Service; the retry control is shown by the controller's notification, never by a timer.
+@Override
+protected void onStart() {
+    super.onStart();
+    Sample2OverlayController.get().setListener(this);
+    onRetainedHandleChanged(Sample2OverlayController.get().hasRetainedFailedDisposal());
+}
 
+@Override
+protected void onStop() {
+    Sample2OverlayController.get().setListener(null);
+    super.onStop();
+}
+
+@Override
+public void onRetainedHandleChanged(boolean retainedAfterFailedDisposal) {
+    retryDisposeButton.setVisibility(retainedAfterFailedDisposal ? View.VISIBLE : View.GONE);
+}
+
+public void onClick(View view) {
+    if (view.getId() == R.id.btn_retry_dispose) {
+        // Explicit, user-driven retry of a disposal that failed when the Service stopped.
+        OverlayResult disposed = Sample2OverlayController.get().dispose();
+        if (!disposed.isSuccess()) {
+            Timber.w(disposed.getCause(), "Retry of dispose() failed again: %s", disposed.getFailure());
+        }
+    } else if (isServiceRunning()) {
+        stopService(new Intent(this, Sample2Service.class));
+    } else {
+        startService(new Intent(this, Sample2Service.class));
+    }
+}
+</pre>
 <script src="run_prettify.js"></script>

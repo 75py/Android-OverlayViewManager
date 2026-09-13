@@ -44,7 +44,7 @@ public class SampleTimberActivity extends BaseSampleWithCodeActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Timber.d("onStart");
+        Timber.d("onResume");
     }
 
     public void onClick(View view) {

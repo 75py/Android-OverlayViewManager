@@ -21,28 +21,65 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
-import androidx.annotation.Nullable;
 import android.view.View;
-import android.widget.ImageView;
+import android.widget.Button;
 
-import com.nagopy.android.overlayviewmanager.OverlayView;
+import androidx.annotation.Nullable;
+
+import com.nagopy.android.overlayviewmanager.OverlayResult;
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 
 import java.util.List;
 
-public class Sample2Activity extends BaseSampleWithCodeActivity {
+import timber.log.Timber;
+
+/**
+ * Application-scoped overlay shown while a {@link Service} runs, on top of other apps, so it needs
+ * the "display over other apps" permission for every show(). The handle itself is owned by the
+ * application-level {@link Sample2OverlayController}, not by the Service, so a failed disposal
+ * keeps a retry path after the Service is gone.
+ */
+public class Sample2Activity extends BaseSampleWithCodeActivity implements Sample2OverlayController.Listener {
 
     private ActivityManager activityManager;
+    private Button retryDisposeButton;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample2);
         activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        retryDisposeButton = findViewById(R.id.btn_retry_dispose);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // The controller reports every dispose()/show() outcome, so the retry control appears as
+        // soon as the Service's disposal fails, without polling or timers.
+        Sample2OverlayController.get().setListener(this);
+        onRetainedHandleChanged(Sample2OverlayController.get().hasRetainedFailedDisposal());
+    }
+
+    @Override
+    protected void onStop() {
+        Sample2OverlayController.get().setListener(null);
+        super.onStop();
+    }
+
+    @Override
+    public void onRetainedHandleChanged(boolean retainedAfterFailedDisposal) {
+        retryDisposeButton.setVisibility(retainedAfterFailedDisposal ? View.VISIBLE : View.GONE);
     }
 
     public void onClick(View view) {
-        if (isServiceRunning()) {
+        if (view.getId() == R.id.btn_retry_dispose) {
+            // Explicit, user-driven retry of a disposal that failed when the Service stopped.
+            OverlayResult disposed = Sample2OverlayController.get().dispose();
+            if (!disposed.isSuccess()) {
+                Timber.w(disposed.getCause(), "Retry of dispose() failed again: %s", disposed.getFailure());
+            }
+        } else if (isServiceRunning()) {
             stopService(new Intent(this, Sample2Service.class));
         } else {
             startService(new Intent(this, Sample2Service.class));
@@ -62,26 +99,31 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
 
     public static class Sample2Service extends Service {
 
-        OverlayView<ImageView> overlayView;
-
         @Override
         public void onCreate() {
             super.onCreate();
-            overlayView = OverlayViewManager.getInstance().newOverlayView(createImageView())
-                    .setTouchable(true)
-                    .setDraggable(true)
-                    .setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            startActivity(new Intent(getApplicationContext(), Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                        }
-                    });
-            overlayView.show();
+            // Application-scoped overlays always require the permission. The host decides what to
+            // do when it is missing; this sample simply stops instead of asking the user again.
+            if (!OverlayViewManager.getInstance().overlayPermission().isGranted(this)) {
+                Timber.w("Overlay permission is not granted; Sample2Service stops without showing anything.");
+                stopSelf();
+                return;
+            }
+            OverlayResult shown = Sample2OverlayController.get().show(this);
+            if (!shown.isSuccess()) {
+                // e.g. PERMISSION_DENIED if the permission was revoked between the check and show().
+                Timber.w(shown.getCause(), "Sample2Service show() failed: %s", shown.getFailure());
+                stopSelf();
+            }
         }
 
         @Override
         public void onDestroy() {
-            overlayView.hide();
+            OverlayResult disposed = Sample2OverlayController.get().dispose();
+            if (!disposed.isSuccess()) {
+                // The controller keeps the handle; Sample2Activity offers the explicit retry.
+                Timber.w(disposed.getCause(), "Sample2Service dispose() failed: %s; handle retained for retry", disposed.getFailure());
+            }
             super.onDestroy();
         }
 
@@ -89,13 +131,6 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
         @Override
         public IBinder onBind(Intent intent) {
             return null;
-        }
-
-        ImageView createImageView() {
-            ImageView imageView = new ImageView(this);
-            imageView.setId(R.id.sample_text_view);
-            imageView.setImageResource(R.mipmap.ic_launcher);
-            return imageView;
         }
     }
 }

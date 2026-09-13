@@ -17,46 +17,54 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 import android.content.Intent;
-import androidx.databinding.DataBindingUtil;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.databinding.DataBindingUtil;
+
+import com.nagopy.android.overlayviewmanager.OverlayPermission;
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 import com.nagopy.android.overlayviewmanager.sample.databinding.ActivitySampleStartBinding;
 
 import timber.log.Timber;
 
+/**
+ * Entry screen. Shows how the host application owns the "display over other apps" permission
+ * flow: check with {@link OverlayPermission#isGranted}, open the system settings screen through an
+ * Activity Result launcher, and re-check when the user comes back. The library never opens that
+ * screen on its own and never retries a show() for you.
+ */
 public class SampleStartActivity extends AppCompatActivity {
 
     ActivitySampleStartBinding binding;
-    OverlayViewManager overlayViewManager;
+    OverlayPermission overlayPermission;
+
+    // The system settings screen returns no payload; the only reliable signal is to re-check the
+    // permission once the user is back.
+    private final ActivityResultLauncher<Intent> permissionSettingsLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> refreshPermissionState());
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         binding = DataBindingUtil.setContentView(this, R.layout.activity_sample_start);
-        overlayViewManager = OverlayViewManager.getInstance();
-
-        if (savedInstanceState == null) {
-            if (!overlayViewManager.canDrawOverlays()) {
-                overlayViewManager.showPermissionRequestDialog(getSupportFragmentManager(), R.string.app_name);
-            }
-        }
+        overlayPermission = OverlayViewManager.getInstance().overlayPermission();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        Timber.d("canDrawOverlays:%s", overlayViewManager.canDrawOverlays());
-        binding.setCanDrawOverlays(overlayViewManager.canDrawOverlays());
+        refreshPermissionState();
     }
 
     public void onClick(View view) {
         if (view.getId() == R.id.btn_requestPermission) {
-            overlayViewManager.requestOverlayPermission();
+            permissionSettingsLauncher.launch(overlayPermission.settingsIntent(this));
         } else if (view.getId() == R.id.btn_sample_all_options) {
             startActivity(new Intent(this, SampleAllOptionsActivity.class));
         } else if (view.getId() == R.id.btn_sample1) {
@@ -70,4 +78,9 @@ public class SampleStartActivity extends AppCompatActivity {
         }
     }
 
+    private void refreshPermissionState() {
+        boolean granted = overlayPermission.isGranted(this);
+        Timber.d("overlay permission granted: %s", granted);
+        binding.setCanDrawOverlays(granted);
+    }
 }
