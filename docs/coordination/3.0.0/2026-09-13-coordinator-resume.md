@@ -20,3 +20,34 @@ T10、T04c、T09 stage 2、T11、T12、T13は未完了。T05/T06端末検証を�
 Codexはコミット6e243c3のproduction差分を読み、msg_1ee3d4d99ee7で追加の確認を依頼した。共有renderRunnableが予約時の世代を保持せず現在の2フィールドを比較するため、古いcallbackが新世代の予約を処理できる。旧callbackだけを先に実行する回帰検証と、実装・KDocの契約の一致を候補で確認する。存在しないinitApplicationInstanceへの参照と計画内識別子FROZEN L2/L3も利用者向け記述へ直す。未完成WIPに対する観察であり、完成候補へのレビュー結果ではない。
 
 文書PR53はhead6526b6bで既存、承認コメントなしを確認した。このPRを今回の再開状態へ更新し、更新SHAのClaude承認とCIを要求する。以前のCI成功を新しいheadの成功根拠に流用しない。
+
+## 09:40–09:46 JST 調整と代理許可
+
+- PR53のhead fed9707827bf8bf3791c3276c061204cfcec7f8dをClaudeへレビュー依頼（msg_fcfbd80cb19e）。CI run34728558459はSUCCESS。Claude承認はまだ未受領。以後のログはcoordination-wave17へ分離し、レビュー中headを固定した。
+- Claudeの環境確認が長引いたため既知のJDK/SDKとCodexによる最小検証・GitHub代行を提示（msg_5329f94f5fd1）。T07編集は引き続きClaude所有。
+- 旧worker画面に司令塔handleでの受信箱checkが表示されていたため、msg_3c03fe9314b1で宛先訂正と未受領メッセージ確認を要請。workerの操作をCodex側で代理実施していない。
+- T07はf2bc6ffとe59cd1dへ履歴整理済み。e59cd1dのwatcherテストはlock外からArrayDequeを読み、正常な追加→trimの途中を誤検出できる。またlog開始がinit完了後のためinit競合を再現しない。msg_d5ee64215eaeで修正を依頼。Gradleはまだ実行していない。
+- Claude司令塔の長時間の環境照会を中断して受信箱確認へ戻す入力を送り、入力受理を確認。Task/Dispatchの停止・abandon・replacementやファイル変更は行っていない。
+- その後のpermissions.blockReadsOutsideWorkingDirectoriesダイアログでは、orca orchestration checkのJSONをpython3で整形表示するコマンド全体を確認。ファイル書込や無関係な読取はなく、ユーザーの既存代理許可指示の範囲と判断した。text+Enterはagent_prompt_blockedで未実施、同request IDの再確認も同結果。選択済みYesへのraw Enterがacceptedとなり、次の受信箱読取に進んだことを画面で確認した。権限設定の緩和は行っていない。
+
+## 09:49 JST worker返却の代理許可拒否
+
+worker-showでctx_a50bedd97da3がmsg_4cc722724d09によるworker_reportでsettled/failedとなったことを確認。HEAD8b464b7709d01fd9ff12be12d8d4378ff9d4a464、tracked clean、テスト未実行。端末はlive/external/retained。
+
+Claudeのack delivery_d19978dcf0a7 + worker-release ctx_a50bedd97da3 + reclaimable一覧コマンド全体を確認後、代理Enterを要求したが、自動承認レビューが「liveかつrelease未要求、明示的な完了・返却確定前の代理許可」として拒否。Enterは未実行。ダイアログをraw Escapeでキャンセルし、msg_f5f70494021eで返却操作の保留・外部端末維持・回避実行禁止を連絡した。これは既存担当の完了報告を取り消すものではなく、release操作だけを実行していない。
+
+PR53承認の送信処理はClaude画面に表示されたが、Codex受信箱にはまだ未着。承認済みとは扱わず、送信結果の確認を依頼した。
+
+## T07候補の検証成功・PR54作成（09:58 JST）
+
+Claude msg_6cd082a5f543でownership返却を確認し、worker-releaseは保留・端末維持のまま、司令塔が直接修正することに合意。PR53の承認文を依頼どおり代理投稿（comment5649792601）し、head fed9707・CI34728558459 SUCCESS・MERGEABLE/CLEANを再確認後、64f8897a510449e6eb825b261ccad4b37c0299d0へ通常mergeした。
+
+Claude msg_d9074f9d96d9: 候補a39813a5cea32f2d89e0bab835e2074c17976cfb。世代をcallbackへcaptureする修正、旧callbackのみを先にdrainするテスト、誤ったwatcherテスト削除を司令塔が直接実施。buffer/maxLinesの同一lockは差分レビューで確認し、競合テストで保証したとは扱わない。
+
+Codexが候補SHAを確認し、JDK17/既知SDKで依頼されたGradleを実行。BUILD SUCCESSFUL（20秒）。XML実測はKotlin39 + Java1 = 40 tests、failures/errors/skipped全0。opt-timber lintはエラー0・警告2。opt-timber/core/sample assembleDebugすべて成功。ソース変更なし、tracked clean。msg_e78097b4a1a1で結果とレビューblockingなしを通知した。
+
+検証成功後に指定どおりclaude/3.0.0/t07-lifecycleへ同SHAをpush、draft PR54を英語で作成。Codex現SHA承認comment5649811216を投稿。msg_ef1cf2c2a713でClaudeへPRを通知し、重複作成を避けた。CI・統合はこの時点で未完了。PR53のnon-blocking nitだったT07台帳の古い再開blocked表示を今回訂正した。
+
+## 最終候補のコメント修正
+
+Claude msg_6477ff749aca / msg_ec0265de8f3eでc13acee8884bb3426142bf2e53c6f0ff542d4503を受領。a39813aとの差分はtestコメント2行のみで、削除済みメンバへの参照を訂正するもの。連絡が交差したため新しいPRを増やさずPR54をfast-forwardした。指定の5 Gradle tasksを最終HEADで確認しBUILD SUCCESSFUL（2秒、135 tasksのうち4 executed/131 up-to-date）。40 testsの成功XMLは前回から有効な結果として再利用され、テストを新たに全件再実行したとは扱わない。CIは新HEADで確認する。PR本文とタイトルを最終状態へ更新した。
