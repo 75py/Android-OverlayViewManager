@@ -120,7 +120,7 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `c13acee`、40 tests成功・lintエラー0/警告2・3 module build成功。最終相互承認・CI成功後6c9e2aaへ統合済み |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
-| T10 | sample・README・3.0移行ガイド | Claude（sample/docs分離所有） | T07寿命統合、T08、T09 stage 1 | 合意済み（C1/K1〜K7、T07統合後開始） |
+| T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 作業中。665d169のbuild/unit/lint成功、API36端末3件中2件失敗で修正待ち。docs PR56は対向承認とsample統合待ち |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
 | T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
