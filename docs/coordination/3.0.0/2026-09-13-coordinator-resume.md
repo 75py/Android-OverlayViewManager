@@ -71,3 +71,11 @@ PR55はhead6addac4・Claude承認5649867149（msg_2e289c029277の依頼文を代
 - 相互レビューを維持し、sampleのコンパイル済みコード例と文書を照合後に受け入れる。T04cは両方の統合後。
 
 文書初稿d90b0dcbef136b50855ebca923cb2016eed0924bを保存。新API・結果・両scopeの所有・権限復帰・破棄失敗のretry・threading・Timber・未リリース状態を記述。ローカルリンクとMarkdown fence、git diff --check成功。文書のみでGradle未実行。msg_dc55cc182244でClaudeへレビュー依頼、コンパイル済みsampleとの最終照合は未完了と明記した。
+
+## T10初回候補の差戻し
+
+T10bはdraft PR56（初稿d90b0dc、後続b4059d1で旧outside-screenの非互換を2行補足）として共有。コンパイル済みsampleとの照合とClaudeレビューは未完了。
+
+sampleの文書照合で、Sample2Service.onDestroyが失敗をlogするだけではService破棄後のretry所有者が残らない点を発見。msg_d87cb8640080でK3要件違反として差戻し、Application等に生き残るownerと明示retry手段を求めた。先の「Service追加不要」注記は既存nested Sample2Serviceを見落としていたため、同連絡で訂正した。
+
+Claude msg_92e34ec5d478の初回候補13130407b798e3a9d566aed7a7df4ba8ba46cd03をtracked cleanで確認し、指定6タスクを実行。7秒で失敗。sample Kotlin compile成功、Java compileはSampleAllOptionsActivity.java:17の重複package宣言で失敗。sampleのunit/lint/androidTest APKは未完了。msg_83e9c6ee87b1で結果とログ/private/tmp/overlay-t10a-validation.logを引継ぎ、ファイルを編集せず検証専有を解除した。Claudeのack/受信待ち/JSON整形のみのコマンドを全体確認して代理許可し、修正担当を変更していない。
