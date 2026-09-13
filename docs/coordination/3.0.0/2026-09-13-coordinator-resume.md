@@ -125,3 +125,11 @@ msg_7c0b2038baf3 / delivery_b4b6c98c1546の8185320a4f415d7996080c211fb9817cf0135
 ## T10a最終候補のPR57作成（12:32 JST）
 
 msg_03e9bf655ad9の52caec4277b79153ff76fce840197c9c947c4cd5を確認。8185320との差分は7PNGだけ。最終6 Gradle tasks成功（819ms、1 executed/164 up-to-date）。指定remote branchへ同SHAをpushし、英語draft PR57を作成。本文に不変SHAの画像リンクと検証実施SHAを明記した。Codex対向承認comment5650802093を投稿、CI34735697110は実行中。Claudeの依頼文の代理投稿とmergeはCI成功後。msg_038444f2dc9bで現状を通知し、delivery_803b9896bcc8をackした。PR56は承認SHA1ca27f3のCI34730952948成功、sample統合・リンク再確認待ち。
+
+## T10統合完了とT04c開始依頼（13:16 JST）
+
+ユーザーの継続指示後、PR57のhead52caec4/base work/3.0.0/CI34735697110 SUCCESS/CLEANを確認。Claude依頼文をcomment5651082255へ代理投稿し、Codex対向承認5650802093と合わせてready化・通常merge。統合SHA c298798789c0b9788e90ac732f5b11b2e5fcae8e（13:14:50 JST）。
+
+共有workをfast-forwardし、文書PR56のローカルリンクを統合済みsampleと提案文書へ照合して成功。現head1ca27f3・Claude承認5650579496・CI34730952948 SUCCESSを確認し、本文のdraft依存記述を検証済み状態へ改訂。ready化後に通常mergeし、97080616f4ccc4b796799fba5b8998c4283e4d5dへ統合（13:16:13 JST）。main/tag/publishは未実行。
+
+T10を完了扱いとし、ClaudeへT04cの開始を依頼。最新workから新しい隔離worktree、暫定2.x API除去、JVM可視性監査、Java/Kotlin consumer検証、影響範囲のcore/sample/Timber/lint確認が対象。具体的branch/worktree/検証計画は返答待ち。共有plan/logはCodex所有、lint stage2を無断で混在させない。T12の全端末matrixは引き続きrelease-blocking。
