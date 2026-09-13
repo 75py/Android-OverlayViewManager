@@ -19,41 +19,31 @@
 pre {
     white-space: pre-wrap;
 }
-
-</style>
 <ul>
-    <li>The option feature for Timber users.
-    <li>Call DebugOverlayTree.getInstance().register(Activity). Timber's logs are displayed during the Activity is running.
+    <li>The optional feature for Timber users (module opt-timber).
+    <li>Plant DebugOverlayTree.init(application) once in your Application; init is idempotent for the same Application.
+    <li>Call DebugOverlayTree.getInstance().register(Activity). Timber's logs are displayed while a registered Activity is started.
+    <li>DebugOverlayTree.getInstance().dispose() releases the overlay and callbacks; Timber.uproot(tree) stays your job.
 </ul>
 <pre class="prettyprint">
 public class SampleApplication extends Application {
-
     @Override
     public void onCreate() {
         super.onCreate();
-
         OverlayViewManager.init(this);
-
-        if(BuildConfig.DEBUG) {
-            // Initialize and plant DebugOverlayTree instance
-            Timber.plant(DebugOverlayTree.init(this));
-        }
+        Timber.plant(new Timber.DebugTree());
+        Timber.plant(DebugOverlayTree.init(this));
     }
-
 }
 </pre>
 <pre class="prettyprint">
-public class SampleTimberActivity extends AppCompatActivity {
-
+public class SampleTimberActivity extends BaseSampleWithCodeActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Register this Activity
+        // Register this Activity: the log overlay is visible while it is started.
         DebugOverlayTree.getInstance().register(this);
-
         setContentView(R.layout.activity_sample_timber);
-
         Timber.d("onCreate");
     }
 
@@ -66,14 +56,12 @@ public class SampleTimberActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Timber.d("onStart");
+        Timber.d("onResume");
     }
 
     public void onClick(View view) {
         Timber.d("onClick %d", view.getId());
     }
-
 }
 </pre>
-
 <script src="run_prettify.js"></script>

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.nagopy.android.overlayviewmanager.sample;
 
 import android.app.ActivityManager;
@@ -21,15 +20,25 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
-import androidx.annotation.Nullable;
 import android.view.View;
 import android.widget.ImageView;
 
+import androidx.annotation.Nullable;
+
+import com.nagopy.android.overlayviewmanager.OverlayResult;
+import com.nagopy.android.overlayviewmanager.OverlaySpec;
+import com.nagopy.android.overlayviewmanager.OverlayTouchMode;
 import com.nagopy.android.overlayviewmanager.OverlayView;
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 
 import java.util.List;
 
+import timber.log.Timber;
+
+/**
+ * Application-scoped overlay owned by a {@link Service}: it stays on screen while the Service runs,
+ * on top of other apps, so it needs the "display over other apps" permission for every show().
+ */
 public class Sample2Activity extends BaseSampleWithCodeActivity {
 
     private ActivityManager activityManager;
@@ -67,21 +76,41 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
         @Override
         public void onCreate() {
             super.onCreate();
-            overlayView = OverlayViewManager.getInstance().newOverlayView(createImageView())
-                    .setTouchable(true)
-                    .setDraggable(true)
-                    .setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            startActivity(new Intent(getApplicationContext(), Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                        }
-                    });
-            overlayView.show();
+            OverlayViewManager manager = OverlayViewManager.getInstance();
+            // Application-scoped overlays always require the permission. The host decides what to
+            // do when it is missing; this sample simply stops instead of asking the user again.
+            if (!manager.overlayPermission().isGranted(this)) {
+                Timber.w("Overlay permission is not granted; Sample2Service stops without showing anything.");
+                stopSelf();
+                return;
+            }
+
+            ImageView imageView = createImageView();
+            // Ordinary click delivery stays on the View itself, even while DRAGGABLE.
+            imageView.setOnClickListener(v -> startActivity(
+                    new Intent(getApplicationContext(), Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
+
+            overlayView = manager.newOverlayView(
+                    imageView,
+                    new OverlaySpec.Builder().setTouchMode(OverlayTouchMode.DRAGGABLE).build());
+            OverlayResult shown = overlayView.show();
+            if (!shown.isSuccess()) {
+                // e.g. PERMISSION_DENIED if the permission was revoked between the check and show().
+                Timber.w(shown.getCause(), "Sample2Service show() failed: %s", shown.getFailure());
+                stopSelf();
+            }
         }
 
         @Override
         public void onDestroy() {
-            overlayView.hide();
+            if (overlayView != null) {
+                OverlayResult disposed = overlayView.dispose();
+                if (!disposed.isSuccess()) {
+                    // A failed disposal keeps the handle retryable; a Service that is being destroyed
+                    // can only report it.
+                    Timber.w(disposed.getCause(), "Sample2Service dispose() failed: %s", disposed.getFailure());
+                }
+            }
             super.onDestroy();
         }
 
@@ -93,7 +122,7 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
 
         ImageView createImageView() {
             ImageView imageView = new ImageView(this);
-            imageView.setId(R.id.sample_text_view);
+            imageView.setId(R.id.sample_image_view);
             imageView.setImageResource(R.mipmap.ic_launcher);
             return imageView;
         }

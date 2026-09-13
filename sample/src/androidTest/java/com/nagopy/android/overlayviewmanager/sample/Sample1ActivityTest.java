@@ -3,7 +3,8 @@ package com.nagopy.android.overlayviewmanager.sample;
 
 import android.Manifest;
 import android.os.Build;
-import androidx.test.InstrumentationRegistry;
+import android.widget.TextView;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.espresso.Espresso;
 import androidx.test.espresso.ViewInteraction;
 import androidx.test.espresso.matcher.RootMatchers;
@@ -13,7 +14,7 @@ import androidx.test.rule.GrantPermissionRule;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
-import com.nagopy.android.overlayviewmanager.OverlayViewManager;
+import com.nagopy.android.overlayviewmanager.OverlayState;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,6 +33,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.JELLY_BEAN_MR2)
 @RunWith(AndroidJUnit4.class)
@@ -48,10 +50,10 @@ public class Sample1ActivityTest {
 
     @Before
     public void setup() {
+        // SampleApplication already initialized OverlayViewManager on the main thread; init() is
+        // main-thread only, so the instrumentation thread must not call it again here.
         uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         activity = mActivityTestRule.getActivity();
-
-        OverlayViewManager.init(activity.getApplication());
     }
 
     private void waitALittle() {
@@ -85,6 +87,8 @@ public class Sample1ActivityTest {
         appCompatButton2.perform(click());
 
         waitALittle();
+        // state is a thread-safe read: the show() requested by the button succeeded.
+        assertEquals(OverlayState.ATTACHED, activity.getOverlayView().getState());
         ViewInteraction textView4 = onView(
                 allOf(withId(R.id.sample_text_view), withText("click:0"), isDisplayed()))
                 .inRoot(RootMatchers.withDecorView(not(is(activity.getWindow().getDecorView()))));
@@ -108,9 +112,16 @@ public class Sample1ActivityTest {
         for (int i = 0; i < 10; i++) {
             waitALittle();
             int[] location = new int[2];
-            activity.overlayView.getView().getLocationOnScreen(location);
-            int w = activity.overlayView.getView().getMeasuredWidth();
-            int h = activity.overlayView.getView().getMeasuredHeight();
+            int[] size = new int[2];
+            // OverlayView.getView() is main-thread only.
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                TextView view = activity.getOverlayView().getView();
+                view.getLocationOnScreen(location);
+                size[0] = view.getMeasuredWidth();
+                size[1] = view.getMeasuredHeight();
+            });
+            int w = size[0];
+            int h = size[1];
             int startX = location[0] + w / 2;
             int startY = location[1] + h / 2;
             int step = (int) (100 * new Random().nextDouble() + 50);
@@ -148,5 +159,7 @@ public class Sample1ActivityTest {
             }
             uiDevice.drag(startX, startY, endX, endY, step);
         }
+        // Dragging moves the window but never detaches it.
+        assertEquals(OverlayState.ATTACHED, activity.getOverlayView().getState());
     }
 }

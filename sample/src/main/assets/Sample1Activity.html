@@ -19,50 +19,51 @@
 pre {
     white-space: pre-wrap;
 }
-
-</style>
 <ul>
-    <li>Show or hide an overlay click counter!
-    <li>The view is draggable. Try long-tapping and dragging it.
+    <li>Activity-scoped overlay written in Kotlin: no "display over other apps" permission is needed.
+    <li>Show or hide an overlay click counter. The view is draggable (OverlayTouchMode.DRAGGABLE) and still receives clicks.
 </ul>
 <pre class="prettyprint">
-public class Sample1Activity extends AppCompatActivity {
+class Sample1Activity : BaseSampleWithCodeActivity() {
 
-    OverlayView&lt;TextView> overlayView;
-    int clickCounter = 0;
+    lateinit var overlayView: OverlayView&lt;TextView&gt;
+        private set
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sample1);
+    private var clickCounter = 0
 
-        TextView textView = createTextView();
-        overlayView = OverlayViewManager.create(textView)
-                .setTouchable(true)
-                .setDraggable(true)
-                .setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        clickCounter++;
-                        overlayView.getView().setText("click:" + clickCounter);
-                    }
-                });
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_sample1)
+
+        val textView = createTextView()
+        // Click handling stays on the View itself, even with OverlayTouchMode.DRAGGABLE.
+        textView.setOnClickListener {
+            clickCounter++
+            textView.text = "click:$clickCounter"
+        }
+        overlayView = OverlayViewManager.getInstance().newOverlayView(
+            textView,
+            this,
+            OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE),
+        )
     }
 
-    public void onClick(View view) {
-        if (overlayView.isVisible()) {
-            overlayView.hide();
-        } else {
-            overlayView.show();
+    fun onClick(view: View) {
+        val result = if (overlayView.state == OverlayState.ATTACHED) overlayView.hide() else overlayView.show()
+        if (!result.isSuccess) {
+            Timber.w(result.cause, "Sample1 show()/hide() failed: %s", result.failure)
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        overlayView.destroy();
-        super.onDestroy();
+    override fun onDestroy() {
+        // The library also disposes activity-scoped handles when the Activity is destroyed;
+        // disposing here keeps ownership explicit, and a repeated dispose() is a harmless no-op.
+        val disposed = overlayView.dispose()
+        if (!disposed.isSuccess) {
+            Timber.w(disposed.cause, "Sample1 dispose() failed: %s", disposed.failure)
+        }
+        super.onDestroy()
     }
 }
 </pre>
-
 <script src="run_prettify.js"></script>

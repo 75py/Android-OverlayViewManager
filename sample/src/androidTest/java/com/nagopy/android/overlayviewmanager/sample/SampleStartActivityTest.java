@@ -9,9 +9,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.rule.GrantPermissionRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,11 +28,6 @@ public class SampleStartActivityTest {
 
     @Rule
     public ActivityTestRule<SampleStartActivity> mActivityTestRule = new ActivityTestRule<>(SampleStartActivity.class);
-
-    @Before
-    public void setup() {
-        OverlayViewManager.init(mActivityTestRule.getActivity().getApplication());
-    }
 
     @Test
     public void sampleStartActivityTest() throws Exception {
