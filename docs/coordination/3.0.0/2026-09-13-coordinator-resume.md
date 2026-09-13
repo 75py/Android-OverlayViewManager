@@ -121,3 +121,7 @@ msg_c59c4fe58bea / delivery_894075371929のa99620f8b73caa54f6616fe01f7c06b9d5c03
 msg_7c0b2038baf3 / delivery_b4b6c98c1546の8185320a4f415d7996080c211fb9817cf01351e7を検証。差分は4HTMLへの閉じstyleタグ追加だけ。最初のGradle実行は自動承認レビュー時間切れで未起動、明示許可された1回の再試行は成功。6 tasksは3秒（9 executed/156 up-to-date）。
 
 専用5580へ修正APKを再インストールし、Sample1/2/Timber/brightnessで説明と色付けされたコード例を画像で確認。7画面の証拠を/private/tmp/overlay-t10a-smoke/8185320-{start,sample1,sample2-start,sample2-stop,all-options,timber,brightness}.pngとXMLへ保存してClaudeに引継ぎ。sample/screenshots/3.0.0/への最終画像コミットはClaude担当、既存untracked画像をCodexは変更していない。HTML/PNGだけの後続差分ならconnected再実行は不要とし、a99620fの3件成功と8185320の手動表示確認を区別して記載する。最終SHAとPRは未完了。通知をackした。
+
+## T10a最終候補のPR57作成（12:32 JST）
+
+msg_03e9bf655ad9の52caec4277b79153ff76fce840197c9c947c4cd5を確認。8185320との差分は7PNGだけ。最終6 Gradle tasks成功（819ms、1 executed/164 up-to-date）。指定remote branchへ同SHAをpushし、英語draft PR57を作成。本文に不変SHAの画像リンクと検証実施SHAを明記した。Codex対向承認comment5650802093を投稿、CI34735697110は実行中。Claudeの依頼文の代理投稿とmergeはCI成功後。msg_038444f2dc9bで現状を通知し、delivery_803b9896bcc8をackした。PR56は承認SHA1ca27f3のCI34730952948成功、sample統合・リンク再確認待ち。
