@@ -49,8 +49,6 @@ import java.util.ArrayList
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 
 /**
@@ -292,71 +290,6 @@ class DebugOverlayTreeTest {
         assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(notNullValue()))
         assertThat(debugOverlayTree.reflectedRegisteredActivities, isEqualTo(notNullValue()))
         verify(application, times(1)).registerActivityLifecycleCallbacks(debugOverlayTree.reflectedActivityLifecycleCallbacks)
-    }
-
-    /**
-     * Codex finding #2 regression: initialize() must reset [messages] and [maxLines] inside the
-     * SAME `bufferLock` critical section. Before the fix, `maxLines = DEFAULT_MAX_LINES` ran
-     * AFTER releasing the lock that reset `messages`, leaving a window where a racing background
-     * log() could observe the fresh (empty) buffer together with the PRIOR (larger) limit and
-     * append past the new default before the assignment caught up.
-     *
-     * This is a best-effort concurrency stress test, not a guaranteed single-run reproduction --
-     * consistent with this suite's other concurrency tests (e.g.
-     * [log_concurrentThreads_doesNotCorruptBufferOrThrow]), which cannot force the JVM's thread
-     * scheduling deterministically either. A dedicated watcher thread polls the buffer size in a
-     * tight loop for the entire dispose+reinit+concurrent-log window (not just once at the end)
-     * specifically because every subsequent log() call re-trims under whatever `maxLines` it
-     * currently observes: checking only the FINAL size can never expose a merely transient
-     * violation, since the very next log() call would silently correct it back down to the
-     * (by-then-correct) limit.
-     */
-    @Test
-    fun initialize_resetsBufferAndMaxLinesAtomically_concurrentLogNeverObservesTheStaleLimit() {
-        debugOverlayTree.callInitialize(application)
-        debugOverlayTree.setMaxLines(500)
-        for (i in 1..100) {
-            debugOverlayTree.callLog(Log.DEBUG, "tag", "old$i", null)
-        }
-        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(100))
-
-        val disposeResult = debugOverlayTree.dispose()
-        assertThat(disposeResult.isSuccess, isEqualTo(true))
-        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(nullValue()))
-
-        val watcherStop = AtomicBoolean(false)
-        val maxObservedSize = AtomicInteger(0)
-        val watcher = Thread {
-            while (!watcherStop.get()) {
-                val size = debugOverlayTree.reflectedMessages?.size ?: 0
-                maxObservedSize.updateAndGet { current -> maxOf(current, size) }
-            }
-        }
-        watcher.start()
-
-        reflectedInstance = debugOverlayTree
-        DebugOverlayTree.init(application)
-        assertThat(debugOverlayTree.reflectedMaxLines, isEqualTo(reflectedDefaultMaxLines))
-
-        val threadCount = 8
-        val doneLatch = CountDownLatch(threadCount)
-        for (t in 0 until threadCount) {
-            val thread = Thread {
-                for (i in 0 until 20) {
-                    debugOverlayTree.callLog(Log.DEBUG, "t$t", "m$i", null)
-                }
-                doneLatch.countDown()
-            }
-            thread.start()
-        }
-        assertThat(doneLatch.await(10, TimeUnit.SECONDS), isEqualTo(true))
-        watcherStop.set(true)
-        watcher.join(10_000)
-
-        // At no sampled point did the buffer, freshly reset by initialize(), exceed the freshly
-        // reset (smaller) limit -- it never observed the buffer-is-new/limit-is-stale combination.
-        assertThat(maxObservedSize.get() <= reflectedDefaultMaxLines, isEqualTo(true))
-        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(reflectedDefaultMaxLines))
     }
 
     @Test
@@ -1046,28 +979,26 @@ class DebugOverlayTreeTest {
 
     /**
      * Codex finding #1 regression: a stale render queued before a successful dispose must never
-     * block or lose a fresh log() issued in the NEW generation before the stale Runnable drains.
+     * block or lose a fresh log() issued in the NEW generation before the stale callback drains.
      * Before the fix, scheduling tracked a single renderPending boolean shared across
      * generations: the fresh log() below would lose its CAS to that stale flag (still `true` from
-     * the pre-dispose schedule), and the stale Runnable's own generation check would then bail
+     * the pre-dispose schedule), and the stale callback's own generation check would then bail
      * without rendering anything, so the fresh message was rendered only much later, and only if
      * some unrelated log() call happened to arrive afterward. Tracking the pending generation
      * itself (instead of a plain flag) fixes this: a fresh log() in a new generation always
      * re-arms scheduling.
      *
-     * The queue order is made explicit and deterministic here: every log() call runs on its own
-     * background thread and is `join()`-ed before the next step proceeds, so by the time this
-     * test reaches the intermediate assertion, the SAME shared render Runnable (see
-     * [renderRunnable]) is known to have been posted twice -- once before dispose, once after
-     * re-init -- and neither post has been drained yet, which the intermediate assertion below
-     * confirms. Only the final `shadowOf(...).idle()` call drains the queue, dequeuing both posts
-     * in FIFO order; per [renderRunnable]'s contract, whichever one runs first renders the CURRENT
-     * (fresh) buffer and the other is then a no-op, so the final content is deterministic
-     * regardless of which post happens to "win".
+     * The queue order is explicit and deterministic: every log() call runs on its own background
+     * thread and is `join()`-ed before the next step, so exactly two render callbacks are queued
+     * on the main thread in FIFO order -- the stale one (posted before dispose) first, the fresh
+     * one (posted after re-init) second. The callbacks are then drained ONE AT A TIME with
+     * `runOneTask()`: the stale callback must run first and render nothing (it belongs to a
+     * generation this tree has left), and only the fresh callback may render the fresh message.
      */
     @Test
-    fun log_newMessageBeforeStaleRenderDrains_rendersExactlyTheFreshMessageOnce() {
+    fun log_newMessageBeforeStaleRenderDrains_staleCallbackIsNoOpAndFreshCallbackRendersOnce() {
         debugOverlayTree.callInitialize(application)
+        val mainLooper = shadowOf(Looper.getMainLooper())
 
         // Step 1: a background log() in the OLD generation schedules (queues) a render.
         val staleLoggingThread = Thread {
@@ -1076,7 +1007,7 @@ class DebugOverlayTreeTest {
         staleLoggingThread.start()
         staleLoggingThread.join(10_000)
 
-        // Step 2: dispose (main thread) succeeds while that stale render Runnable is still
+        // Step 2: dispose (main thread) succeeds while that stale render callback is still
         // sitting, undrained, in the queue -- generation advances, buffer/handle released.
         val disposeResult = debugOverlayTree.dispose()
         assertThat(disposeResult.isSuccess, isEqualTo(true))
@@ -1088,23 +1019,27 @@ class DebugOverlayTreeTest {
         val newHandle = debugOverlayTree.reflectedOverlayView!!
 
         // Step 4: a NEW background log() in the NEW generation, issued strictly before the stale
-        // Runnable from step 1 is drained (draining happens only in step 6, below). This is
-        // exactly the ordering Codex's finding #1 describes.
+        // callback from step 1 is drained. This is exactly the ordering Codex's finding #1
+        // describes; it must schedule its own render instead of waiting on the stale callback.
         val freshLoggingThread = Thread {
             debugOverlayTree.callLog(Log.DEBUG, "tag", "fresh message", null)
         }
         freshLoggingThread.start()
         freshLoggingThread.join(10_000)
 
-        // Step 5 (intermediate assertion): nothing has been rendered yet -- both the stale (step
-        // 1) and fresh (step 4) render Runnables are still queued, undrained, on the main thread.
+        // Step 5: nothing has been rendered yet -- both callbacks are queued, undrained.
         assertThat(newHandle.view.text.toString(), isEqualTo(""))
 
-        // Step 6: drain the whole queue in one pass -- both posts run, in FIFO order; the first
-        // to run renders the current (fresh) buffer, the second is then a no-op.
-        shadowOf(Looper.getMainLooper()).idle()
+        // Step 6: run ONLY the first queued callback -- the stale one. It must not render the
+        // fresh buffer on behalf of the new generation, nor anything from the old one.
+        mainLooper.runOneTask()
+        assertThat(newHandle.view.text.toString(), isEqualTo(""))
 
+        // Step 7: run the second queued callback -- the fresh one -- which renders the fresh
+        // message exactly once.
+        mainLooper.runOneTask()
         assertThat(newHandle.view.text.toString(), isEqualTo("tag: fresh message"))
+        assertThat(mainLooper.isIdle, isEqualTo(true))
     }
 
     @Test

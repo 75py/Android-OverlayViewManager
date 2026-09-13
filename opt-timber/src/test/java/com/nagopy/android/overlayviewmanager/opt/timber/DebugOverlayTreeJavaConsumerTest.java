@@ -50,8 +50,8 @@ import java.lang.reflect.Field;
 /**
  * Exercises DebugOverlayTree's public surface the way a Java Timber consumer would -- init,
  * getInstance, setThreshold, setMaxLines, register and dispose -- with no Kotlin-specific call
- * syntax (default arguments, named parameters, extension receivers). This is the L6 "Java API
- * compatibility" coverage required by the FROZEN T07 LIFECYCLE CONTRACT.
+ * syntax (default arguments, named parameters, extension receivers), so the Java-callable
+ * surface of the 3.0.0 lifecycle API is exercised end to end.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = Build.VERSION_CODES.M, manifest = Config.NONE)

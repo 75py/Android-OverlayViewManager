@@ -79,12 +79,11 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
      * Tracking this as "the generation a pending render targets" rather than a plain boolean is
      * what lets [log] correctly re-arm scheduling across a [dispose] + re-[initialize] that
      * happens before an already-queued render [Runnable] drains: a stale render belonging to a
-     * generation this tree has since left is recognized as such by [render] (and, since it never
-     * claims the *current* generation's slot, never blocks a fresh [log] in the new generation
-     * from scheduling its own render). A single shared pending/not-pending flag would instead let
-     * that stale Runnable's completion silently clear the new generation's pending state before
-     * it renders, losing the fresh message until some later, unrelated [log] call happened to
-     * schedule again.
+     * generation this tree has since left never claims the *current* generation's slot, so it
+     * cannot block a fresh [log] in the new generation from scheduling its own render. A single
+     * shared pending/not-pending flag would instead let that stale Runnable's completion silently
+     * clear the new generation's pending state before it renders, losing the fresh message until
+     * some later, unrelated [log] call happened to schedule again.
      */
     private var pendingRenderGeneration: Int = NO_PENDING_RENDER
 
@@ -304,16 +303,16 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
         if (maxLines < 1) {
             throw IllegalArgumentException("maxLines must be >= 1, but was $maxLines")
         }
-        var shouldPost = false
+        var scheduledGeneration = NO_PENDING_RENDER
         synchronized(bufferLock) {
             this.maxLines = maxLines
             if (trimLocked() && pendingRenderGeneration != generation) {
                 pendingRenderGeneration = generation
-                shouldPost = true
+                scheduledGeneration = generation
             }
         }
-        if (shouldPost) {
-            postToMainThread(renderRunnable)
+        if (scheduledGeneration != NO_PENDING_RENDER) {
+            postRender(scheduledGeneration)
         }
     }
 
@@ -335,7 +334,7 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
             return
         }
 
-        var shouldPost = false
+        var scheduledGeneration = NO_PENDING_RENDER
         synchronized(bufferLock) {
             val currentMessages = messages ?: return@synchronized
             currentMessages.addLast("$tag: $message")
@@ -347,11 +346,11 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
             // count, so this line is never lost waiting on a stale Runnable to drain.
             if (pendingRenderGeneration != generation) {
                 pendingRenderGeneration = generation
-                shouldPost = true
+                scheduledGeneration = generation
             }
         }
-        if (shouldPost) {
-            postToMainThread(renderRunnable)
+        if (scheduledGeneration != NO_PENDING_RENDER) {
+            postRender(scheduledGeneration)
         }
     }
 
@@ -372,33 +371,33 @@ open class DebugOverlayTree private constructor() : Timber.DebugTree() {
     }
 
     /**
-     * A single stateless closure, reused for every post: it carries no generation of its own and
-     * always reads the live [generation]/[pendingRenderGeneration]/[messages] at the moment it
-     * actually runs, never a value captured at schedule time. This is why coalescing two posts of
-     * the SAME object (e.g. one queued before a dispose+re-init, one queued after) is safe: which
-     * of the two dequeued invocations happens to observe [generation] `==` [pendingRenderGeneration]
-     * -- and therefore performs the render -- is irrelevant, because [render] always renders the
-     * CURRENT buffer, not whatever buffer existed when that particular post was made. Exactly one
-     * of any pair of posts renders (the first to reach [render] while the match still holds); the
-     * other is a no-op because the first already cleared [pendingRenderGeneration].
+     * Posts a render for [scheduledGeneration] to the main thread. Each post captures the
+     * generation it was scheduled for, so a callback that is dequeued only after a
+     * [dispose] + re-[initialize] recognizes itself as stale and does nothing; the new
+     * generation is rendered exclusively by a callback scheduled in that generation. Callers
+     * must already have claimed [pendingRenderGeneration] for [scheduledGeneration] under
+     * [bufferLock].
      */
-    private val renderRunnable: Runnable = Runnable { render() }
+    private fun postRender(scheduledGeneration: Int) {
+        postToMainThread(Runnable { render(scheduledGeneration) })
+    }
 
     /**
      * Build the text for the current buffer and apply it to the TextView. Only ever invoked on
-     * the main thread via [renderRunnable]. A no-op if [messages] is `null` (uninitialized or
-     * disposed since this render was scheduled) or if [generation] no longer matches
-     * [pendingRenderGeneration] (a dispose and re-init happened in between, or another invocation
-     * of the same shared [renderRunnable] already serviced this generation): either way this must
-     * never render stale messages into a new lifecycle generation's overlay, and must never render
-     * the same generation twice for one schedule.
+     * the main thread via [postRender]. A no-op if [scheduledGeneration] is no longer the live
+     * [generation] (a dispose, or a dispose and re-init, happened after this render was
+     * scheduled), if [messages] is `null` (uninitialized or disposed), or if no render is pending
+     * for the live generation any more (already serviced): this never renders stale messages
+     * into a new lifecycle generation's overlay, and never renders the same generation twice for
+     * one schedule.
      */
-    private fun render() {
+    private fun render(scheduledGeneration: Int) {
         var text: String? = null
         var view: TextView? = null
         synchronized(bufferLock) {
+            if (scheduledGeneration != generation) return@synchronized
             val currentMessages = messages ?: return@synchronized
-            if (generation != pendingRenderGeneration) return@synchronized
+            if (pendingRenderGeneration != generation) return@synchronized
             pendingRenderGeneration = NO_PENDING_RENDER
             view = overlayView?.view
             val out = StringBuilder()
