@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-09-13 09:35 JST、ユーザーの明示指示で再開**。T08まで統合済み。T07寿命管理はWIP `6e243c3`を基点に、旧担当から安全に返却後、Claude司令塔が直接実装・検証を担当する。Codex司令塔が対向レビューと共有計画・ログの統合を担当する。候補・検証・PR・承認は未完了。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
+- 状態: **2026-09-13 09:35 JST、ユーザーの明示指示で再開**。T08まで統合済み。T07寿命管理はClaude司令塔の直接修正候補 `a39813a` をPR54でレビュー中。Codexの対向レビューと40 unit tests・lint・3 module buildは成功、CIと統合は未完了。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -117,7 +117,7 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命L1〜L7はWIP `6e243c3`で保全。Dispatch `ctx_72258eaf9359`はabandoned/failed、外部terminal liveのため再開blocked |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `a39813a`、40 tests成功・lintエラー0/警告2・3 module build成功、Codex対向承認済み。CI・統合待ち |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
 | T10 | sample・README・3.0移行ガイド | Claude（sample/docs分離所有） | T07寿命統合、T08、T09 stage 1 | 合意済み（C1/K1〜K7、T07統合後開始） |
