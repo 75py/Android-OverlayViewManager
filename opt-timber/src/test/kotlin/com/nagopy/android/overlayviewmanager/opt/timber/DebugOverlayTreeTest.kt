@@ -5,13 +5,18 @@ import android.app.Application
 import android.os.Build
 import android.os.Looper
 import android.util.Log
+import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import com.nagopy.android.overlayviewmanager.OverlayFailure
+import com.nagopy.android.overlayviewmanager.OverlayState
 import com.nagopy.android.overlayviewmanager.OverlayView
 import com.nagopy.android.overlayviewmanager.OverlayViewManager
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import com.nagopy.android.overlayviewmanager.internal.WeakReferenceCache
 import org.hamcrest.CoreMatchers.`is` as isEqualTo
+import org.hamcrest.CoreMatchers.instanceOf
+import org.hamcrest.CoreMatchers.not
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.CoreMatchers.nullValue
 import org.hamcrest.CoreMatchers.sameInstance
@@ -21,8 +26,10 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.reset
 import org.mockito.Mockito.spy
@@ -30,16 +37,20 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when` as whenever
 import org.mockito.MockitoAnnotations
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSettings
 import java.lang.reflect.Field
 import java.util.ArrayDeque
 import java.util.ArrayList
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 
 /**
@@ -228,6 +239,7 @@ class DebugOverlayTreeTest {
     @Before
     fun setUp() {
         MockitoAnnotations.openMocks(this)
+        ShadowSettings.setCanDrawOverlays(true)
 
         application = initCoreForTest()
 
@@ -280,6 +292,71 @@ class DebugOverlayTreeTest {
         assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(notNullValue()))
         assertThat(debugOverlayTree.reflectedRegisteredActivities, isEqualTo(notNullValue()))
         verify(application, times(1)).registerActivityLifecycleCallbacks(debugOverlayTree.reflectedActivityLifecycleCallbacks)
+    }
+
+    /**
+     * Codex finding #2 regression: initialize() must reset [messages] and [maxLines] inside the
+     * SAME `bufferLock` critical section. Before the fix, `maxLines = DEFAULT_MAX_LINES` ran
+     * AFTER releasing the lock that reset `messages`, leaving a window where a racing background
+     * log() could observe the fresh (empty) buffer together with the PRIOR (larger) limit and
+     * append past the new default before the assignment caught up.
+     *
+     * This is a best-effort concurrency stress test, not a guaranteed single-run reproduction --
+     * consistent with this suite's other concurrency tests (e.g.
+     * [log_concurrentThreads_doesNotCorruptBufferOrThrow]), which cannot force the JVM's thread
+     * scheduling deterministically either. A dedicated watcher thread polls the buffer size in a
+     * tight loop for the entire dispose+reinit+concurrent-log window (not just once at the end)
+     * specifically because every subsequent log() call re-trims under whatever `maxLines` it
+     * currently observes: checking only the FINAL size can never expose a merely transient
+     * violation, since the very next log() call would silently correct it back down to the
+     * (by-then-correct) limit.
+     */
+    @Test
+    fun initialize_resetsBufferAndMaxLinesAtomically_concurrentLogNeverObservesTheStaleLimit() {
+        debugOverlayTree.callInitialize(application)
+        debugOverlayTree.setMaxLines(500)
+        for (i in 1..100) {
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "old$i", null)
+        }
+        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(100))
+
+        val disposeResult = debugOverlayTree.dispose()
+        assertThat(disposeResult.isSuccess, isEqualTo(true))
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(nullValue()))
+
+        val watcherStop = AtomicBoolean(false)
+        val maxObservedSize = AtomicInteger(0)
+        val watcher = Thread {
+            while (!watcherStop.get()) {
+                val size = debugOverlayTree.reflectedMessages?.size ?: 0
+                maxObservedSize.updateAndGet { current -> maxOf(current, size) }
+            }
+        }
+        watcher.start()
+
+        reflectedInstance = debugOverlayTree
+        DebugOverlayTree.init(application)
+        assertThat(debugOverlayTree.reflectedMaxLines, isEqualTo(reflectedDefaultMaxLines))
+
+        val threadCount = 8
+        val doneLatch = CountDownLatch(threadCount)
+        for (t in 0 until threadCount) {
+            val thread = Thread {
+                for (i in 0 until 20) {
+                    debugOverlayTree.callLog(Log.DEBUG, "t$t", "m$i", null)
+                }
+                doneLatch.countDown()
+            }
+            thread.start()
+        }
+        assertThat(doneLatch.await(10, TimeUnit.SECONDS), isEqualTo(true))
+        watcherStop.set(true)
+        watcher.join(10_000)
+
+        // At no sampled point did the buffer, freshly reset by initialize(), exceed the freshly
+        // reset (smaller) limit -- it never observed the buffer-is-new/limit-is-stale combination.
+        assertThat(maxObservedSize.get() <= reflectedDefaultMaxLines, isEqualTo(true))
+        assertThat(debugOverlayTree.reflectedMessages!!.size, isEqualTo(reflectedDefaultMaxLines))
     }
 
     @Test
@@ -688,10 +765,379 @@ class DebugOverlayTreeTest {
     fun simpleActivityLifecycleCallbacks_onActivityDestroyed() {
         run {
             debugOverlayTree.reflectedRegisteredActivities = registeredActivitiesMock
+            debugOverlayTree.reflectedRunningActivities = runningActivitiesMock
+            debugOverlayTree.reflectedRegisteredAndRunningActivities = registeredAndRunningActivitiesMock
 
             debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityDestroyed(activity)
 
+            // L4: onActivityDestroyed must remove the Activity from every cache, not only
+            // registeredActivities, so no destroyed Activity is retained anywhere.
             verify(registeredActivitiesMock, times(1)).remove(activity)
+            verify(runningActivitiesMock, times(1)).remove(activity)
+            verify(registeredAndRunningActivitiesMock, times(1)).remove(activity)
+        }
+    }
+
+    // --- L3: init idempotence -------------------------------------------------------------
+
+    @Test
+    fun init_sameApplication_isNoOpAndDoesNotReRegisterCallbacks() {
+        val freshTree = newDebugOverlayTree()
+        reflectedInstance = freshTree
+
+        val first = DebugOverlayTree.init(application)
+        val handleAfterFirstInit = freshTree.reflectedOverlayView
+        val callback = freshTree.reflectedActivityLifecycleCallbacks
+
+        val second = DebugOverlayTree.init(application)
+
+        assertThat(second, isEqualTo(sameInstance(first)))
+        assertThat(freshTree.reflectedOverlayView, isEqualTo(sameInstance(handleAfterFirstInit)))
+        verify(application, times(1)).registerActivityLifecycleCallbacks(callback)
+    }
+
+    @Test
+    fun init_differentApplication_throwsAndDoesNotChangeState() {
+        val freshTree = newDebugOverlayTree()
+        reflectedInstance = freshTree
+        DebugOverlayTree.init(application)
+        val handleBefore = freshTree.reflectedOverlayView
+        val messagesBefore = freshTree.reflectedMessages
+        val otherApplication = mock(Application::class.java)
+
+        try {
+            DebugOverlayTree.init(otherApplication)
+            fail("expected IllegalStateException")
+        } catch (expected: IllegalStateException) {
+            // no-op
+        }
+
+        assertThat(freshTree.reflectedOverlayView, isEqualTo(sameInstance(handleBefore)))
+        assertThat(freshTree.reflectedMessages, isEqualTo(sameInstance(messagesBefore)))
+        verify(otherApplication, never()).registerActivityLifecycleCallbacks(any())
+    }
+
+    @Test
+    fun init_afterSuccessfulDispose_reinitializesCleanlyWithExactlyOneCallbackAndOneHandle() {
+        val freshTree = newDebugOverlayTree()
+        reflectedInstance = freshTree
+        DebugOverlayTree.init(application)
+        val callback = freshTree.reflectedActivityLifecycleCallbacks
+        val firstHandle = freshTree.reflectedOverlayView
+
+        val disposeResult = freshTree.dispose()
+        assertThat(disposeResult.isSuccess, isEqualTo(true))
+        assertThat(freshTree.reflectedOverlayView, isEqualTo(nullValue()))
+
+        val reInitialized = DebugOverlayTree.init(application)
+
+        assertThat(reInitialized, isEqualTo(sameInstance(freshTree)))
+        assertThat(freshTree.reflectedOverlayView, isEqualTo(notNullValue()))
+        assertThat(freshTree.reflectedOverlayView, not(sameInstance(firstHandle)))
+        // Exactly one live registration: register() called once per init, unregister() called
+        // once by the successful dispose in between -- net one active callback.
+        verify(application, times(2)).registerActivityLifecycleCallbacks(callback)
+        verify(application, times(1)).unregisterActivityLifecycleCallbacks(callback)
+    }
+
+    // --- L2: dispose() -----------------------------------------------------------------------
+
+    @Test
+    fun dispose_success_releasesEverythingAndIsIdempotent() {
+        debugOverlayTree.callInitialize(application)
+        val callback = debugOverlayTree.reflectedActivityLifecycleCallbacks
+
+        val result = debugOverlayTree.dispose()
+
+        assertThat(result.isSuccess, isEqualTo(true))
+        assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(nullValue()))
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(nullValue()))
+        assertThat(debugOverlayTree.reflectedRegisteredActivities, isEqualTo(nullValue()))
+        assertThat(debugOverlayTree.reflectedRunningActivities, isEqualTo(nullValue()))
+        assertThat(debugOverlayTree.reflectedRegisteredAndRunningActivities, isEqualTo(nullValue()))
+        verify(application, times(1)).unregisterActivityLifecycleCallbacks(callback)
+
+        reflectedInstance = debugOverlayTree
+        try {
+            DebugOverlayTree.getInstance()
+            fail("expected IllegalStateException")
+        } catch (expected: IllegalStateException) {
+            // no-op
+        }
+
+        val secondDispose = debugOverlayTree.dispose()
+        assertThat(secondDispose.isSuccess, isEqualTo(true))
+        assertThat(secondDispose.changed, isEqualTo(false))
+        assertThat(secondDispose.state, isEqualTo(OverlayState.DISPOSED))
+        // Still just once: a repeated dispose after success never touches the callback again.
+        verify(application, times(1)).unregisterActivityLifecycleCallbacks(callback)
+    }
+
+    @Test
+    fun dispose_failedUnderlyingDisposal_isTransactionalAndRetryable() {
+        val backend = RecordingBackend(hideFailure = RuntimeException("boom"))
+        OverlayWindowManager.setApplicationInstance(backend)
+        debugOverlayTree.callInitialize(application)
+        val handle = debugOverlayTree.reflectedOverlayView!!
+        assertThat(handle.show().isSuccess, isEqualTo(true))
+        assertThat(handle.state, isEqualTo(OverlayState.ATTACHED))
+
+        val result = debugOverlayTree.dispose()
+
+        assertThat(result.isSuccess, isEqualTo(false))
+        assertThat(backend.hideCalls, isEqualTo(1))
+        // Nothing is cleared on a failed dispose: the handle, caches and buffer are all intact.
+        assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(sameInstance(handle)))
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(notNullValue()))
+        assertThat(debugOverlayTree.reflectedRegisteredActivities, isEqualTo(notNullValue()))
+
+        // log() still works: the tree remains fully active after a failed dispose.
+        debugOverlayTree.callLog(Log.DEBUG, "tag", "still logging", null)
+        assertThat(debugOverlayTree.reflectedMessages!!.contains("tag: still logging"), isEqualTo(true))
+
+        // A retried dispose succeeds once the backend recovers, without a new handle.
+        backend.hideFailure = null
+        val retryResult = debugOverlayTree.dispose()
+
+        assertThat(retryResult.isSuccess, isEqualTo(true))
+        assertThat(backend.hideCalls, isEqualTo(2))
+        assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(nullValue()))
+    }
+
+    @Test
+    fun setMaxLines_afterSuccessfulDispose_doesNotCrash() {
+        debugOverlayTree.callInitialize(application)
+        debugOverlayTree.dispose()
+
+        debugOverlayTree.setMaxLines(3)
+
+        assertThat(debugOverlayTree.reflectedMaxLines, isEqualTo(3))
+    }
+
+    // --- Codex finding #3: dispose() enforces the main-thread contract on every path ----------
+
+    /**
+     * Covers the branch where [DebugOverlayTree.dispose] is called while initialized (so it
+     * reaches the underlying handle). This branch always had a main-thread check -- delegated to
+     * the underlying `OverlayView.dispose()` -- so this asserts the pre-existing, still-correct
+     * behavior rather than a fix.
+     */
+    @Test
+    fun dispose_calledOffMainThread_whileInitialized_throwsAndChangesNothing() {
+        debugOverlayTree.callInitialize(application)
+
+        val error = disposeOnBackgroundThreadAndCaptureFailure()
+
+        assertThat(error, instanceOf(IllegalStateException::class.java))
+        assertThat(debugOverlayTree.reflectedOverlayView, isEqualTo(notNullValue()))
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(notNullValue()))
+    }
+
+    /**
+     * Codex finding #3 regression: before the fix, the uninitialized/no-op early-return branch of
+     * [DebugOverlayTree.dispose] (`overlayView == null`) skipped the underlying handle entirely --
+     * and, with it, the underlying handle's own main-thread check -- so calling `dispose()` off
+     * the main thread while never initialized silently returned a fake successful [OverlayResult]
+     * instead of throwing. [DebugOverlayTree.dispose] now checks the main thread itself, as its
+     * very first statement, before this branch is ever reached.
+     */
+    @Test
+    fun dispose_calledOffMainThread_whileNeverInitialized_throwsIllegalStateException() {
+        // debugOverlayTree is fresh from setUp() -- never initialized.
+        val error = disposeOnBackgroundThreadAndCaptureFailure()
+
+        assertThat(error, instanceOf(IllegalStateException::class.java))
+    }
+
+    /**
+     * Codex finding #3 regression, on the OTHER no-op branch: after a successful dispose,
+     * `overlayView` is `null` again, so this exercises the exact same previously-unchecked early
+     * return as the never-initialized case above, but reached via a different path.
+     */
+    @Test
+    fun dispose_calledOffMainThread_afterSuccessfulDispose_throwsIllegalStateException() {
+        debugOverlayTree.callInitialize(application)
+        assertThat(debugOverlayTree.dispose().isSuccess, isEqualTo(true))
+
+        val error = disposeOnBackgroundThreadAndCaptureFailure()
+
+        assertThat(error, instanceOf(IllegalStateException::class.java))
+    }
+
+    private fun disposeOnBackgroundThreadAndCaptureFailure(): Throwable? {
+        val errors: MutableList<Throwable> = Collections.synchronizedList(ArrayList())
+        val doneLatch = CountDownLatch(1)
+        val thread = Thread {
+            try {
+                debugOverlayTree.dispose()
+            } catch (e: Throwable) {
+                errors.add(e)
+            } finally {
+                doneLatch.countDown()
+            }
+        }
+        thread.start()
+        assertThat(doneLatch.await(10, TimeUnit.SECONDS), isEqualTo(true))
+        assertThat(errors.size, isEqualTo(1))
+        return errors.firstOrNull()
+    }
+
+    // --- L1: denied permission is logged and non-fatal ------------------------------------
+
+    @Test
+    fun onActivityStarted_permissionDenied_isNonFatalAndLeavesTreeConsistent() {
+        ShadowSettings.setCanDrawOverlays(false)
+        debugOverlayTree.callInitialize(application)
+        val activityForTest = Robolectric.buildActivity(Activity::class.java).create().get()
+
+        // Not yet running: register() only records bookkeeping, no show() attempted.
+        debugOverlayTree.register(activityForTest)
+        // Starting it drives the first (and only) show() attempt, which the denied permission fails.
+        debugOverlayTree.reflectedActivityLifecycleCallbacks.onActivityStarted(activityForTest)
+
+        val handle = debugOverlayTree.reflectedOverlayView!!
+        assertThat(handle.state, isEqualTo(OverlayState.CONFIGURED))
+        assertThat(handle.lastFailure, isEqualTo(OverlayFailure.PERMISSION_DENIED))
+        // Bookkeeping is unaffected by the failed show -- the tree stays internally consistent.
+        assertThat(debugOverlayTree.reflectedRegisteredAndRunningActivities!!.contains(activityForTest), isEqualTo(true))
+    }
+
+    // --- L5: generation-guarded render -----------------------------------------------------
+
+    @Test
+    fun render_queuedBeforeSuccessfulDispose_isANoOp() {
+        debugOverlayTree.callInitialize(application)
+        val loggingThread = Thread {
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "queued before dispose", null)
+        }
+        loggingThread.start()
+        loggingThread.join(10_000)
+
+        val disposeResult = debugOverlayTree.dispose()
+        assertThat(disposeResult.isSuccess, isEqualTo(true))
+
+        // Must not throw when the already-queued render finally runs against a disposed tree.
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(nullValue()))
+    }
+
+    @Test
+    fun render_queuedBeforeSuccessfulDisposeAndReinit_rendersNothingFromTheOldGeneration() {
+        debugOverlayTree.callInitialize(application)
+        val loggingThread = Thread {
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "stale message", null)
+        }
+        loggingThread.start()
+        loggingThread.join(10_000)
+
+        val disposeResult = debugOverlayTree.dispose()
+        assertThat(disposeResult.isSuccess, isEqualTo(true))
+
+        reflectedInstance = debugOverlayTree
+        DebugOverlayTree.init(application)
+        val newHandle = debugOverlayTree.reflectedOverlayView!!
+
+        // Drains the stale render Runnable, if the generation guard failed to skip it.
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(newHandle.view.text.toString(), isEqualTo(""))
+    }
+
+    /**
+     * Codex finding #1 regression: a stale render queued before a successful dispose must never
+     * block or lose a fresh log() issued in the NEW generation before the stale Runnable drains.
+     * Before the fix, scheduling tracked a single renderPending boolean shared across
+     * generations: the fresh log() below would lose its CAS to that stale flag (still `true` from
+     * the pre-dispose schedule), and the stale Runnable's own generation check would then bail
+     * without rendering anything, so the fresh message was rendered only much later, and only if
+     * some unrelated log() call happened to arrive afterward. Tracking the pending generation
+     * itself (instead of a plain flag) fixes this: a fresh log() in a new generation always
+     * re-arms scheduling.
+     *
+     * The queue order is made explicit and deterministic here: every log() call runs on its own
+     * background thread and is `join()`-ed before the next step proceeds, so by the time this
+     * test reaches the intermediate assertion, BOTH the stale (pre-dispose) and the fresh
+     * (post-reinit) render Runnables are known to be sitting, undrained, in the main-thread queue
+     * -- neither has run yet, which the intermediate assertion below confirms. Only the final
+     * `shadowOf(...).idle()` call drains that queue, in FIFO order (stale first, fresh second).
+     */
+    @Test
+    fun log_newMessageBeforeStaleRenderDrains_rendersExactlyTheFreshMessageOnce() {
+        debugOverlayTree.callInitialize(application)
+
+        // Step 1: a background log() in the OLD generation schedules (queues) a render.
+        val staleLoggingThread = Thread {
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "stale message", null)
+        }
+        staleLoggingThread.start()
+        staleLoggingThread.join(10_000)
+
+        // Step 2: dispose (main thread) succeeds while that stale render Runnable is still
+        // sitting, undrained, in the queue -- generation advances, buffer/handle released.
+        val disposeResult = debugOverlayTree.dispose()
+        assertThat(disposeResult.isSuccess, isEqualTo(true))
+
+        // Step 3: re-init (main thread) -- generation advances again, a fresh handle/buffer/
+        // TextView created.
+        reflectedInstance = debugOverlayTree
+        DebugOverlayTree.init(application)
+        val newHandle = debugOverlayTree.reflectedOverlayView!!
+
+        // Step 4: a NEW background log() in the NEW generation, issued strictly before the stale
+        // Runnable from step 1 is drained (draining happens only in step 6, below). This is
+        // exactly the ordering Codex's finding #1 describes.
+        val freshLoggingThread = Thread {
+            debugOverlayTree.callLog(Log.DEBUG, "tag", "fresh message", null)
+        }
+        freshLoggingThread.start()
+        freshLoggingThread.join(10_000)
+
+        // Step 5 (intermediate assertion): nothing has been rendered yet -- both the stale (step
+        // 1) and fresh (step 4) render Runnables are still queued, undrained, on the main thread.
+        assertThat(newHandle.view.text.toString(), isEqualTo(""))
+
+        // Step 6: drain the whole queue in one pass -- both Runnables run, in FIFO order.
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(newHandle.view.text.toString(), isEqualTo("tag: fresh message"))
+    }
+
+    @Test
+    fun log_afterSuccessfulDispose_isSilentNoOpFromAnyThread() {
+        debugOverlayTree.callInitialize(application)
+
+        val disposeResult = debugOverlayTree.dispose()
+        assertThat(disposeResult.isSuccess, isEqualTo(true))
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(nullValue()))
+
+        val errors: MutableList<Throwable> = Collections.synchronizedList(ArrayList())
+        val doneLatch = CountDownLatch(1)
+        val loggingThread = Thread {
+            try {
+                debugOverlayTree.callLog(Log.DEBUG, "tag", "after dispose", null)
+            } catch (e: Throwable) {
+                errors.add(e)
+            } finally {
+                doneLatch.countDown()
+            }
+        }
+        loggingThread.start()
+        assertThat(doneLatch.await(10, TimeUnit.SECONDS), isEqualTo(true))
+        loggingThread.join(10_000)
+
+        assertThat(errors.isEmpty(), isEqualTo(true))
+        assertThat(debugOverlayTree.reflectedMessages, isEqualTo(nullValue()))
+    }
+
+    /** Records `hide` invocations and can be told to fail/recover on demand, per test step. */
+    private class RecordingBackend(var hideFailure: Throwable? = null) : OverlayWindowManager() {
+        var hideCalls = 0
+        override fun show(view: View, params: WindowManager.LayoutParams) = Unit
+        override fun update(view: View, params: WindowManager.LayoutParams) = Unit
+        override fun hide(view: View) {
+            hideCalls++
+            hideFailure?.let { throw it }
         }
     }
 }
