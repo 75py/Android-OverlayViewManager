@@ -143,3 +143,7 @@ T10を完了扱いとし、ClaudeへT04cの開始を依頼。最新workから新
 ユーザーが司令塔起動と継続を明示指示し、続いてhighではなくmediumへ訂正。新端末term_66423650-ee22-4e09-a6ba-65ed19561512を作成。最初の起動文字列はモデル名の角括弧がzsh glob解釈され未起動だったため、同端末で引用を修正してclaude --model 'claude-fable-5-1[1m]' --effort mediumを実行。画面にFable5.1 with medium effortを確認。権限回避オプションは追加していない。
 
 統合済みT07/T10、PR58の現SHAレビュー、T04cの隔離worktree・API整理・検証計画、所有境界、main/tag/publish禁止を引き継いだ。request62df7078-6f04-417e-bce6-2e82485896d7はinput_acceptedとturn_startedを確認。新しい調整Runと作業受領の返信は待ち。最新のmedium指示は古いhigh記述を上書きする。
+
+## 復旧司令塔の受領確認
+
+msg_c27a6649eba8 / delivery_7b155cb10022で、新端末term_66423650が既存run_3ae778449744へrun-useで再結合（consumer_generation5）したとの報告を受領。Fable5.1/medium、PR58レビューとT04c inventory開始を明示受諾した。PR58の対象SHAに関する質問には48c1da0ea08cf2c622215b3d93ec089b42ef32c0のままと回答。後続wave19のb2445ee/16bac48は意図的に分離しており、レビュー対象を変更しない。T04cの具体的worktree/branch/検証計画は返答待ち。通知をackした。
