@@ -155,3 +155,11 @@ msg_8e3b6f207facでPR58のhead48c1da0ea08cf2c622215b3d93ec089b42ef32c0へのClau
 msg_5ec55fdf68e9でT04c開始報告を受領し、msg_7c6eaee7c67eで合意。worktree /Users/ai-seb/orca/workspaces/Android-OverlayViewManager/claude-3.0.0-t04c-api-cleanup、branch codex/claude-3.0.0-t04c-api-cleanup、base97080616。Claude Fable5.1/mediumが直接作業。対象はOverlayViewの18旧bridgeとpending/custom listener管理、managerの旧権限/表示サイズAPI、旧permission dialogとstrings/fragment依存、drag内部旧API呼出し。private constructorとfactory、JvmSyntheticを含むJVM可視性監査。内部public/RestrictToテスト接点の残存理由を明記し、syntheticをアクセス制御と説明しない。意味のある旧テストの振る舞いは新APIで維持する。
 
 予定検証はcore assemble/unit/lint/androidTest APK、Timber assemble/unit、sample assemble/unit/lint、lint:testとjavap。lint stage2の新API対応はT04cに混ぜず、移行文書の暫定bridge説明は統合後Codexが変更する。T12はAPI23/26/35/36、別UID透過、両scope/非ゼロ原点/RTL/edge-to-edge/画面外配置でDOWN時no-jumpと実画面移動量の未完了検証を維持する。開始報告をack、候補SHA・検証結果待ち。
+
+## 来週まで中断（ユーザー明示指示、13:50 JST）
+
+msg_dba35bee09abで新規作業停止・安全な保存を依頼。msg_a3c564d0fd0dでClaudeが停止報告。T04c worktreeのHEADは93b0423121419c758032d79c51b537a10b96e898、branch codex/claude-3.0.0-t04c-api-cleanup、tracked cleanをCodexも確認。commit1はOverlayView旧bridge/pending/custom listener状態除去、drag内部を新updateへ置換、state machineテスト移行。未push、PR未作成。ClaudeはJDK17/既知SDK/--offlineでcompileとcore:testDebugUnitTest成功を報告。CodexがXML実測108 tests・failure/error/skip0を確認した。全module/lint/公開API最終検証は未完了で、T04c完了とは扱わない。
+
+来週の再開順: Claudeが同worktreeからmanager旧permission/display API・dialog/strings/fragment依存整理、次に可視性hardeningを続ける。新APIのJava/Kotlin consumer確認、javap残存公開surface監査、合意済み全チェック、対向レビュー・CI後にPR統合する。Codexは移行文書の暫定bridge説明をT04c統合後に訂正。続いてlint stage2、T11成果物、T12全端末matrix、T13 release/3.0.0→main PR。main merge/tag/publishは行わない。
+
+Claude司令塔term_66423650と完了済みGradle端末term_1639d1fcは保持。新作業は開始しない。所有するemulator5580はadb emu killのOKを確認して停止、5554は操作していない。共有workはb4dff8f（PR58統合済み）。wave19の復旧・中断記録はローカル保存し、未承認のままworkへ統合しない。
