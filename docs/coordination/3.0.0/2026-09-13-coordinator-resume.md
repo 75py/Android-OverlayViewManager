@@ -133,3 +133,37 @@ msg_03e9bf655ad9の52caec4277b79153ff76fce840197c9c947c4cd5を確認。8185320�
 共有workをfast-forwardし、文書PR56のローカルリンクを統合済みsampleと提案文書へ照合して成功。現head1ca27f3・Claude承認5650579496・CI34730952948 SUCCESSを確認し、本文のdraft依存記述を検証済み状態へ改訂。ready化後に通常mergeし、97080616f4ccc4b796799fba5b8998c4283e4d5dへ統合（13:16:13 JST）。main/tag/publishは未実行。
 
 T10を完了扱いとし、ClaudeへT04cの開始を依頼。最新workから新しい隔離worktree、暫定2.x API除去、JVM可視性監査、Java/Kotlin consumer検証、影響範囲のcore/sample/Timber/lint確認が対象。具体的branch/worktree/検証計画は返答待ち。共有plan/logはCodex所有、lint stage2を無断で混在させない。T12の全端末matrixは引き続きrelease-blocking。
+
+## Claude受領未確認のチェックポイント
+
+計画・ログのdraft PR58をhead48c1da0で共有し、msg_a623a8fdc53aで対向レビューを依頼。Orca受信箱は空。term_57cc4804-a813-4bd9-a03b-f8a7fc9c92b3のterminal readはstatus exited、tailなしを返した。端末一覧には以前のClaude端末が残るが、別の監視端末にも実処理停止済みとの表示があり、稼働する司令塔やT04c受領を確認できない。メッセージのenqueueを着手確認と誤認しない。T04cとPR58レビューは返答待ち、旧端末を無断で再利用・停止していない。PR58のレビュー対象SHAは変更せず、本記録をwave19へ分離した。
+
+## Claude司令塔の復旧とmediumへの変更
+
+ユーザーが司令塔起動と継続を明示指示し、続いてhighではなくmediumへ訂正。新端末term_66423650-ee22-4e09-a6ba-65ed19561512を作成。最初の起動文字列はモデル名の角括弧がzsh glob解釈され未起動だったため、同端末で引用を修正してclaude --model 'claude-fable-5-1[1m]' --effort mediumを実行。画面にFable5.1 with medium effortを確認。権限回避オプションは追加していない。
+
+統合済みT07/T10、PR58の現SHAレビュー、T04cの隔離worktree・API整理・検証計画、所有境界、main/tag/publish禁止を引き継いだ。request62df7078-6f04-417e-bce6-2e82485896d7はinput_acceptedとturn_startedを確認。新しい調整Runと作業受領の返信は待ち。最新のmedium指示は古いhigh記述を上書きする。
+
+## 復旧司令塔の受領確認
+
+msg_c27a6649eba8 / delivery_7b155cb10022で、新端末term_66423650が既存run_3ae778449744へrun-useで再結合（consumer_generation5）したとの報告を受領。Fable5.1/medium、PR58レビューとT04c inventory開始を明示受諾した。PR58の対象SHAに関する質問には48c1da0ea08cf2c622215b3d93ec089b42ef32c0のままと回答。後続wave19のb2445ee/16bac48は意図的に分離しており、レビュー対象を変更しない。T04cの具体的worktree/branch/検証計画は返答待ち。通知をackした。
+
+## PR58統合とT04cの範囲合意（13:47 JST）
+
+msg_8e3b6f207facでPR58のhead48c1da0ea08cf2c622215b3d93ec089b42ef32c0へのClaude承認を受領。指定文をcomment5651211614へ代理投稿し、CI34737580394 SUCCESS確認後、通常mergeでb4dff8f27b20aefb7e192b1e1518d0af0235eef1へ統合。共有workもfast-forward。T10行の「作業中。完了」のnon-blocking nitを次の計画更新で訂正する。
+
+msg_5ec55fdf68e9でT04c開始報告を受領し、msg_7c6eaee7c67eで合意。worktree /Users/ai-seb/orca/workspaces/Android-OverlayViewManager/claude-3.0.0-t04c-api-cleanup、branch codex/claude-3.0.0-t04c-api-cleanup、base97080616。Claude Fable5.1/mediumが直接作業。対象はOverlayViewの18旧bridgeとpending/custom listener管理、managerの旧権限/表示サイズAPI、旧permission dialogとstrings/fragment依存、drag内部旧API呼出し。private constructorとfactory、JvmSyntheticを含むJVM可視性監査。内部public/RestrictToテスト接点の残存理由を明記し、syntheticをアクセス制御と説明しない。意味のある旧テストの振る舞いは新APIで維持する。
+
+予定検証はcore assemble/unit/lint/androidTest APK、Timber assemble/unit、sample assemble/unit/lint、lint:testとjavap。lint stage2の新API対応はT04cに混ぜず、移行文書の暫定bridge説明は統合後Codexが変更する。T12はAPI23/26/35/36、別UID透過、両scope/非ゼロ原点/RTL/edge-to-edge/画面外配置でDOWN時no-jumpと実画面移動量の未完了検証を維持する。開始報告をack、候補SHA・検証結果待ち。
+
+## 来週まで中断（ユーザー明示指示、13:50 JST）
+
+msg_dba35bee09abで新規作業停止・安全な保存を依頼。msg_a3c564d0fd0dでClaudeが停止報告。T04c worktreeのHEADは93b0423121419c758032d79c51b537a10b96e898、branch codex/claude-3.0.0-t04c-api-cleanup、tracked cleanをCodexも確認。commit1はOverlayView旧bridge/pending/custom listener状態除去、drag内部を新updateへ置換、state machineテスト移行。未push、PR未作成。ClaudeはJDK17/既知SDK/--offlineでcompileとcore:testDebugUnitTest成功を報告。CodexがXML実測108 tests・failure/error/skip0を確認した。全module/lint/公開API最終検証は未完了で、T04c完了とは扱わない。
+
+来週の再開順: Claudeが同worktreeからmanager旧permission/display API・dialog/strings/fragment依存整理、次に可視性hardeningを続ける。新APIのJava/Kotlin consumer確認、javap残存公開surface監査、合意済み全チェック、対向レビュー・CI後にPR統合する。Codexは移行文書の暫定bridge説明をT04c統合後に訂正。続いてlint stage2、T11成果物、T12全端末matrix、T13 release/3.0.0→main PR。main merge/tag/publishは行わない。
+
+Claude司令塔term_66423650と完了済みGradle端末term_1639d1fcは保持。新作業は開始しない。所有するemulator5580はadb emu killのOKを確認して停止、5554は操作していない。共有workはb4dff8f（PR58統合済み）。wave19の復旧・中断記録はローカル保存し、未承認のままworkへ統合しない。
+
+### 最終停止報告の補足（作業再開なし）
+
+msg_5829f3b818daでClaudeから最終確認。93b0423はclean、build実行中なし。実行済みは--offlineのcore:compileDebugKotlin / compileDebugUnitTestKotlin / compileDebugUnitTestJavaWithJavac（6秒、build/t04c-compile1.log）、core:testDebugUnitTest（11秒、build/t04c-test1.log、108件成功）。未実行はTimber/sample/lint、lintDebug、androidTest compile、javap、connected。旧pending-spec失敗テストは既存failedUpdateテストが対応、custom-listener2件は機能削除に伴い廃止、setter chainはlayoutUpdateReachesTheBackendSnapshotAndClicksStayOnTheViewへ移行。Claudeは5580/5554未使用で、来週のユーザー再開指示までidle。中断状態を維持して通知だけ処理した。
