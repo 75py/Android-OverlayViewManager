@@ -115,3 +115,9 @@ msg_8b9d88647fa2 / delivery_3053526e4125の追加診断依頼を処理。専用5
 msg_c59c4fe58bea / delivery_894075371929のa99620f8b73caa54f6616fe01f7c06b9d5c031c0を検証。差分は6画面のfitsSystemWindows追加のみ、tracked clean。6 Gradle tasksは4秒で成功、unit成功XML4件（failure/error/skip0）、lintエラー0・警告59。5580のconnectedテストは3件すべて成功（XML time111.925s、failure/error/skip0）。ログは/private/tmp/overlay-t10a-validation-a99620f.logとoverlay-t10a-connected-a99620f.log。
 
 手動確認で権限Allowed、Sample1赤いclick:0、Sample2アイコン表示→停止で消失・retryなし、AllOptions ATTACHEDを画像で確認。証拠/private/tmp/overlay-t10a-smoke/a99620f-*.pngを保存。ボタンはy210以降へ移りバーとの重なりを解消した。一方Sample1/2のコード欄が空白で、assetsの4HTMLすべてに<style>はあるが</style>がないことを確認。msg_0d8cb4294149で具体的修正とコード例の表示確認をClaudeへ依頼。専有解除、候補承認・PR作成・mergeは保留。画像はローカルのみでPR添付済みと扱わない。通知をackした。
+
+## T10 HTML表示修正の確認と画像引継ぎ
+
+msg_7c0b2038baf3 / delivery_b4b6c98c1546の8185320a4f415d7996080c211fb9817cf01351e7を検証。差分は4HTMLへの閉じstyleタグ追加だけ。最初のGradle実行は自動承認レビュー時間切れで未起動、明示許可された1回の再試行は成功。6 tasksは3秒（9 executed/156 up-to-date）。
+
+専用5580へ修正APKを再インストールし、Sample1/2/Timber/brightnessで説明と色付けされたコード例を画像で確認。7画面の証拠を/private/tmp/overlay-t10a-smoke/8185320-{start,sample1,sample2-start,sample2-stop,all-options,timber,brightness}.pngとXMLへ保存してClaudeに引継ぎ。sample/screenshots/3.0.0/への最終画像コミットはClaude担当、既存untracked画像をCodexは変更していない。HTML/PNGだけの後続差分ならconnected再実行は不要とし、a99620fの3件成功と8185320の手動表示確認を区別して記載する。最終SHAとPRは未完了。通知をackした。
