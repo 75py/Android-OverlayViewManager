@@ -146,7 +146,8 @@ public class SampleAllOptionsActivityTest {
         ViewInteraction showButton = onView(withId(R.id.btn_show));
         showButton.check(ViewAssertions.matches(withText("show()")));
         performAndWait(showButton, scrollTo(), click());
-        assertEquals(OverlayState.ATTACHED, activity.overlayView.getState());
+        assertEquals("lastFailure=" + activity.overlayView.getLastFailure(),
+                OverlayState.ATTACHED, activity.overlayView.getState());
 
         // Width
         if (!skipWidth) {
@@ -304,7 +305,8 @@ public class SampleAllOptionsActivityTest {
             performAndWait(seekMarginHorizontal, scrollTo(), clickSeekBar(0));
         }
         // Every update() above kept the window attached.
-        assertEquals(OverlayState.ATTACHED, activity.overlayView.getState());
+        assertEquals("lastFailure=" + activity.overlayView.getLastFailure(),
+                OverlayState.ATTACHED, activity.overlayView.getState());
     }
 
     // https://qiita.com/yakitorizanmai/items/07c730db6bfccd5ff95f

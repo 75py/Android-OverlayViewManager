@@ -87,8 +87,10 @@ public class Sample1ActivityTest {
         appCompatButton2.perform(click());
 
         waitALittle();
-        // state is a thread-safe read: the show() requested by the button succeeded.
-        assertEquals(OverlayState.ATTACHED, activity.getOverlayView().getState());
+        // state is a thread-safe read: the show() requested by the button succeeded. lastFailure
+        // is included so a failing run explains why the window was not attached.
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.ATTACHED, activity.getOverlayView().getState());
         ViewInteraction textView4 = onView(
                 allOf(withId(R.id.sample_text_view), withText("click:0"), isDisplayed()))
                 .inRoot(RootMatchers.withDecorView(not(is(activity.getWindow().getDecorView()))));
@@ -160,6 +162,7 @@ public class Sample1ActivityTest {
             uiDevice.drag(startX, startY, endX, endY, step);
         }
         // Dragging moves the window but never detaches it.
-        assertEquals(OverlayState.ATTACHED, activity.getOverlayView().getState());
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.ATTACHED, activity.getOverlayView().getState());
     }
 }
