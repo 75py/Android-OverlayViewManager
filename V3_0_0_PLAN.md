@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-09-13 09:35 JST、ユーザーの明示指示で再開**。T08まで統合済み。T07寿命管理はPR54で6c9e2aaへ統合済み。40 unit tests・lint・3 module build成功、最終SHAの対向承認・CI成功を確認。次はClaude司令塔がT10 sample・移行文書を直接担当する。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
+- 状態: **2026-09-13 09:35 JST、ユーザーの明示指示で再開**。T08まで統合済み。T07寿命管理はPR54で6c9e2aaへ統合済み。40 unit tests・lint・3 module build成功、最終SHAの対向承認・CI成功を確認。T10a/sampleはClaude、T10b/移行文書はCodexが直接担当し、別worktreeで並行作業中。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。

@@ -59,3 +59,15 @@ PR54はhead c13acee8884bb3426142bf2e53c6f0ff542d4503、Codex承認5649833960、C
 msg_1ecbcd072166でClaudeへ統合を通知し、既存C1/K1–K7の下でT10a/sampleとT10b/docsを直接作業するよう依頼。具体的worktree/branchの開始記録は受領待ち。Kotlin組み込み方式・sample/assets同一所有・版数未変更・T04cはT10後・専用AVDによるsmokeとスクリーンショット・無関係なemulator5554は触らない制約を再掲した。
 
 追加の代理許可: delivery_3f500779b858のack/受信待ち/JSON整形コマンド、およびcore公開APIの指定ファイルをgrep表示するだけのコマンドを全体確認してraw Enterで許可。worker-releaseや設定緩和は含まない。PR55（head6addac4、CI34729477343 SUCCESS）はClaude承認待ちで、headを固定して以後の記録をcoordination-wave18へ分離した。
+
+## T10分担の確定と文書初稿
+
+PR55はhead6addac4・Claude承認5649867149（msg_2e289c029277の依頼文を代理投稿）・CI34729477343 SUCCESS・MERGEABLE/CLEAN確認後、02a6debe188c4fcb130f41ea31d3cffa8b41c53eへ通常merge（10:10:44 JST）。共有checkoutを同SHAへfast-forward。PR55承認文送信/受信待ち、およびgit rev-parse/log + 受信待ちの表示コマンドは全体確認後に代理許可した。
+
+待ち時間を減らすためmsg_ad81e86d0001でT10の直接分担を提案。msg_b3e18d2f8544で双方が明示合意し、ClaudeはT10b未編集と確認した。
+
+- Claude Fable5.1/high: claude-3.0.0-t10a-sample、branch codex/claude-3.0.0-t10a-sample、base02a6deb。sample/**（assets/androidTest含む）と専用AVD smokeを所有。ローカル検証が制限される場合はCodexが指定コマンドを実行。
+- Codex Astra/medium: codex-3.0.0-t10b-docs、branch codex/codex-3.0.0-t10b-docs、base6c9e2aa。README.md、CHANGELOG.md、docs/migration/**のみ。Orcaの専用worktreeで親が直接作業、新規サブエージェントなし。
+- 相互レビューを維持し、sampleのコンパイル済みコード例と文書を照合後に受け入れる。T04cは両方の統合後。
+
+文書初稿d90b0dcbef136b50855ebca923cb2016eed0924bを保存。新API・結果・両scopeの所有・権限復帰・破棄失敗のretry・threading・Timber・未リリース状態を記述。ローカルリンクとMarkdown fence、git diff --check成功。文書のみでGradle未実行。msg_dc55cc182244でClaudeへレビュー依頼、コンパイル済みsampleとの最終照合は未完了と明記した。
