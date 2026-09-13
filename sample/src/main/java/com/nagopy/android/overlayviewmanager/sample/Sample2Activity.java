@@ -39,7 +39,7 @@ import timber.log.Timber;
  * application-level {@link Sample2OverlayController}, not by the Service, so a failed disposal
  * keeps a retry path after the Service is gone.
  */
-public class Sample2Activity extends BaseSampleWithCodeActivity {
+public class Sample2Activity extends BaseSampleWithCodeActivity implements Sample2OverlayController.Listener {
 
     private ActivityManager activityManager;
     private Button retryDisposeButton;
@@ -55,7 +55,21 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        refreshRetryButton();
+        // The controller reports every dispose()/show() outcome, so the retry control appears as
+        // soon as the Service's disposal fails, without polling or timers.
+        Sample2OverlayController.get().setListener(this);
+        onRetainedHandleChanged(Sample2OverlayController.get().hasRetainedFailedDisposal());
+    }
+
+    @Override
+    protected void onStop() {
+        Sample2OverlayController.get().setListener(null);
+        super.onStop();
+    }
+
+    @Override
+    public void onRetainedHandleChanged(boolean retainedAfterFailedDisposal) {
+        retryDisposeButton.setVisibility(retainedAfterFailedDisposal ? View.VISIBLE : View.GONE);
     }
 
     public void onClick(View view) {
@@ -65,19 +79,11 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
             if (!disposed.isSuccess()) {
                 Timber.w(disposed.getCause(), "Retry of dispose() failed again: %s", disposed.getFailure());
             }
-            refreshRetryButton();
         } else if (isServiceRunning()) {
             stopService(new Intent(this, Sample2Service.class));
-            // The Service is destroyed asynchronously; look again shortly afterwards.
-            view.postDelayed(this::refreshRetryButton, 500);
         } else {
             startService(new Intent(this, Sample2Service.class));
         }
-    }
-
-    private void refreshRetryButton() {
-        boolean retained = Sample2OverlayController.get().hasHandle() && !isServiceRunning();
-        retryDisposeButton.setVisibility(retained ? View.VISIBLE : View.GONE);
     }
 
     private boolean isServiceRunning() {

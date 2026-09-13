@@ -27,6 +27,11 @@ pre {
 <pre class="prettyprint">
 final class Sample2OverlayController {
 
+    /** Notified on the main thread whenever hasRetainedFailedDisposal() may have changed. */
+    interface Listener {
+        void onRetainedHandleChanged(boolean retainedAfterFailedDisposal);
+    }
+
     private static final Sample2OverlayController INSTANCE = new Sample2OverlayController();
 
     static Sample2OverlayController get() {
@@ -35,6 +40,9 @@ final class Sample2OverlayController {
 
     @Nullable
     private OverlayView&lt;ImageView&gt; overlayView;
+    private boolean retainedAfterFailedDisposal;
+    @Nullable
+    private Listener listener;
 
     /** Creates the handle on first use with the application context and shows it. */
     @MainThread
@@ -52,10 +60,12 @@ final class Sample2OverlayController {
                     new OverlaySpec.Builder().setTouchMode(OverlayTouchMode.DRAGGABLE).build());
             overlayView = handle;
         }
-        return handle.show();
+        OverlayResult result = handle.show();
+        setRetained(false);
+        return result;
     }
 
-    /** On failure the handle is kept, still attached, so that a later explicit call can retry. */
+    /** On failure the SAME handle is kept, still attached, so that a later explicit call can retry. */
     @MainThread
     OverlayResult dispose() {
         OverlayView&lt;ImageView&gt; handle = overlayView;
@@ -66,11 +76,25 @@ final class Sample2OverlayController {
         if (result.isSuccess()) {
             overlayView = null;
         }
+        setRetained(!result.isSuccess());
         return result;
     }
 
-    boolean hasHandle() {
-        return overlayView != null;
+    boolean hasRetainedFailedDisposal() {
+        return retainedAfterFailedDisposal;
+    }
+
+    @MainThread
+    void setListener(@Nullable Listener listener) {
+        this.listener = listener;
+    }
+
+    private void setRetained(boolean retained) {
+        retainedAfterFailedDisposal = retained;
+        Listener current = listener;
+        if (current != null) {
+            current.onRetainedHandleChanged(retained);
+        }
     }
 }
 </pre>
@@ -107,18 +131,35 @@ public static class Sample2Service extends Service {
 }
 </pre>
 <pre class="prettyprint">
-// Sample2Activity: the Start / Stop button toggles the Service; the retry button appears only
-// while the controller still holds a handle after the Service stopped.
+// Sample2Activity implements Sample2OverlayController.Listener. The Start / Stop button toggles
+// the Service; the retry control is shown by the controller's notification, never by a timer.
+@Override
+protected void onStart() {
+    super.onStart();
+    Sample2OverlayController.get().setListener(this);
+    onRetainedHandleChanged(Sample2OverlayController.get().hasRetainedFailedDisposal());
+}
+
+@Override
+protected void onStop() {
+    Sample2OverlayController.get().setListener(null);
+    super.onStop();
+}
+
+@Override
+public void onRetainedHandleChanged(boolean retainedAfterFailedDisposal) {
+    retryDisposeButton.setVisibility(retainedAfterFailedDisposal ? View.VISIBLE : View.GONE);
+}
+
 public void onClick(View view) {
     if (view.getId() == R.id.btn_retry_dispose) {
+        // Explicit, user-driven retry of a disposal that failed when the Service stopped.
         OverlayResult disposed = Sample2OverlayController.get().dispose();
         if (!disposed.isSuccess()) {
             Timber.w(disposed.getCause(), "Retry of dispose() failed again: %s", disposed.getFailure());
         }
-        refreshRetryButton();
     } else if (isServiceRunning()) {
         stopService(new Intent(this, Sample2Service.class));
-        view.postDelayed(this::refreshRetryButton, 500);
     } else {
         startService(new Intent(this, Sample2Service.class));
     }

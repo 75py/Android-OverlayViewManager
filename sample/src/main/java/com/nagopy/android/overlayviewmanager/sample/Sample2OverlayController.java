@@ -38,6 +38,11 @@ import com.nagopy.android.overlayviewmanager.OverlayViewManager;
  */
 final class Sample2OverlayController {
 
+    /** Notified on the main thread whenever {@link #hasRetainedFailedDisposal()} may have changed. */
+    interface Listener {
+        void onRetainedHandleChanged(boolean retainedAfterFailedDisposal);
+    }
+
     private static final Sample2OverlayController INSTANCE = new Sample2OverlayController();
 
     static Sample2OverlayController get() {
@@ -46,8 +51,12 @@ final class Sample2OverlayController {
 
     @Nullable
     private OverlayView<ImageView> overlayView;
+    private boolean retainedAfterFailedDisposal;
+    @Nullable
+    private Listener listener;
 
-    private Sample2OverlayController() {
+    /** Package-private so a unit test can use a fresh instance instead of the process singleton. */
+    Sample2OverlayController() {
     }
 
     /** Creates the handle on first use with the application context and shows it. */
@@ -67,12 +76,14 @@ final class Sample2OverlayController {
                     new OverlaySpec.Builder().setTouchMode(OverlayTouchMode.DRAGGABLE).build());
             overlayView = handle;
         }
-        return handle.show();
+        OverlayResult result = handle.show();
+        setRetained(false);
+        return result;
     }
 
     /**
-     * Disposes the handle. On failure the handle is kept, still attached, so that a later explicit
-     * call can retry; only a successful disposal drops it.
+     * Disposes the handle. On failure the same handle is kept, still attached, so that a later
+     * explicit call can retry; only a successful disposal drops it.
      */
     @MainThread
     OverlayResult dispose() {
@@ -84,11 +95,30 @@ final class Sample2OverlayController {
         if (result.isSuccess()) {
             overlayView = null;
         }
+        setRetained(!result.isSuccess());
         return result;
     }
 
     /** True while a handle exists, including one retained after a failed {@link #dispose()}. */
     boolean hasHandle() {
         return overlayView != null;
+    }
+
+    /** True only after a failed {@link #dispose()}, until a later dispose() succeeds or show() runs. */
+    boolean hasRetainedFailedDisposal() {
+        return retainedAfterFailedDisposal;
+    }
+
+    @MainThread
+    void setListener(@Nullable Listener listener) {
+        this.listener = listener;
+    }
+
+    private void setRetained(boolean retained) {
+        retainedAfterFailedDisposal = retained;
+        Listener current = listener;
+        if (current != null) {
+            current.onRetainedHandleChanged(retained);
+        }
     }
 }
