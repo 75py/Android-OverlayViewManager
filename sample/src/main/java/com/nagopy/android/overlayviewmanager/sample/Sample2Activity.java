@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.nagopy.android.overlayviewmanager.sample;
 
 import android.app.ActivityManager;
@@ -21,14 +22,11 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.View;
-import android.widget.ImageView;
+import android.widget.Button;
 
 import androidx.annotation.Nullable;
 
 import com.nagopy.android.overlayviewmanager.OverlayResult;
-import com.nagopy.android.overlayviewmanager.OverlaySpec;
-import com.nagopy.android.overlayviewmanager.OverlayTouchMode;
-import com.nagopy.android.overlayviewmanager.OverlayView;
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 
 import java.util.List;
@@ -36,26 +34,50 @@ import java.util.List;
 import timber.log.Timber;
 
 /**
- * Application-scoped overlay owned by a {@link Service}: it stays on screen while the Service runs,
- * on top of other apps, so it needs the "display over other apps" permission for every show().
+ * Application-scoped overlay shown while a {@link Service} runs, on top of other apps, so it needs
+ * the "display over other apps" permission for every show(). The handle itself is owned by the
+ * application-level {@link Sample2OverlayController}, not by the Service, so a failed disposal
+ * keeps a retry path after the Service is gone.
  */
 public class Sample2Activity extends BaseSampleWithCodeActivity {
 
     private ActivityManager activityManager;
+    private Button retryDisposeButton;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample2);
         activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        retryDisposeButton = findViewById(R.id.btn_retry_dispose);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        refreshRetryButton();
     }
 
     public void onClick(View view) {
-        if (isServiceRunning()) {
+        if (view.getId() == R.id.btn_retry_dispose) {
+            // Explicit, user-driven retry of a disposal that failed when the Service stopped.
+            OverlayResult disposed = Sample2OverlayController.get().dispose();
+            if (!disposed.isSuccess()) {
+                Timber.w(disposed.getCause(), "Retry of dispose() failed again: %s", disposed.getFailure());
+            }
+            refreshRetryButton();
+        } else if (isServiceRunning()) {
             stopService(new Intent(this, Sample2Service.class));
+            // The Service is destroyed asynchronously; look again shortly afterwards.
+            view.postDelayed(this::refreshRetryButton, 500);
         } else {
             startService(new Intent(this, Sample2Service.class));
         }
+    }
+
+    private void refreshRetryButton() {
+        boolean retained = Sample2OverlayController.get().hasHandle() && !isServiceRunning();
+        retryDisposeButton.setVisibility(retained ? View.VISIBLE : View.GONE);
     }
 
     private boolean isServiceRunning() {
@@ -71,29 +93,17 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
 
     public static class Sample2Service extends Service {
 
-        OverlayView<ImageView> overlayView;
-
         @Override
         public void onCreate() {
             super.onCreate();
-            OverlayViewManager manager = OverlayViewManager.getInstance();
             // Application-scoped overlays always require the permission. The host decides what to
             // do when it is missing; this sample simply stops instead of asking the user again.
-            if (!manager.overlayPermission().isGranted(this)) {
+            if (!OverlayViewManager.getInstance().overlayPermission().isGranted(this)) {
                 Timber.w("Overlay permission is not granted; Sample2Service stops without showing anything.");
                 stopSelf();
                 return;
             }
-
-            ImageView imageView = createImageView();
-            // Ordinary click delivery stays on the View itself, even while DRAGGABLE.
-            imageView.setOnClickListener(v -> startActivity(
-                    new Intent(getApplicationContext(), Sample2Activity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
-
-            overlayView = manager.newOverlayView(
-                    imageView,
-                    new OverlaySpec.Builder().setTouchMode(OverlayTouchMode.DRAGGABLE).build());
-            OverlayResult shown = overlayView.show();
+            OverlayResult shown = Sample2OverlayController.get().show(this);
             if (!shown.isSuccess()) {
                 // e.g. PERMISSION_DENIED if the permission was revoked between the check and show().
                 Timber.w(shown.getCause(), "Sample2Service show() failed: %s", shown.getFailure());
@@ -103,13 +113,10 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
 
         @Override
         public void onDestroy() {
-            if (overlayView != null) {
-                OverlayResult disposed = overlayView.dispose();
-                if (!disposed.isSuccess()) {
-                    // A failed disposal keeps the handle retryable; a Service that is being destroyed
-                    // can only report it.
-                    Timber.w(disposed.getCause(), "Sample2Service dispose() failed: %s", disposed.getFailure());
-                }
+            OverlayResult disposed = Sample2OverlayController.get().dispose();
+            if (!disposed.isSuccess()) {
+                // The controller keeps the handle; Sample2Activity offers the explicit retry.
+                Timber.w(disposed.getCause(), "Sample2Service dispose() failed: %s; handle retained for retry", disposed.getFailure());
             }
             super.onDestroy();
         }
@@ -118,13 +125,6 @@ public class Sample2Activity extends BaseSampleWithCodeActivity {
         @Override
         public IBinder onBind(Intent intent) {
             return null;
-        }
-
-        ImageView createImageView() {
-            ImageView imageView = new ImageView(this);
-            imageView.setId(R.id.sample_image_view);
-            imageView.setImageResource(R.mipmap.ic_launcher);
-            return imageView;
         }
     }
 }
