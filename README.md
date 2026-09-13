@@ -172,7 +172,14 @@ Successful disposal unregisters callbacks and clears the buffer and Activity cac
 
 ## Development and limits
 
-See [the sample](sample/) and [the 3.0.0 migration guide](docs/migration/2.x-to-3.0.md). The library does not provide background execution, a foreground service, notifications, or automatic permission recovery. The host owns those responsibilities for long-running application overlays. OS and device window policies still apply.
+See [the 3.0.0 migration guide](docs/migration/2.x-to-3.0.md) and these sample sources:
+
+- [Kotlin Activity overlay](sample/src/main/kotlin/com/nagopy/android/overlayviewmanager/sample/Sample1Activity.kt).
+- [Java permission recheck](sample/src/main/java/com/nagopy/android/overlayviewmanager/sample/SampleStartActivity.java), without automatic showing on return.
+- [Java application overlay owner](sample/src/main/java/com/nagopy/android/overlayviewmanager/sample/Sample2OverlayController.java) and [Service/retry UI](sample/src/main/java/com/nagopy/android/overlayviewmanager/sample/Sample2Activity.java).
+- [Java spec updates and host-window bounds](sample/src/main/java/com/nagopy/android/overlayviewmanager/sample/SampleAllOptionsActivity.java).
+
+ The library does not provide background execution, a foreground service, notifications, or automatic permission recovery. The host owns those responsibilities for long-running application overlays. OS and device window policies still apply.
 
 The release's device matrix, including cross-UID pass-through and edge-to-edge positioning, is tracked in [V3_0_0_PLAN.md](V3_0_0_PLAN.md) and is not yet complete.
 
