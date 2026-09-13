@@ -4,13 +4,15 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **再開して作業継続中**。T01〜T04b、T05a/b、T07段階1〜3、T09 stage 1は統合済み。T06実装PR49はb105885へ統合済み、T08はPR51で相互レビュー中（core111 tests・lint・build成功）。T05/T06の端末検証はT12のrelease-blocking項目として未完了。利用制限への対応で実装・独立レビューはClaude Code中心、Codexは集約検証・対向承認・統合を担当する。
+- 状態: **2026-09-13 09:35 JST、ユーザーの明示指示で再開**。T08まで統合済み。T07寿命管理はWIP `6e243c3`を基点に、旧担当から安全に返却後、Claude司令塔が直接実装・検証を担当する。Codex司令塔が対向レビューと共有計画・ログの統合を担当する。候補・検証・PR・承認は未完了。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
 - **開始指示受領済み**: 「あなたはcodex側の司令塔として、claudeと一緒に作業を開始してください」。準備中の停止条件を解除し、本書の分担合意・相互承認・検証条件に従って進める。
 - `release/3.0.0` は今は作らず、統合・検証後のリリース候補として作る。
 - `AGENTS.md`、この計画書、`docs/coordination/3.0.0/` の記録、共有用 `.serena/project.yml` と `.serena/.gitignore` をGit管理する。Serenaのcacheとproject.local.ymlはコミットしない。
+
+停止時点の履歴: [2026-09-13-pause.md](docs/coordination/3.0.0/2026-09-13-pause.md)。現在の再開・担当判断: [2026-09-13-coordinator-resume.md](docs/coordination/3.0.0/2026-09-13-coordinator-resume.md)。
 
 ## 目的・到達点
 
@@ -24,11 +26,11 @@
 
 | 司令塔 | モデル | effort | 責務 |
 | --- | --- | --- | --- |
-| Codex | Astra (`gpt-6-astra`) | medium | Claudeとの設計・分担合意、Codex側サブエージェントの起動・管理、成果物統合、Claude側PRのレビューと承認 |
-| Claude | Fable 5.1 | high | Codexとの設計・分担合意、Claude側サブエージェントの起動・管理、成果物統合、Codex側PRのレビューと承認 |
+| Codex | Astra (`gpt-6-astra`) | medium | Claudeとの設計・分担合意、担当範囲の直接作業・検証、成果物統合、Claude側PRのレビューと承認 |
+| Claude | Fable 5.1 | high | Codexとの設計・分担合意、担当範囲の直接作業・検証、成果物統合、Codex側PRのレビューと承認 |
 
 - 開始時に実際のモデル・effortを確認する。Claudeの正確なCLIモデル識別子は利用環境で確認し、推測で指定しない。指定モデルが利用できなければ、その問題を報告し、無断で代替モデルに変更しない。
-- 開始後の実装・調査・検証・レビューは、各司令塔がサブエージェントへ委譲して進める。司令塔は要件、設計判断、調整、結果の評価、承認、統合を担当する。
+- 2026-09-13更新のリポジトリAGENTS.mdに従い、既存の両司令塔が担当範囲の調査・実装・検証と対向レビューを直接行う。従来の必須サブエージェント規約と過去ログの起動案は既定の手順として使用しない。ユーザーが対象作業で明示要求した場合だけ委譲する。
 - サブエージェントのモデル・effortは各司令塔がタスクに応じて判断し、**Luna (`gpt-5.6-luna`)、Terra (`gpt-5.6-terra`)、Sonnet 5**から選ぶ。以前のサブエージェント選択方針よりこの指定を優先する。GPT-5.5やHaikuは原則使用しない。許可されたモデルが使えない場合も無断で別モデルに置き換えない。Sonnet 5のCLI識別子も起動時に確認する。
 - 両側ともモデル・effort・役割・選択理由をタスク記録へ残す。司令塔のモデル指定とサブエージェントのモデル指定を混同しない。
 - サブエージェントの成果報告だけで自動承認しない。相手の司令塔が指摘・検証根拠を確認し、承認判断を行う。
@@ -115,10 +117,10 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 未着手 |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命L1〜L7合意済み・T08統合待ち |
-| T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 相互レビュー中（PR51 59ef303、111 tests成功） |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）、寿命L1〜L7はWIP `6e243c3`で保全。Dispatch `ctx_72258eaf9359`はabandoned/failed、外部terminal liveのため再開blocked |
+| T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
-| T10 | sample・README・3.0移行ガイド | Claude | T03, T04b, T05〜T09 | 未着手 |
+| T10 | sample・README・3.0移行ガイド | Claude（sample/docs分離所有） | T07寿命統合、T08、T09 stage 1 | 合意済み（C1/K1〜K7、T07統合後開始） |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
 | T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
@@ -532,3 +534,20 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 - PR51 head59ef303: core111 tests全成功、lintエラー0/警告13、assemble成功。独立レビュー・CI34699740974・最終承認は未完了。
 - T07寿命L1〜L7は明示合意済みでT08統合後に開始。削除失敗の結果を返しretry可能な状態を保ち、成功時だけ参照・callback・bufferを解放する。
+
+### 2026-09-12 23:47 JST: T08統合・T07寿命管理へ
+
+- PR52文書をbe1843c、PR51 T08をd6ccdf2へ、現SHA承認とCI成功後に通常merge。
+- T07寿命L1〜L7を最新基点で開始依頼済み。T04cのJVM API監査とT12端末検証は未完了。代理許可2件とレビュー表現訂正もログに記録した。
+
+### 2026-09-13 02:30 JST: T07寿命管理の再開
+
+- ユーザーの再開指示を受け、Orca runtimeを復旧して既存のTask `task_2db547061e3f`／Dispatch `ctx_72258eaf9359`／Terminal `term_b4d72bee-a9a2-447b-99b6-b125837cf663`／worktree `t07-lifecycle` を再確認した。新規worker・worktree・Dispatchは作成していない。
+- 再開送信 `requestId 72e6aca0-8864-4248-8902-32209a1fa595` は `input_accepted` と `turn_started` を確認し、協調メッセージ `msg_3336a2f54803` はDispatch宛てにdurable enqueueされた。active worktreeコメントも再開状態へ更新した。
+- 再開時点で作業ツリーは `DebugOverlayTree.kt` の未コミット変更（+192/-37）のみ（`.claude/`はユーザー所有として触れない）。担当はセッション制限前の差分・3件の未解決指摘・回帰テストから継続する。候補SHA、PR、検証、独立レビュー、相手のexact-head承認、CI、統合は未完了であり、完了扱いしない。
+
+### 2026-09-13 02:49 JST: T07再開のauthority blocker
+
+- 再開後、担当はWIP `4c080f8` → `8aa29f5` → `6e243c3` と進み、世代別render回帰テスト、初期化の同期、dispose入口のmain-thread検査を含む変更を保存した。最終worktreeは `codex/t07-lifecycle` の `6e243c3`、tracked差分なし、`.claude/`のみ未追跡でユーザー所有のため触れていない。
+- 古い停止操作により、既存Dispatch `ctx_72258eaf9359` は capability revoked 後に `stop_unknown` を経て `abandoned/failed`（completed `2026-09-13 02:49:24 JST`相当）となった。Orcaのworker authorityは再開中に失われ、terminal `term_b4d72bee-a9a2-447b-99b6-b125837cf663` は外部管理のまま `live`。停止・終了は確認できない。
+- Orca recovery規約により、live terminalを残したまま同じT07のreplacement worker／retryを起動しない。T07はWIPを保持したblocked状態とし、端末停止または新しい担当への安全なauthority移管が確認できるまで、検証・PR・レビュー・統合を行わない。
