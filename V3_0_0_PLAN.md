@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-09-13 09:35 JST、ユーザーの明示指示で再開**。T08まで統合済み。T07寿命管理はPR54で6c9e2aaへ統合済み。40 unit tests・lint・3 module build成功、最終SHAの対向承認・CI成功を確認。T10a/sampleとT10b/移行文書はPR57・PR56で統合完了。T04cをClaudeへ開始依頼済み。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
+- 状態: **2026-09-14 02:30 JSTのユーザー指示で再開**。T08まで統合済み。T07寿命管理はPR54で6c9e2aaへ統合済み。40 unit tests・lint・3 module build成功、最終SHAの対向承認・CI成功を確認。T10a/sampleとT10b/移行文書はPR57・PR56で統合完了。T04cは93b0423で中断保存済み。2026-09-14 02:30 JSTのユーザー指示で再開し、Claudeの既存実装所有権を維持して調整中。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -114,7 +114,7 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 作業中 |
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
-| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 範囲合意・実装中。claude-3.0.0-t04c-api-cleanup / base9708061、旧bridge除去とJVM可視性監査、候補検証待ち |
+| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 既存Claude worktreeの93b0423から再開調整中。core108 tests成功は前回証拠。残API除去・JVM可視性監査・全module検証は未完了 |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `c13acee`、40 tests成功・lintエラー0/警告2・3 module build成功。最終相互承認・CI成功後6c9e2aaへ統合済み |
@@ -558,6 +558,10 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 ユーザーの最新指示により、以後のClaude司令塔はFable 5.1 / mediumとする。旧high指定より優先する。復旧端末term_66423650-ee22-4e09-a6ba-65ed19561512で表示と引継ぎturn_startedを確認済み。
 
 
-### 最新チェックポイント: 来週まで中断
+### 2026-09-13チェックポイント: 来週まで中断（後続指示で解除）
 
 ユーザーの2026-09-13中断指示により両司令塔の作業を停止。T04cはClaude所有worktreeのローカル93b0423121419c758032d79c51b537a10b96e898（clean、core unit108件成功）まで保存済み。未push・未PR、manager側削除とJVM可視性整理は未完了。再開時は同worktreeから続ける。詳細は2026-09-13-coordinator-resume.md末尾。専用emulator5580は停止済み。
+
+### 2026-09-14 02:30 JST: T04c再開調整
+
+ユーザーの今回の明示指示により前回の中断を解除。既存T04c実装93b0423とwave19記録4463893はcleanで保存されている。Claude側も同時再開しているため実装を重複起動せず、Codexは既存調整worktreeで計画・記録と対向レビューを担当する。詳細と未確認事項は[再開記録](docs/coordination/3.0.0/2026-09-14-t04c-resume.md)参照。
