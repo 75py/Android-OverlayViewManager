@@ -114,13 +114,13 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 作業中 |
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
-| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 9708061を基点に開始依頼済み、所有worktreeと検証計画の返答待ち |
+| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 範囲合意・実装中。claude-3.0.0-t04c-api-cleanup / base9708061、旧bridge除去とJVM可視性監査、候補検証待ち |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `c13acee`、40 tests成功・lintエラー0/警告2・3 module build成功。最終相互承認・CI成功後6c9e2aaへ統合済み |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
-| T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 作業中。完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
+| T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
 | T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
