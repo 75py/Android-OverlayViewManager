@@ -569,3 +569,9 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 ### 2026-09-14 02:54 JST: 設定確認待ちのチェックポイント
 
 記録PR59を213a7d0へ対向承認・CI成功後に統合。T04c commit2は7d5af7b、core105 tests成功。Claudeの実effort highと前回指定mediumが不一致で、Orca設定入力は同ID再確認でもoperation_unknown。既存Claudeターンを中断し、commit3途中の7ファイルWIPをそのまま保存した。最新WIPは未コンパイル。ユーザーによる既存端末のmedium設定確認後、同じ所有者が継続する。詳細は2026-09-14-t04c-resume.md末尾。
+
+### 2026-09-15 02:30 JST: T04c再開確認
+
+ユーザー指示で再開。共有213a7d0、記録PR60、Claude所有7d5af7bと7ファイルWIPを確認・保持した。既存Claudeも同時再開中のため重複実装せず、Orcaで所有権と実effort high/指定mediumの整合を確認中。現在WIPは未コンパイル、前回105 tests成功とは区別する。詳細は[今回の再開記録](docs/coordination/3.0.0/2026-09-15-t04c-resume.md)。
+
+02:37 JST: 実effort不一致に加え、Orca注意喚起入力が同ID再確認でoperation_unknownとなった。Claude画面はInterruptedで待機、途中成果は保持。medium設定と端末入力状態の確認が必要なblockerとして記録し、重複入力・実装・統合は行わない。
