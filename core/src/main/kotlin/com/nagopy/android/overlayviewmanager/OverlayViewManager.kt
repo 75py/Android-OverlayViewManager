@@ -6,16 +6,12 @@ package com.nagopy.android.overlayviewmanager
 
 import android.app.Activity
 import android.app.Application
-import android.annotation.TargetApi
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import androidx.annotation.MainThread
-import androidx.annotation.StringRes
-import androidx.fragment.app.FragmentManager
 import com.nagopy.android.overlayviewmanager.internal.ActivityOverlayRegistry
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import com.nagopy.android.overlayviewmanager.internal.SimpleActivityLifecycleCallbacks
@@ -40,38 +36,6 @@ public class OverlayViewManager private constructor(private val application: App
 
     /** Returns the immutable overlay permission helper. See [OverlayPermission]. */
     public fun overlayPermission(): OverlayPermission = permission
-
-    /** Temporary 2.x bridge. New code should use [OverlayPermission.isGranted] instead. */
-    @Deprecated("Use OverlayPermission.isGranted from the host application instead.") public fun canDrawOverlays(): Boolean = overlayPermission().isGranted(application)
-
-    /**
-     * Temporary 2.x bridge retained until sample and consumer migration.
-     * New code should use [OverlayPermission.settingsIntent] and own its rationale UI instead.
-     */
-    @Deprecated("Use OverlayPermission.settingsIntent from the host application instead.")
-    @TargetApi(Build.VERSION_CODES.M)
-    public fun showPermissionRequestDialog(fragmentManager: FragmentManager, @StringRes appNameId: Int) {
-        PermissionRequestDialogFragment.newInstance(appNameId).show(fragmentManager, "PermissionRequestDialogFragment")
-    }
-
-    /** Temporary 2.x bridge retained until sample and consumer migration. */
-    @Deprecated("Use OverlayPermission.settingsIntent from the host application instead.")
-    @TargetApi(Build.VERSION_CODES.M)
-    public fun requestOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !canDrawOverlays()) {
-            val intent = overlayPermission().settingsIntent(application)
-                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            application.startActivity(intent)
-        }
-    }
-
-    /** Temporary 2.x bridge retained until T05/T10 migrate geometry consumers. */
-    @Deprecated("Obtain bounds and insets from the target window instead.")
-    public fun getDisplayWidth(): Int = android.util.DisplayMetrics().let { metrics -> windowManager.defaultDisplay.getMetrics(metrics); metrics.widthPixels }
-
-    /** Temporary 2.x bridge retained until T05/T10 migrate geometry consumers. */
-    @Deprecated("Obtain bounds and insets from the target window instead.")
-    public fun getDisplayHeight(): Int = android.util.DisplayMetrics().let { metrics -> windowManager.defaultDisplay.getMetrics(metrics); metrics.heightPixels }
 
     private fun <T : View> newApplicationOverlay(view: T, spec: OverlaySpec): OverlayView<T> {
         requireMainThread()

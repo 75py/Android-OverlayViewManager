@@ -9,7 +9,6 @@ import android.os.ParcelFileDescriptor;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
-import androidx.test.uiautomator.UiDevice;
 import android.util.Log;
 
 import org.junit.Before;
@@ -20,9 +19,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeoutException;
 
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.JELLY_BEAN_MR2)
@@ -31,7 +28,6 @@ public class OverlayViewManagerTest {
 
     OverlayViewManager overlayViewManager;
 
-    private UiDevice uiDevice;
     private Application application;
     private UiAutomation uiAutomation;
 
@@ -42,7 +38,6 @@ public class OverlayViewManagerTest {
         OverlayViewManager.init(application);
         overlayViewManager = OverlayViewManager.getInstance();
 
-        uiDevice = UiDevice.getInstance(instrumentation);
         uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
     }
 
@@ -51,7 +46,7 @@ public class OverlayViewManagerTest {
     // @SdkSuppress(minSdkVersion = Build.VERSION_CODES.M)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N)
     @Test
-    public void canDrawOverlays_granted() throws Exception {
+    public void overlayPermissionIsGranted_afterShellGrant() throws Exception {
         executeShellCommand(
                 "pm grant "
                         + application.getPackageName()
@@ -59,38 +54,29 @@ public class OverlayViewManagerTest {
                         + Manifest.permission.SYSTEM_ALERT_WINDOW
                 , 5000);
 
-        assertTrue(overlayViewManager.canDrawOverlays());
+        assertTrue(overlayViewManager.overlayPermission().isGranted(application));
     }
 
-    // Cannot grant SYSTEM_ALERT_WINDOW permission by "pm grant pkg" command on Marshmallow.
+    // Cannot revoke SYSTEM_ALERT_WINDOW permission by "pm revoke pkg" command on Marshmallow.
     // So skip the test.
     // @SdkSuppress(minSdkVersion = Build.VERSION_CODES.M)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N)
     @Test
-    public void canDrawOverlays_denied() throws Exception {
+    public void overlayPermissionIsDenied_afterShellRevoke() throws Exception {
         executeShellCommand(
                 "pm revoke "
                         + application.getPackageName()
                         + " "
                         + Manifest.permission.SYSTEM_ALERT_WINDOW
                 , 5000);
-        assertFalse(overlayViewManager.canDrawOverlays());
+
+        assertFalse(overlayViewManager.overlayPermission().isGranted(application));
     }
 
     @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.LOLLIPOP_MR1)
     @Test
-    public void canDrawOverlays_API22() throws Exception {
-        assertTrue(overlayViewManager.canDrawOverlays());
-    }
-
-    @Test
-    public void getDisplayWidth() throws Exception {
-        assertThat(overlayViewManager.getDisplayWidth(), is(uiDevice.getDisplayWidth()));
-    }
-
-    @Test
-    public void getDisplayHeight() throws Exception {
-        assertThat(overlayViewManager.getDisplayHeight(), is(uiDevice.getDisplayHeight()));
+    public void overlayPermissionIsGranted_API22() throws Exception {
+        assertTrue(overlayViewManager.overlayPermission().isGranted(application));
     }
 
     private void executeShellCommand(String cmd, long timeoutInMillis) throws Exception {
@@ -102,8 +88,8 @@ public class OverlayViewManagerTest {
                     new InputStreamReader(new ParcelFileDescriptor.AutoCloseInputStream(pfDescriptor)));
             String line;
             while ((line = reader.readLine()) != null) {
-                Log.i("canDrawOverlays_API23_deny", line);
-                if (endTimeInMillis > System.currentTimeMillis()) {
+                Log.i("OverlayViewManagerTest", line);
+                if (endTimeInMillis > 0 && System.currentTimeMillis() > endTimeInMillis) {
                     throw new TimeoutException();
                 }
             }

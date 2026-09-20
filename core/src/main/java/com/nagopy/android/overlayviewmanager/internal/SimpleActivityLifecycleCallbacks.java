@@ -21,9 +21,9 @@ import android.app.Application;
 import android.os.Bundle;
 import androidx.annotation.RestrictTo;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
-@RestrictTo(LIBRARY)
+@RestrictTo(LIBRARY_GROUP)
 public abstract class SimpleActivityLifecycleCallbacks implements Application.ActivityLifecycleCallbacks {
 
     @Override
