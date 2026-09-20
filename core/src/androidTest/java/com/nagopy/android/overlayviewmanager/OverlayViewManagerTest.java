@@ -35,8 +35,13 @@ public class OverlayViewManagerTest {
     public void setup() {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         application = (Application) instrumentation.getTargetContext().getApplicationContext();
-        OverlayViewManager.init(application);
-        overlayViewManager = OverlayViewManager.getInstance();
+        // init() and getInstance() are main-thread only; @Before runs on the instrumentation thread.
+        OverlayViewManager[] holder = new OverlayViewManager[1];
+        instrumentation.runOnMainSync(() -> {
+            OverlayViewManager.init(application);
+            holder[0] = OverlayViewManager.getInstance();
+        });
+        overlayViewManager = holder[0];
 
         uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
     }
