@@ -17,6 +17,7 @@
 package com.nagopy.android.overlayviewmanager.lint;
 
 import com.android.tools.lint.detector.api.Category;
+import com.android.tools.lint.detector.api.ConstantEvaluator;
 import com.android.tools.lint.detector.api.Detector;
 import com.android.tools.lint.detector.api.Implementation;
 import com.android.tools.lint.detector.api.Issue;
@@ -24,6 +25,7 @@ import com.android.tools.lint.detector.api.JavaContext;
 import com.android.tools.lint.detector.api.LintFix;
 import com.android.tools.lint.detector.api.Scope;
 import com.android.tools.lint.detector.api.Severity;
+import com.android.tools.lint.detector.api.SourceCodeScanner;
 import com.intellij.psi.PsiMethod;
 
 import org.jetbrains.uast.UCallExpression;
@@ -32,14 +34,12 @@ import org.jetbrains.uast.UExpression;
 import java.util.Collections;
 import java.util.List;
 
-public class SetOverlayAboveNavigationViewsDetector extends Detector implements Detector.UastScanner {
+public class SetOverlayAboveNavigationViewsDetector extends Detector implements SourceCodeScanner {
 
-    // allowViewToExtendOutsideScreen is a deprecated 2.x bridge method; T09 stage 2 (after
-    // T06/T04c) retargets this detector once the final 3.0 API surface is decided.
-    private static final String OVERLAY_VIEW_CLASS = "com.nagopy.android.overlayviewmanager.OverlayView";
+    private static final String OVERLAY_SPEC_BUILDER_CLASS = "com.nagopy.android.overlayviewmanager.OverlaySpec.Builder";
 
-    static final Issue ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN = Issue.create("ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN",
-            "Using OverlayView#allowViewToExtendOutsideScreen",
+    static final Issue ALLOW_OUTSIDE_BOUNDS = Issue.create("ALLOW_OUTSIDE_BOUNDS",
+            "Using OverlaySpec.Builder#setAllowOutsideBounds",
             "If you use this method and show a wrong size view, you cannot do anything.",
             Category.MESSAGES,
             5,
@@ -48,12 +48,12 @@ public class SetOverlayAboveNavigationViewsDetector extends Detector implements 
 
     @Override
     public List<String> getApplicableMethodNames() {
-        return Collections.singletonList("allowViewToExtendOutsideScreen");
+        return Collections.singletonList("setAllowOutsideBounds");
     }
 
     @Override
-    public void visitMethod(JavaContext context, UCallExpression node, PsiMethod method) {
-        if (!context.getEvaluator().isMemberInClass(method, OVERLAY_VIEW_CLASS)) {
+    public void visitMethodCall(JavaContext context, UCallExpression node, PsiMethod method) {
+        if (!context.getEvaluator().isMemberInClass(method, OVERLAY_SPEC_BUILDER_CLASS)) {
             // A same-named method on an unrelated class must not be flagged.
             return;
         }
@@ -64,9 +64,12 @@ public class SetOverlayAboveNavigationViewsDetector extends Detector implements 
             return;
         }
 
-        Object arg = arguments.get(0);
-        String argStr = arg == null ? "" : arg.toString();
-        if (arg != null && !argStr.equals("false")) {
+        UExpression argument = arguments.get(0);
+        String argumentSource = argument.asSourceString();
+        // Warn unless the argument is provably the constant false; a Kotlin literal's
+        // toString is not its source text, so evaluate the constant instead.
+        Object constant = ConstantEvaluator.evaluate(context, argument);
+        if (!Boolean.FALSE.equals(constant)) {
             LintFix.GroupBuilder fixGrouper = fix().group();
             String oldText = node.asSourceString();
             // delete
@@ -75,12 +78,12 @@ public class SetOverlayAboveNavigationViewsDetector extends Detector implements 
                     .text(oldText)
                     .shortenNames()
                     .reformat(true)
-                    .with(oldText.replace(".allowViewToExtendOutsideScreen(" + argStr + ")", ""))
+                    .with(oldText.replace(".setAllowOutsideBounds(" + argumentSource + ")", ""))
                     .build()
             );
 
-            context.report(ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN, node, context.getLocation(node),
-                    "Please be careful with using allowViewToExtendOutsideScreen(true)", fixGrouper.build());
+            context.report(ALLOW_OUTSIDE_BOUNDS, node, context.getLocation(node),
+                    "Please be careful with using setAllowOutsideBounds(true)", fixGrouper.build());
         }
     }
 }
