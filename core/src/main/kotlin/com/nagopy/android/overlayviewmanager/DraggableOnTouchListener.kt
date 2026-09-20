@@ -21,7 +21,6 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
-import androidx.annotation.RestrictTo
 import androidx.annotation.VisibleForTesting
 import com.nagopy.android.overlayviewmanager.internal.Logger
 import com.nagopy.android.overlayviewmanager.internal.OverlayGeometry
@@ -29,10 +28,8 @@ import com.nagopy.android.overlayviewmanager.internal.OverlayWindowFrame
 import kotlin.math.abs
 
 /**
- * Library-owned drag gesture for [OverlayTouchMode.DRAGGABLE]. Not 3.0 public API in spirit --
- * [RestrictTo] marks it as such -- but it stays a public, Java-callable class because the
- * deprecated [OverlayView.setDraggable] bridge still exposes it to existing 2.x callers until
- * T04c removes that bridge.
+ * Library-owned drag gesture for [OverlayTouchMode.DRAGGABLE]. It is not part of the 3.0 public
+ * API: Kotlin consumers cannot see this `internal` declaration, and no public member exposes it.
  *
  * `x`/`y` are always converted from screen space into the target window's layout space using
  * [OverlayGeometry] and [OverlayWindowFrame] -- see [OverlayGeometry] for the coordinate model.
@@ -63,9 +60,8 @@ import kotlin.math.abs
  * pointer itself lifts while others remain, tracking rebases onto a remaining pointer's current
  * position instead of its stale prior position, so the overlay does not jump.
  */
-@RestrictTo(RestrictTo.Scope.LIBRARY)
-public class DraggableOnTouchListener<T : View>(
-    internal val overlayView: OverlayView<T>,
+internal class DraggableOnTouchListener<T : View>(
+    private val overlayView: OverlayView<T>,
 ) : View.OnTouchListener {
 
     private var activePointerId = MotionEvent.INVALID_POINTER_ID
@@ -206,7 +202,7 @@ public class DraggableOnTouchListener<T : View>(
     private fun onActionEnd(): Boolean {
         val wasDragging = isDragging
         if (wasDragging) {
-            overlayView.setAlpha(backupAlpha).update()
+            overlayView.update(overlayView.spec.copy(alpha = backupAlpha))
         }
         val result = consumed()
         isDragging = false

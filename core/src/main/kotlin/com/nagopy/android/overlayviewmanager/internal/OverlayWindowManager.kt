@@ -7,8 +7,12 @@ import android.view.WindowManager
 import androidx.annotation.RestrictTo
 import java.util.WeakHashMap
 
-/** Synchronous WindowManager adapter. Platform exceptions intentionally reach the handle. */
-@RestrictTo(RestrictTo.Scope.LIBRARY)
+/**
+ * Synchronous WindowManager adapter. Platform exceptions intentionally reach the handle.
+ * Shared with the sibling opt-timber module, so it is restricted to the library group rather
+ * than made `internal` -- Kotlin `internal` would not compile in `opt-timber`.
+ */
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public open class OverlayWindowManager @JvmOverloads constructor(private var windowManager: WindowManager? = null) {
     public open fun show(view: View, params: WindowManager.LayoutParams) { requireWindowManager().addView(view, params) }
     public open fun update(view: View, params: WindowManager.LayoutParams) { requireWindowManager().updateViewLayout(view, params) }

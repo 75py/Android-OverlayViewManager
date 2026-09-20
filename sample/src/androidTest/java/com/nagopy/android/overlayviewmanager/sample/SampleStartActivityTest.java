@@ -1,12 +1,10 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 
-import android.Manifest;
 import android.os.Build;
 import androidx.test.espresso.Espresso;
 import androidx.test.espresso.ViewInteraction;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.rule.GrantPermissionRule;
 import androidx.test.runner.AndroidJUnit4;
 
 
@@ -24,7 +22,7 @@ import static org.hamcrest.Matchers.allOf;
 public class SampleStartActivityTest {
 
     @Rule
-    public GrantPermissionRule grantPermissionRule = GrantPermissionRule.grant(Manifest.permission.SYSTEM_ALERT_WINDOW);
+    public GrantOverlayPermissionRule grantPermissionRule = new GrantOverlayPermissionRule();
 
     @Rule
     public ActivityTestRule<SampleStartActivity> mActivityTestRule = new ActivityTestRule<>(SampleStartActivity.class);

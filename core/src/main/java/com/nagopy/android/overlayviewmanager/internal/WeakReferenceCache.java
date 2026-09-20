@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
-@RestrictTo(LIBRARY)
+@RestrictTo(LIBRARY_GROUP)
 public class WeakReferenceCache<T> {
 
     final List<WeakReference<T>> cacheSet;

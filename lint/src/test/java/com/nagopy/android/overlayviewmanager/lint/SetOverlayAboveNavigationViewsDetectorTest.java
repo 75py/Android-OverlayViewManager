@@ -14,28 +14,42 @@ import static com.android.tools.lint.checks.infrastructure.TestLintTask.lint;
 
 public class SetOverlayAboveNavigationViewsDetectorTest {
 
-    private static final TestFile TEST_FILE = java(
+    private static final TestFile OVERLAY_SPEC_JAVA = java(
             "package com.nagopy.android.overlayviewmanager;\n"
-                    + "public class OverlayView {\n"
-                    + "  public OverlayView setTouchable(boolean b) { return this; }\n"
-                    + "  public OverlayView allowViewToExtendOutsideScreen(boolean b) { return this; }\n"
-                    + "  public OverlayView show() { return this; }\n"
+                    + "public class OverlaySpec {\n"
+                    + "  public static class Builder {\n"
+                    + "    public Builder setAllowOutsideBounds(boolean b) { return this; }\n"
+                    + "    public OverlaySpec build() { return new OverlaySpec(); }\n"
+                    + "  }\n"
                     + "}"
     );
 
-    private static final TestFile TEST_FILE_WITH_NO_ARG_OVERLOAD = java(
+    private static final TestFile OVERLAY_SPEC_KOTLIN = kotlin(
+            "package com.nagopy.android.overlayviewmanager\n"
+                    + "class OverlaySpec {\n"
+                    + "    class Builder {\n"
+                    + "        private var allowOutsideBounds: Boolean = false\n"
+                    + "        fun setAllowOutsideBounds(value: Boolean): Builder = apply { allowOutsideBounds = value }\n"
+                    + "        fun build(): OverlaySpec = OverlaySpec()\n"
+                    + "    }\n"
+                    + "}"
+    );
+
+    private static final TestFile OVERLAY_SPEC_WITH_NO_ARG_OVERLOAD = java(
             "package com.nagopy.android.overlayviewmanager;\n"
-                    + "public class OverlayView {\n"
-                    + "  public OverlayView allowViewToExtendOutsideScreen(boolean b) { return this; }\n"
-                    + "  public OverlayView allowViewToExtendOutsideScreen() { return this; }\n"
-                    + "  public OverlayView show() { return this; }\n"
+                    + "public class OverlaySpec {\n"
+                    + "  public static class Builder {\n"
+                    + "    public Builder setAllowOutsideBounds(boolean b) { return this; }\n"
+                    + "    public Builder setAllowOutsideBounds() { return this; }\n"
+                    + "    public OverlaySpec build() { return new OverlaySpec(); }\n"
+                    + "  }\n"
                     + "}"
     );
 
     private static final TestFile UNRELATED_CLASS_WITH_SAME_NAMED_METHOD = java(
             "package foo;\n"
-                    + "public class NotOverlayView {\n"
-                    + "  public NotOverlayView allowViewToExtendOutsideScreen(boolean b) { return this; }\n"
+                    + "public class NotOverlaySpecBuilder {\n"
+                    + "  public NotOverlaySpecBuilder setAllowOutsideBounds(boolean b) { return this; }\n"
                     + "}"
     );
 
@@ -48,64 +62,82 @@ public class SetOverlayAboveNavigationViewsDetectorTest {
     }
 
     @Test
-    public void usingSetTouchableOnNavigationViews() throws Exception {
-        lint().files(TEST_FILE,
+    public void allowOutsideBounds_true_isFlagged() throws Exception {
+        lint().files(OVERLAY_SPEC_JAVA,
                 java("package foo;\n"
-                        + "import com.nagopy.android.overlayviewmanager.OverlayView;\n"
+                        + "import com.nagopy.android.overlayviewmanager.OverlaySpec;\n"
                         + "public class Example {\n"
                         + "    public void test() {\n"
-                        + "        OverlayView view = new OverlayView()\n"
-                        + "            .allowViewToExtendOutsideScreen(true)\n"
-                        + "            .show();\n"
+                        + "        new OverlaySpec.Builder()\n"
+                        + "            .setAllowOutsideBounds(true)\n"
+                        + "            .build();\n"
                         + "    }\n"
                         + "}"
                 )
-        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
                 .allowMissingSdk()
                 .run()
                 .expectWarningCount(1)
-                .expectMatches("src/foo/Example\\.java:5: Warning: Please be careful with using allowViewToExtendOutsideScreen\\(true\\).+");
+                .expectMatches("src/foo/Example\\.java:5: Warning: Please be careful with using setAllowOutsideBounds\\(true\\).+");
     }
 
     @Test
-    public void usingSetTouchableOnNavigationViews_false() throws Exception {
-        lint().files(TEST_FILE,
+    public void allowOutsideBounds_false_isNotFlagged() throws Exception {
+        lint().files(OVERLAY_SPEC_JAVA,
                 java("package foo;\n"
-                        + "import com.nagopy.android.overlayviewmanager.OverlayView;\n"
+                        + "import com.nagopy.android.overlayviewmanager.OverlaySpec;\n"
                         + "public class Example {\n"
                         + "    public void test() {\n"
-                        + "        OverlayView view = new OverlayView()\n"
-                        + "            .setTouchable(true)\n"
-                        + "            .allowViewToExtendOutsideScreen(false)\n"
-                        + "            .show();\n"
+                        + "        new OverlaySpec.Builder()\n"
+                        + "            .setAllowOutsideBounds(false)\n"
+                        + "            .build();\n"
                         + "    }\n"
                         + "}"
                 )
-        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
                 .allowMissingSdk()
                 .run()
                 .expectWarningCount(0);
     }
 
     @Test
-    public void usingSetTouchableOnNavigationViews_variable() throws Exception {
-        lint().files(TEST_FILE,
+    public void allowOutsideBounds_variable_isFlagged() throws Exception {
+        lint().files(OVERLAY_SPEC_JAVA,
                 java("package foo;\n"
-                        + "import com.nagopy.android.overlayviewmanager.OverlayView;\n"
+                        + "import com.nagopy.android.overlayviewmanager.OverlaySpec;\n"
                         + "public class Example {\n"
-                        + "    public void test() {\n"
-                        + "        boolean b = false;\n"
-                        + "        OverlayView view = new OverlayView()\n"
-                        + "            .allowViewToExtendOutsideScreen(b)\n"
-                        + "            .show();\n"
+                        + "    public void test(boolean b) {\n"
+                        + "        new OverlaySpec.Builder()\n"
+                        + "            .setAllowOutsideBounds(b)\n"
+                        + "            .build();\n"
                         + "    }\n"
                         + "}"
                 )
-        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
                 .allowMissingSdk()
                 .run()
                 .expectWarningCount(1)
-                .expectMatches("src/foo/Example\\.java:6: Warning: Please be careful with using allowViewToExtendOutsideScreen\\(true\\).+");
+                .expectMatches("src/foo/Example\\.java:5: Warning: Please be careful with using setAllowOutsideBounds\\(true\\).+");
+    }
+
+    @Test
+    public void allowOutsideBounds_constantFalseVariable_isNotFlagged() throws Exception {
+        lint().files(OVERLAY_SPEC_JAVA,
+                java("package foo;\n"
+                        + "import com.nagopy.android.overlayviewmanager.OverlaySpec;\n"
+                        + "public class Example {\n"
+                        + "    public void test() {\n"
+                        + "        boolean b = false;\n"
+                        + "        new OverlaySpec.Builder()\n"
+                        + "            .setAllowOutsideBounds(b)\n"
+                        + "            .build();\n"
+                        + "    }\n"
+                        + "}"
+                )
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
+                .allowMissingSdk()
+                .run()
+                .expectWarningCount(0);
     }
 
     @Test
@@ -114,11 +146,11 @@ public class SetOverlayAboveNavigationViewsDetectorTest {
                 java("package foo;\n"
                         + "public class Example {\n"
                         + "    public void test() {\n"
-                        + "        new NotOverlayView().allowViewToExtendOutsideScreen(true);\n"
+                        + "        new NotOverlaySpecBuilder().setAllowOutsideBounds(true);\n"
                         + "    }\n"
                         + "}"
                 )
-        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
                 .allowMissingSdk()
                 .run()
                 .expectWarningCount(0);
@@ -126,18 +158,18 @@ public class SetOverlayAboveNavigationViewsDetectorTest {
 
     @Test
     public void noArgOverload_doesNotThrowOrFlag() throws Exception {
-        lint().files(TEST_FILE_WITH_NO_ARG_OVERLOAD,
+        lint().files(OVERLAY_SPEC_WITH_NO_ARG_OVERLOAD,
                 java("package foo;\n"
-                        + "import com.nagopy.android.overlayviewmanager.OverlayView;\n"
+                        + "import com.nagopy.android.overlayviewmanager.OverlaySpec;\n"
                         + "public class Example {\n"
                         + "    public void test() {\n"
-                        + "        OverlayView view = new OverlayView()\n"
-                        + "            .allowViewToExtendOutsideScreen()\n"
-                        + "            .show();\n"
+                        + "        new OverlaySpec.Builder()\n"
+                        + "            .setAllowOutsideBounds()\n"
+                        + "            .build();\n"
                         + "    }\n"
                         + "}"
                 )
-        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
                 .allowMissingSdk()
                 .run()
                 .expectWarningCount(0);
@@ -145,21 +177,40 @@ public class SetOverlayAboveNavigationViewsDetectorTest {
 
     @Test
     public void kotlinCaller_isFlagged() throws Exception {
-        lint().files(TEST_FILE,
+        lint().files(OVERLAY_SPEC_KOTLIN,
                 kotlin("package foo\n"
                         + "\n"
-                        + "import com.nagopy.android.overlayviewmanager.OverlayView\n"
+                        + "import com.nagopy.android.overlayviewmanager.OverlaySpec\n"
                         + "\n"
                         + "fun test() {\n"
-                        + "    OverlayView()\n"
-                        + "        .allowViewToExtendOutsideScreen(true)\n"
-                        + "        .show()\n"
+                        + "    OverlaySpec.Builder()\n"
+                        + "        .setAllowOutsideBounds(true)\n"
+                        + "        .build()\n"
                         + "}\n"
                 )
-        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN)
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
                 .allowMissingSdk()
                 .run()
                 .expectWarningCount(1);
+    }
+
+    @Test
+    public void kotlinCaller_false_isNotFlagged() throws Exception {
+        lint().files(OVERLAY_SPEC_KOTLIN,
+                kotlin("package foo\n"
+                        + "\n"
+                        + "import com.nagopy.android.overlayviewmanager.OverlaySpec\n"
+                        + "\n"
+                        + "fun test() {\n"
+                        + "    OverlaySpec.Builder()\n"
+                        + "        .setAllowOutsideBounds(false)\n"
+                        + "        .build()\n"
+                        + "}\n"
+                )
+        ).issues(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS)
+                .allowMissingSdk()
+                .run()
+                .expectWarningCount(0);
     }
 
 }

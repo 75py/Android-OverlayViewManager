@@ -21,12 +21,12 @@ import android.util.Log;
 
 import com.nagopy.android.overlayviewmanager.BuildConfig;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 /**
  * Inner class for debug.
  */
-@RestrictTo(LIBRARY)
+@RestrictTo(LIBRARY_GROUP)
 public class Logger {
 
     static final String TAG = "OverlayViewManager";
