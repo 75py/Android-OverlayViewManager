@@ -5,10 +5,12 @@
 - Introduce immutable `OverlaySpec` configuration, Java builders and Kotlin copy-based updates, and synchronous `OverlayResult` outcomes with classified failures.
 - Define Activity/application ownership and explicit transactional disposal. Activity destruction releases owned references; application owners retain failed-disposal handles for retry.
 - Replace overlay fluent configuration, visibility getters and library-owned permission dialogs with the new state/spec API and host-owned permission flow. See the [2.x migration guide](docs/migration/2.x-to-3.0.md).
+- Remove the 2.x methods outright instead of deprecating them: the `OverlayView` setters, the `OverlayViewManager` permission and display-size helpers, `PermissionRequestDialogFragment` with its strings, and the public `DraggableOnTouchListener`. `core` no longer depends on AndroidX Fragment, and `OverlayView` handles can be created only through `OverlayViewManager`.
 - Rework window geometry, drag handling and managed pass-through opacity admission. Device validation remains pending before release.
 - Make the optional Timber tree lifecycle explicit, preserve logging on failed disposal, and prevent stale queued renders from affecting a reinitialized tree.
 - Raise minimum Android support to API 23 and modernize the build to JDK 17, SDK 36, Gradle 9.4.1 and AGP 9.2.1 with built-in Kotlin.
-- Update CI, lint integration and Java/Kotlin regression coverage. Final artifact publication and consumer validation remain pending.
+- Retarget the bundled lint check to `OverlaySpec.Builder.setAllowOutsideBounds` and rename its issue id from `ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN` to `ALLOW_OUTSIDE_BOUNDS`.
+- Update CI and Java/Kotlin regression coverage, and add `jitpack.yml` for JDK 17 builds. Final artifact publication remains pending.
 
 ## [1.1.0](https://github.com/75py/Android-OverlayViewManager/tree/1.1.0) (2018-01-10)
 [Full Changelog](https://github.com/75py/Android-OverlayViewManager/compare/1.0.0...1.1.0)
