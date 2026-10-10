@@ -27,14 +27,20 @@ import com.nagopy.android.overlayviewmanager.internal.MaximumObscuringOpacity
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import com.nagopy.android.overlayviewmanager.internal.PassThroughOpacityRegistry
 
-/** A synchronous, main-thread-owned overlay handle. */
-public class OverlayView<T : View> internal constructor(
+/**
+ * A synchronous, main-thread-owned overlay handle.
+ *
+ * Handles are created only by [OverlayViewManager]. The constructor is private rather than
+ * `internal` because Kotlin compiles an `internal` constructor to a public JVM constructor, which
+ * Java callers could invoke directly.
+ */
+public class OverlayView<T : View> private constructor(
     view: T,
     private val scope: OverlayScope,
     backend: OverlayWindowManager,
     initialSpec: OverlaySpec,
-    private val permission: OverlayPermission = OverlayPermission(),
-    activityReleaseCallback: (() -> Unit)? = null,
+    private val permission: OverlayPermission,
+    activityReleaseCallback: (() -> Unit)?,
 ) {
     private var backend: OverlayWindowManager? = backend
     private var ownedView: T? = view
@@ -211,6 +217,7 @@ public class OverlayView<T : View> internal constructor(
      * framework removal succeeded. Idempotent: a no-op once already [DISPOSED][OverlayState.DISPOSED].
      */
     @MainThread
+    @JvmSynthetic
     internal fun disposeForActivityDestruction() {
         requireMainThread()
         if (currentState == OverlayState.DISPOSED) return
@@ -377,4 +384,16 @@ public class OverlayView<T : View> internal constructor(
         check(main != null && Looper.myLooper() === main) { "OverlayView must be used on the main thread." }
     }
 
+    internal companion object {
+        /** Library-internal factory; synthetic so that Java sources cannot call it. */
+        @JvmSynthetic
+        internal fun <T : View> create(
+            view: T,
+            scope: OverlayScope,
+            backend: OverlayWindowManager,
+            initialSpec: OverlaySpec,
+            permission: OverlayPermission = OverlayPermission(),
+            activityReleaseCallback: (() -> Unit)? = null,
+        ): OverlayView<T> = OverlayView(view, scope, backend, initialSpec, permission, activityReleaseCallback)
+    }
 }

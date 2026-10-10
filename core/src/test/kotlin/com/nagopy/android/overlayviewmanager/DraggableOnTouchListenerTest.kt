@@ -42,7 +42,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun tapBelowSlopFiresClickAndLeavesSpecUnchanged() {
         val view = PositionedView(100, 240, 24)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -70,7 +70,7 @@ class DraggableOnTouchListenerTest {
     @Test fun moveBeyondSlopConsumesAndUpdatesXY() {
         val view = PositionedView(100, 240, 24)
         val backend = RecordingBackend()
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             backend,
@@ -109,7 +109,7 @@ class DraggableOnTouchListenerTest {
         // (see OverlayWindowFrame's KDoc).
         val view = PositionedView(screenX = 300, screenY = 500, visibleFrameLeft = 120, visibleFrameTop = 60)
         val backend = RecordingBackend()
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             backend,
@@ -134,7 +134,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun downMoveCancelRestoresOriginalAlphaWithoutResettingCoordinates() {
         val view = PositionedView(50, 160, 20)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -155,7 +155,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun cancelBelowSlopIsANoOpAndReturnsFalse() {
         val view = PositionedView(50, 160, 20)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -171,7 +171,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun secondFingerPointerDownDoesNotMoveTheOverlayAndActivePointerKeepsDriving() {
         val view = PositionedView(100, 240, 24)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -207,7 +207,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun activePointerLiftingRebasesToTheRemainingPointerWithoutAJump() {
         val view = PositionedView(100, 240, 24)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -248,7 +248,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun preDragPointerHandoffRebasesTheSlopOriginSoAStationaryMoveStartsNoDrag() {
         val view = PositionedView(100, 240, 24)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -290,7 +290,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun preDragPointerHandoffThenMovingBeyondSlopStartsTheDragFromTheHandoffPosition() {
         val view = PositionedView(100, 240, 24)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -324,7 +324,7 @@ class DraggableOnTouchListenerTest {
     @Test fun dragWhileBackendUpdateThrowsPreservesEffectiveSpecAndContinuesFromLastAppliedPositionOnceItRecovers() {
         val view = PositionedView(100, 240, 24)
         val backend = RecordingBackend()
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             backend,
@@ -361,7 +361,7 @@ class DraggableOnTouchListenerTest {
 
     @Test fun dragBeyondSlopCancelsPendingClickAndLongPressSoNeitherFiresOnUp() {
         val view = PositionedView(100, 240, 24)
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -395,7 +395,7 @@ class DraggableOnTouchListenerTest {
     @Test fun nonClickableViewConsumesFromDownAndTheDragStillWorks() {
         val view = PositionedView(100, 240, 24)
         view.isClickable = false
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -420,7 +420,7 @@ class DraggableOnTouchListenerTest {
         ShadowSettings.setCanDrawOverlays(false)
         val view = PositionedView(100, 240, 24)
         val backend = RecordingBackend()
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             backend,

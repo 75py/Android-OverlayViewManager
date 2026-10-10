@@ -151,7 +151,7 @@ class PassThroughOpacityAdmissionTest {
 
     @Test fun sameUidOnlyIsNeverAdmissionChecked() {
         MaximumObscuringOpacity.setForTests { 0f } // would reject everything if ever consulted
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             View(RuntimeEnvironment.getApplication()),
             OverlayScope.APPLICATION,
             RecordingBackend(),
@@ -162,7 +162,7 @@ class PassThroughOpacityAdmissionTest {
 
     @Test fun sameUidOnlyHandleCountsInTheCombinedSumEvenThoughItIsNeverItselfGated() {
         MaximumObscuringOpacity.setForTests { 0.8f }
-        val sameUidOnly = OverlayView(
+        val sameUidOnly = OverlayView.create(
             View(RuntimeEnvironment.getApplication()),
             OverlayScope.APPLICATION,
             RecordingBackend(),
@@ -179,7 +179,7 @@ class PassThroughOpacityAdmissionTest {
 
     @Test fun activityScopeIsNeverAdmissionChecked() {
         MaximumObscuringOpacity.setForTests { 0f } // would reject everything if ever consulted
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             View(RuntimeEnvironment.getApplication()),
             OverlayScope.ACTIVITY,
             RecordingBackend(),
@@ -229,7 +229,7 @@ class PassThroughOpacityAdmissionTest {
     @Test fun failedHideLeavesTheRegistryEntryAndBudgetInPlace() {
         MaximumObscuringOpacity.setForTests { 0.8f }
         val backend = FailingHideBackend()
-        val overlay = OverlayView(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec(alpha = .6f, touchMode = OverlayTouchMode.PASS_THROUGH, crossUidPassThrough = CrossUidPassThrough.WHEN_SYSTEM_ALLOWS))
+        val overlay = OverlayView.create(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec(alpha = .6f, touchMode = OverlayTouchMode.PASS_THROUGH, crossUidPassThrough = CrossUidPassThrough.WHEN_SYSTEM_ALLOWS))
         assertTrue(overlay.show().isSuccess)
         assertTrue(PassThroughOpacityRegistry.containsForTests(overlay))
 
@@ -246,7 +246,7 @@ class PassThroughOpacityAdmissionTest {
     @Test fun failedApplicationDisposeKeepsTheRegistryEntryAndASuccessfulRetryRemovesIt() {
         MaximumObscuringOpacity.setForTests { 0.8f }
         val backend = FailingHideBackend()
-        val overlay = OverlayView(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec(alpha = .6f, touchMode = OverlayTouchMode.PASS_THROUGH, crossUidPassThrough = CrossUidPassThrough.WHEN_SYSTEM_ALLOWS))
+        val overlay = OverlayView.create(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec(alpha = .6f, touchMode = OverlayTouchMode.PASS_THROUGH, crossUidPassThrough = CrossUidPassThrough.WHEN_SYSTEM_ALLOWS))
         assertTrue(overlay.show().isSuccess)
         assertTrue(PassThroughOpacityRegistry.containsForTests(overlay))
 
@@ -261,7 +261,7 @@ class PassThroughOpacityAdmissionTest {
         assertFalse(PassThroughOpacityRegistry.containsForTests(overlay))
     }
 
-    private fun handle(alpha: Float, backend: OverlayWindowManager = RecordingBackend()): OverlayView<View> = OverlayView(
+    private fun handle(alpha: Float, backend: OverlayWindowManager = RecordingBackend()): OverlayView<View> = OverlayView.create(
         View(RuntimeEnvironment.getApplication()),
         OverlayScope.APPLICATION,
         backend,

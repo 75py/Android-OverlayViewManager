@@ -38,7 +38,7 @@ class OverlayViewGravityTest {
         val view = View(RuntimeEnvironment.getApplication())
         view.layoutDirection = View.LAYOUT_DIRECTION_RTL
         val backend = RecordingBackend()
-        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
 
         overlay.show()
 
@@ -52,7 +52,7 @@ class OverlayViewGravityTest {
         val view = View(RuntimeEnvironment.getApplication())
         view.layoutDirection = View.LAYOUT_DIRECTION_LTR
         val backend = RecordingBackend()
-        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
 
         overlay.show()
 

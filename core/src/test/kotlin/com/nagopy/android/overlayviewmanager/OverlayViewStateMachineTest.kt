@@ -49,7 +49,7 @@ class OverlayViewStateMachineTest {
     @Test fun showWithParentedViewFailsBeforeTheBackendIsCalled() {
         val backend = RecordingBackend()
         val view = View(RuntimeEnvironment.getApplication())
-        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec())
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec())
         FrameLayout(view.context).addView(view)
 
         val result = overlay.show()
@@ -189,7 +189,7 @@ class OverlayViewStateMachineTest {
     }
 
     @Test fun applicationBrightnessIsRejectedForUpdate() {
-        val overlay = OverlayView(
+        val overlay = OverlayView.create(
             View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, RecordingBackend(), OverlaySpec(),
         )
         assertThrows(IllegalArgumentException::class.java) {
@@ -203,7 +203,7 @@ class OverlayViewStateMachineTest {
         val application = RuntimeEnvironment.getApplication()
         val applicationBackend = RecordingBackend()
         ShadowSettings.setCanDrawOverlays(false)
-        val applicationOverlay = OverlayView(View(application), OverlayScope.APPLICATION, applicationBackend, OverlaySpec())
+        val applicationOverlay = OverlayView.create(View(application), OverlayScope.APPLICATION, applicationBackend, OverlaySpec())
 
         assertEquals(OverlayFailure.PERMISSION_DENIED, applicationOverlay.show().failure)
         assertEquals(0, applicationBackend.addCalls)
@@ -213,7 +213,7 @@ class OverlayViewStateMachineTest {
 
         ShadowSettings.setCanDrawOverlays(false)
         val activityBackend = RecordingBackend()
-        val activityOverlay = OverlayView(View(application), OverlayScope.ACTIVITY, activityBackend, OverlaySpec())
+        val activityOverlay = OverlayView.create(View(application), OverlayScope.ACTIVITY, activityBackend, OverlaySpec())
         assertTrue(activityOverlay.show().isSuccess)
         assertEquals(1, activityBackend.addCalls)
     }
@@ -224,7 +224,7 @@ class OverlayViewStateMachineTest {
         ShadowSettings.setCanDrawOverlays(true)
         val application = RuntimeEnvironment.getApplication()
         val applicationBackend = RecordingBackend()
-        val applicationOverlay = OverlayView(View(application), OverlayScope.APPLICATION, applicationBackend, OverlaySpec())
+        val applicationOverlay = OverlayView.create(View(application), OverlayScope.APPLICATION, applicationBackend, OverlaySpec())
         applicationOverlay.show()
         assertAllowedFlags(applicationBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_SYSTEM_ALERT, passThrough = true)
         applicationOverlay.update(applicationOverlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE))
@@ -233,7 +233,7 @@ class OverlayViewStateMachineTest {
         assertAllowedFlags(applicationBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_SYSTEM_ALERT, passThrough = false)
 
         val activityBackend = RecordingBackend()
-        val activityOverlay = OverlayView(View(application), OverlayScope.ACTIVITY, activityBackend, OverlaySpec())
+        val activityOverlay = OverlayView.create(View(application), OverlayScope.ACTIVITY, activityBackend, OverlaySpec())
         activityOverlay.show()
         assertAllowedFlags(activityBackend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_APPLICATION, passThrough = true)
         activityOverlay.update(activityOverlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE))
@@ -247,7 +247,7 @@ class OverlayViewStateMachineTest {
     fun applicationWindowTypeUsesApplicationOverlayFromApi26() {
         ShadowSettings.setCanDrawOverlays(true)
         val backend = RecordingBackend()
-        val overlay = OverlayView(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec())
+        val overlay = OverlayView.create(View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, backend, OverlaySpec())
 
         assertTrue(overlay.show().isSuccess)
         assertAllowedFlags(backend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, passThrough = true)
@@ -256,7 +256,7 @@ class OverlayViewStateMachineTest {
     @Test fun updateAppliesEveryLayoutFieldAndViewOwnsTheClickListener() {
         val backend = RecordingBackend()
         val view = View(RuntimeEnvironment.getApplication())
-        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec())
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec())
         overlay.show()
         var clicks = 0
         view.setOnClickListener { clicks++ }
@@ -284,7 +284,7 @@ class OverlayViewStateMachineTest {
     @Test fun draggableSpecInstallsTheBridgeAndUpdatesOnlyAfterTheListenerRuns() {
         val backend = RecordingBackend()
         val view = View(RuntimeEnvironment.getApplication())
-        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
         overlay.show()
         val slop = android.view.ViewConfiguration.get(view.context).scaledTouchSlop
         val down = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_DOWN, 12f, 20f, 0)
@@ -302,7 +302,7 @@ class OverlayViewStateMachineTest {
     @Test fun failedDraggableUpdateKeepsThePriorEffectiveTouchState() {
         val backend = RecordingBackend()
         val view = View(RuntimeEnvironment.getApplication())
-        val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.INTERACTIVE))
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.INTERACTIVE))
         overlay.show()
         backend.updateFailure = IllegalStateException("rejected")
         assertFalse(overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.DRAGGABLE)).isSuccess)
@@ -313,7 +313,7 @@ class OverlayViewStateMachineTest {
         assertEquals(1, backend.updateCalls)
     }
 
-    private fun overlay(backend: RecordingBackend, spec: OverlaySpec = OverlaySpec()): OverlayView<View> = OverlayView(
+    private fun overlay(backend: RecordingBackend, spec: OverlaySpec = OverlaySpec()): OverlayView<View> = OverlayView.create(
         View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, spec,
     )
 

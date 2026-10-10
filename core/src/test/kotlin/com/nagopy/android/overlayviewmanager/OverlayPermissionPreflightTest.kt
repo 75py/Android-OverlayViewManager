@@ -92,7 +92,7 @@ class OverlayPermissionPreflightTest {
     @Test fun activityScope_neverConsultsPermissionEvenWhenApplicationPermissionIsDenied() {
         ShadowSettings.setCanDrawOverlays(false)
         val backend = RecordingBackend()
-        val overlay = OverlayView(View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, OverlaySpec())
+        val overlay = OverlayView.create(View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, OverlaySpec())
 
         val result = overlay.show()
 
@@ -101,7 +101,7 @@ class OverlayPermissionPreflightTest {
         assertEquals(1, backend.addCalls)
     }
 
-    private fun applicationOverlay(backend: RecordingBackend): OverlayView<View> = OverlayView(
+    private fun applicationOverlay(backend: RecordingBackend): OverlayView<View> = OverlayView.create(
         View(RuntimeEnvironment.getApplication()),
         OverlayScope.APPLICATION,
         backend,
