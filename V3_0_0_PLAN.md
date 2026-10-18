@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-09-14 02:30 JSTのユーザー指示で再開**。T08まで統合済み。T07寿命管理はPR54で6c9e2aaへ統合済み。40 unit tests・lint・3 module build成功、最終SHAの対向承認・CI成功を確認。T10a/sampleとT10b/移行文書はPR57・PR56で統合完了。T04cはcommit2の7d5af7bまで保存済み。2026-09-14 02:30 JSTのユーザー指示で再開し、Claudeの既存実装所有権を確認済み。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
+- 状態: **2026-10-18 JST: T04c・T09 stage 2・T11を統合済み、T12は端末確認待ち**。2026-09-20にユーザー依頼のDevinがPR61（`work/3.0.0-devin`、head `99c918e`）でT04c/T09 stage 2/T11/T12を一括実装。Claude司令塔がレビュー・承認後、ユーザー許可で2c256a8へ統合。レビュー指摘のJVM可視性と文書修正をPR62で208588fへ統合。中断記録PR60も9776926へ統合。別UIDアプリへのタッチ透過の端末確認、配布方法（JitPack廃止・Maven Central移行）の決定と反映、T13が残る。Codex司令塔は今回未稼働で、PR62のCodex対向承認はなくユーザー許可でマージした。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -111,18 +111,18 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 統合済み |
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
 | T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 統合済み |
-| T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 作業中 |
+| T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 統合済み（T04a〜c） |
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
-| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 既存Claude worktreeでcommit2の7d5af7bを保存。core105 tests成功。effort変更がoperation_unknownのため02:54 JSTに現在ターンを中断・保持。commit3途中の7ファイルWIPを保存、未検証。JVM可視性監査・全module検証は未完了 |
+| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認（実際はDevin実装・Claudeレビュー） | T07, T10 | 統合済み: PR61 2c256a8（Devin再実装、旧Claude worktreeの7d5af7b/WIPは不採用）、JVM可視性の追補PR62 208588f。両PRともCI成功。PR62はCodex承認なし・ユーザー許可でマージ |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `c13acee`、40 tests成功・lintエラー0/警告2・3 module build成功。最終相互承認・CI成功後6c9e2aaへ統合済み |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
-| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
+| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 統合済み（T09a PR42 65c7e95、stage 2はPR61 2c256a8）。Kotlinの`OverlaySpec(allowOutsideBounds = true)`/`copy`は未検出で、移行ガイドに既知の制限として記載 |
 | T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
-| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
-| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
+| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 一部統合: version 3.0.0/id10とjitpack.ymlはPR61。publishToMavenLocal・R8 consumer確認はDevin申告で未再現。2026-10-18にユーザーがJitPack廃止・Maven Central移行の意向を表明、配布設定と文書は未対応 |
+| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 作業中: PR61で端末テスト追加、API23/26/35/36結果はDevin申告で未再現。CIはassemble/unit/lintのみ。別UIDアプリへのタッチ透過は未確認でrelease-blocking |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
 
 T02とT01、T04とT07などは編集範囲が独立する場合に並列実行する。T03中のビルド検証や、T04〜T06・T08の同一coreファイル変更は直列化する。大きいタスクはファイル所有範囲が明確な小PRへ分割してよい。
@@ -443,8 +443,8 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 ### T04c / T06 follow-ups from PR40
 
-- [ ] constructorのJava公開可視性を最終API監査で閉じる（RestrictToだけをaccess controlと扱わない）。
-- [ ] 暫定public DraggableOnTouchListener/custom listener setterをT06/T04cで除去・内部化する。
+- [x] constructorのJava公開可視性を最終API監査で閉じる（RestrictToだけをaccess controlと扱わない）。PR62でprivate constructorと`@JvmSynthetic`の内部factoryに変更し、reflectionテストで保護。
+- [x] 暫定public DraggableOnTouchListener/custom listener setterをT06/T04cで除去・内部化する。PR61でsetter除去・`internal class`化。
 - [ ] DISPOSED show/updateのdiagnostic保持KDocを補足し、合意済みnullability方針を適用する。
 
 ### 2026-09-12 18:32 JST: 利用制限に伴う分担変更
@@ -575,3 +575,7 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 ユーザー指示で再開。共有213a7d0、記録PR60、Claude所有7d5af7bと7ファイルWIPを確認・保持した。既存Claudeも同時再開中のため重複実装せず、Orcaで所有権と実effort high/指定mediumの整合を確認中。現在WIPは未コンパイル、前回105 tests成功とは区別する。詳細は[今回の再開記録](docs/coordination/3.0.0/2026-09-15-t04c-resume.md)。
 
 02:37 JST: 実effort不一致に加え、Orca注意喚起入力が同ID再確認でoperation_unknownとなった。Claude画面はInterruptedで待機、途中成果は保持。medium設定と端末入力状態の確認が必要なblockerとして記録し、重複入力・実装・統合は行わない。
+
+### 2026-10-18 JST: PR61・PR62・PR60の統合
+
+ユーザーの「どこまで終わったか」の確認を受け、Claude司令塔（Opus 5.5）が状態を調査。2026-09-20にユーザー依頼のDevinがPR61でT04c/T09 stage 2/T11/T12を実装していた。ユーザーはPR61の採用・レビュー・マージを指示。Claudeが全差分をレビューし、承認コメントを付けた。PR61はユーザー許可で2c256a8へ統合。レビュー指摘のうちJVM可視性と文書をPR62で修正し、CI成功後、ユーザーのコマンドで208588fへ統合。PR60はおすすめどおり記録として9776926へ統合。サンドボックス制約によりGradle・端末試験はローカルで再現していない。詳細は[統合記録](docs/coordination/3.0.0/2026-10-18-pr61-integration.md)。
