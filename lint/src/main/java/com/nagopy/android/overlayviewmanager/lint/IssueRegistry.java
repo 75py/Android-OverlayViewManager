@@ -34,7 +34,7 @@ public class IssueRegistry extends com.android.tools.lint.client.api.IssueRegist
 
     @Override
     public List<Issue> getIssues() {
-        return Collections.singletonList(SetOverlayAboveNavigationViewsDetector.ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN);
+        return Collections.singletonList(SetOverlayAboveNavigationViewsDetector.ALLOW_OUTSIDE_BOUNDS);
     }
 
     @Override

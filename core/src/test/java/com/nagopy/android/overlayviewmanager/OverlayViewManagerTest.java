@@ -2,9 +2,7 @@ package com.nagopy.android.overlayviewmanager;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.app.Application;
@@ -20,7 +18,6 @@ import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
-import org.robolectric.shadows.ShadowSettings;
 
 import java.lang.reflect.Field;
 
@@ -93,15 +90,6 @@ public class OverlayViewManagerTest {
         Mockito.when(finishing.isFinishing()).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), finishing));
         assertThrows(IllegalArgumentException.class, () -> OverlayViewManager.getInstance().newOverlayView(new View(application), finishing, new OverlaySpec()));
-    }
-    @Test @Config(sdk = Build.VERSION_CODES.M, manifest = Config.NONE)
-    public void canDrawOverlaysTemporarilyBridgesPlatformAllowAndDenyAtApi23() {
-        Application application = RuntimeEnvironment.getApplication();
-        OverlayViewManager.init(application);
-        ShadowSettings.setCanDrawOverlays(false);
-        assertFalse(OverlayViewManager.getInstance().canDrawOverlays());
-        ShadowSettings.setCanDrawOverlays(true);
-        assertTrue(OverlayViewManager.getInstance().canDrawOverlays());
     }
     private static Field managerInstanceField() throws NoSuchFieldException {
         Field field = OverlayViewManager.class.getDeclaredField("instance");

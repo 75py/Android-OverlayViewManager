@@ -96,20 +96,6 @@ class OverlayViewStateMachineTest {
         assertEquals(applied.alpha, backend.lastSuccessfulParams!!.alpha, 0f)
     }
 
-    @Test fun legacyPendingConfigurationDoesNotReplaceEffectiveSpecWhenApplyFails() {
-        val backend = RecordingBackend()
-        val overlay = overlay(backend)
-        overlay.show()
-        val applied = overlay.spec
-        backend.updateFailure = IllegalStateException("rejected")
-        overlay.setX(24).setAlpha(.5f)
-        val result = overlay.update()
-        assertFalse(result.isSuccess)
-        assertEquals(applied, overlay.spec)
-        assertEquals(24, (privateField(overlay, "pendingSpec") as OverlaySpec).x)
-        assertEquals(.5f, (privateField(overlay, "pendingSpec") as OverlaySpec).alpha, 0f)
-    }
-
     @Test fun equalUpdatesAndRepeatedShowAreNoOps() {
         val backend = RecordingBackend()
         val overlay = overlay(backend)
@@ -202,42 +188,13 @@ class OverlayViewStateMachineTest {
         assertEquals(OverlayState.CONFIGURED, overlay.state)
     }
 
-    @Test fun applicationBrightnessIsRejectedForUpdateAndLegacySetter() {
+    @Test fun applicationBrightnessIsRejectedForUpdate() {
         val overlay = OverlayView(
             View(RuntimeEnvironment.getApplication()), OverlayScope.APPLICATION, RecordingBackend(), OverlaySpec(),
         )
         assertThrows(IllegalArgumentException::class.java) {
             overlay.update(OverlaySpec(screenBrightness = .4f))
         }
-        assertThrows(IllegalArgumentException::class.java) { overlay.setScreenBrightness(.4f) }
-    }
-
-    @Test fun disposedLegacyCustomListenerIsNotRetainedBeforeTheSetterFails() {
-        val overlay = overlay(RecordingBackend())
-        overlay.dispose()
-        val customListener = DraggableOnTouchListener(overlay)
-
-        assertThrows(IllegalStateException::class.java) { overlay.setDraggable(true, customListener) }
-
-        assertNull(privateField(overlay, "pendingDragListener"))
-        assertNull(privateField(overlay, "effectiveDragListener"))
-        assertFalse(privateField(overlay, "pendingDragListenerChange") as Boolean)
-        assertEquals(OverlayState.DISPOSED, overlay.state)
-        assertNull(privateField(overlay, "backend"))
-    }
-
-    @Test fun customLegacyListenerChangeIsAppliedEvenWhenTheSpecIsOtherwiseEqual() {
-        val backend = RecordingBackend()
-        val overlay = overlay(backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
-        overlay.show()
-        val customListener = DraggableOnTouchListener(overlay)
-
-        val result = overlay.setDraggable(true, customListener).update()
-
-        assertTrue(result.isSuccess)
-        assertTrue(result.changed)
-        assertEquals(1, backend.updateCalls)
-        assertSame(customListener, privateField(overlay, "effectiveDragListener"))
     }
 
     @Test
@@ -296,15 +253,25 @@ class OverlayViewStateMachineTest {
         assertAllowedFlags(backend.lastSuccessfulParams!!, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, passThrough = true)
     }
 
-    @Test fun legacyLayoutAndClickBridgeUsePendingSpecAndBackendSnapshot() {
+    @Test fun updateAppliesEveryLayoutFieldAndViewOwnsTheClickListener() {
         val backend = RecordingBackend()
         val view = View(RuntimeEnvironment.getApplication())
         val overlay = OverlayView(view, OverlayScope.ACTIVITY, backend, OverlaySpec())
         overlay.show()
         var clicks = 0
-        overlay.setOnClickListener { clicks++ }
-        overlay.setWidth(240).setHeight(80).setGravity(android.view.Gravity.BOTTOM).setX(12).setY(34)
-            .setAlpha(.7f).setHorizontalMargin(.2f).setVerticalMargin(.3f).update()
+        view.setOnClickListener { clicks++ }
+        overlay.update(
+            overlay.spec.copy(
+                width = 240,
+                height = 80,
+                gravity = android.view.Gravity.BOTTOM,
+                x = 12,
+                y = 34,
+                alpha = .7f,
+                horizontalMargin = .2f,
+                verticalMargin = .3f,
+            ),
+        )
 
         assertEquals(240, overlay.spec.width)
         assertEquals(80, backend.lastSuccessfulParams!!.height)
