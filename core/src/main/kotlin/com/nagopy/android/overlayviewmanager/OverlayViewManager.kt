@@ -41,7 +41,7 @@ public class OverlayViewManager private constructor(private val application: App
         requireMainThread()
         require(view.parent == null) { "The managed view must not already have a parent." }
         require(spec.screenBrightness == null) { "screenBrightness is supported only for activity overlays." }
-        return OverlayView(view, OverlayScope.APPLICATION, OverlayWindowManager.getApplicationInstance(), spec, permission)
+        return OverlayView.create(view, OverlayScope.APPLICATION, OverlayWindowManager.getApplicationInstance(), spec, permission)
     }
 
     private fun <T : View> newActivityOverlay(view: T, activity: Activity, spec: OverlaySpec): OverlayView<T> {
@@ -49,7 +49,7 @@ public class OverlayViewManager private constructor(private val application: App
         require(view.parent == null) { "The managed view must not already have a parent." }
         require(!activity.isFinishing && (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1 || !activity.isDestroyed)) { "Activity is finishing or destroyed." }
         lateinit var handle: OverlayView<T>
-        handle = OverlayView(
+        handle = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
             OverlayWindowManager.getActivityInstance(activity),
