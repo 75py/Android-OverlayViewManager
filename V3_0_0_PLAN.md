@@ -576,7 +576,6 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 02:37 JST: 実effort不一致に加え、Orca注意喚起入力が同ID再確認でoperation_unknownとなった。Claude画面はInterruptedで待機、途中成果は保持。medium設定と端末入力状態の確認が必要なblockerとして記録し、重複入力・実装・統合は行わない。
 
-
 ### 2026-10-25 JST: PR64のAPI31/36再検証（T12全体の完了とは区別）
 
 Codexレビュー後、Settingsが非システムoverlayを隠すため、以前のSettingsに対する成功結果を別UID透過の証拠から除外した。Claudeがtest APK内の別UID受信Activityへ変更。候補 `c9d8334f358a72217419947ddc3bc2bb57c61e9a` をCodexがAPI31初期r02・更新r03・API36で実行し、各3/3成功（skipなし）。API31はalpha1.0で遮断、API36は約0.8へ補正して到達する。詳細・所有権合意・再現情報は[PR64再検証記録](docs/coordination/3.0.0/2026-10-25-pr64-device-validation.md)。

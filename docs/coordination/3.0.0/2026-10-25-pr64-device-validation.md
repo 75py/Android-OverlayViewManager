@@ -59,10 +59,18 @@ Build fingerprints:
 
 ローカル証跡: `/private/tmp/ovm-pr64-evidence/c9d8334-api31-r02-results`、`c9d8334-api31-r03-results`、`c9d8334-api36-results` に各XMLとtest logcat、同prefixの `*-gradle.log` にビルド結果を保存。Settings非表示のdumpは `api31-r03-window-observation.txt`。一時ディレクトリの保存は永続保証ではないため、本ログにもfingerprint・SHA・コマンド・観測値を記載した。
 
-候補の[CI run 40184221635](https://github.com/75py/Android-OverlayViewManager/actions/runs/40184221635)も成功。端末検証は上記3テストのみで、sample全体やrelease matrixの再実行とは区別する。
+候補の[CI run 40184221635](https://github.com/75py/Android-OverlayViewManager/actions/runs/40184221635)も成功。その後の `43b1b3b47fa543595f015983dfa955ca028079d7` はREADME・KDoc・移行ガイドだけを修正し、androidTestは `c9d8334` と同一であることをCodexとClaudeが差分で確認した。[43b1b3bのCI run 40184685971](https://github.com/75py/Android-OverlayViewManager/actions/runs/40184685971)も成功。端末検証は上記3テストのみで、sample全体やrelease matrixの再実行とは区別する。
 
 ## 残るゲートと記録の整合
 
 - 最終の説明修正と本記録を含むheadに対して、差分確認・ClaudeによるCodex文書の確認・CodexのPR64承認・CI確認が必要。mergeは実行していない。
 - PR63 head `f1627229a60b302923379dc480c622063a2fd42d` の「Settingsで端末確認済み／次はT13」は上記発見より前の記録。今回のreceiver結果で置き換え、PR63/64統合時には新しい履歴を失わず計画を整合する。配布をJitPack継続とするユーザー判断は変更しない。
 - 本作業はAPI31/36の別UID透過に限定。合意済みAPI23/26/35を含むT12全体、T05/T06の権限・drag・座標等のrelease-blocking試験や最終consumer/成果物検証を完了扱いにしない。未実施ゲートは両司令塔が別途証跡を照合して閉じる。
+
+## 記録の対向レビュー（2026-10-25 19:28 JST）
+
+Claudeは記録commit `49622cc` を読み取りレビューし、XML・logcatの数値、fingerprint、候補CI、PR63 headの一致を確認した。Orca receiptと初期imageのSHA256はClaude側では未照合（Codexが取得・記録）。指摘は、現head `43b1b3b` とCIの追記、PR63との統合手順の具体化、計画末尾の空行1行削除の3点。本追記と上記CI説明で対応した。
+
+PR63との整合は次の順を提案し、実際のmerge/rebase/pushを行う承認とは区別する。PR64を先に統合する場合、PR63所有者Claudeが最新baseを取り込み、計画と調整ログの旧2026-10-25節を本記録への参照に置換する。状態行の「次はT13」とT12行の旧sample9/9を訂正し、T12全体の未完了ゲートを保持する。2026-10-18の統合履歴を失わず、10月18日→25日の順に並べる。競合解消後はCodexが差分を再確認し、新head承認・CIを確認する。両PRは現在未マージで、この手順は将来の統合時のもの。
+
+記録のPR64 branchへの取り込み/push依頼は自動承認レビューが拒否し、ユーザーの明示回答待ち。Codexは許可不要の読み取りレビューとローカル修正まで完了し、取り込み/push/PR63変更を実施していない。[コードレビューと現head CIの報告](https://github.com/75py/Android-OverlayViewManager/pull/64#issuecomment-6396511235)は投稿済み。最終merge承認は記録反映後のheadに対して別途確認する。専用API31エミュレータ5582/5584を停止し、既存5554は起動したまま保持した。
