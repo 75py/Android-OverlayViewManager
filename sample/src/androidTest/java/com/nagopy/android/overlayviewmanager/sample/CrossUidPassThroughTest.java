@@ -2,7 +2,6 @@ package com.nagopy.android.overlayviewmanager.sample;
 
 import android.app.Instrumentation;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.hardware.input.InputManager;
@@ -44,6 +43,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -55,8 +55,10 @@ import static org.junit.Assume.assumeTrue;
  * {@link InputManager#getMaximumObscuringOpacityForTouch()}. Builds with the window manager's
  * opacity clamp (an AOSP change from March 2022, absent from the initial Android 12 release) lower a
  * non-touchable application overlay above that maximum to the maximum instead.
- * The Settings app is the other UID and its search bar is the touch target: a delivered tap opens
- * the search screen's text field.
+ *
+ * <p>The touch target is {@link TapReceiverActivity}, which runs with the test APK's UID. System
+ * apps such as Settings are unsuitable: they hide non-system overlays while in front, so a tap
+ * reaches them without passing through the overlay at all.
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 @RunWith(AndroidJUnit4.class)
@@ -66,13 +68,6 @@ public class CrossUidPassThroughTest {
     private static final long TIMEOUT_MS = 5000;
     private static final long BLOCKED_OBSERVATION_MS = 3000;
     private static final float ALPHA_TOLERANCE = 0.005f;
-    /**
-     * The search screen's text field: {@code android.widget.EditText} on API 36, and the
-     * {@code AutoCompleteTextView} of a {@code SearchView} ({@code android:id/search_src_text}) on
-     * API 31. Every check, including the blocked case, uses this one selector.
-     */
-    private static final BySelector SEARCH_FIELD =
-            By.clazz(Pattern.compile("android\\.widget\\.(EditText|AutoCompleteTextView)"));
     private static final Pattern DISPATCHED_ALPHA = Pattern.compile("[ ,]alpha=([0-9.]+)");
     /** {@code TYPE_APPLICATION_OVERLAY} as API 31 prints a window type in {@code dumpsys input}. */
     private static final Pattern OVERLAY_TYPE =
@@ -87,17 +82,32 @@ public class CrossUidPassThroughTest {
     private Context context;
     private OverlayView<View> overlay;
     private float dispatchedOverlayAlpha = Float.NaN;
+    private BySelector receiver;
 
     @Before
-    public void setUp() {
+    public void setUp() throws IOException {
         instrumentation = InstrumentationRegistry.getInstrumentation();
         device = UiDevice.getInstance(instrumentation);
         context = instrumentation.getTargetContext().getApplicationContext();
         Log.i(TAG, "Build fingerprint: " + Build.FINGERPRINT);
-        context.startActivity(new Intent(Settings.ACTION_SETTINGS)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-        assertNotNull("Settings search bar not found", findSearchBar());
-        assertFalse("A text field is already shown", device.hasObject(SEARCH_FIELD));
+
+        String receiverPackage = instrumentation.getContext().getPackageName();
+        int receiverUid = instrumentation.getContext().getApplicationInfo().uid;
+        assertNotEquals("The receiver must not share the sample app's UID",
+                context.getApplicationInfo().uid, receiverUid);
+        String started = device.executeShellCommand("am start -W --activity-clear-task -n "
+                + receiverPackage + "/" + TapReceiverActivity.class.getName());
+        Log.i(TAG, "Tap receiver start: " + started.trim());
+        assertNotNull("Tap receiver not shown", device.wait(Until.findObject(
+                By.pkg(receiverPackage).text(TapReceiverActivity.TAPS_PREFIX + 0)), TIMEOUT_MS));
+        UiObject2 uid = device.findObject(By.pkg(receiverPackage)
+                .text(Pattern.compile(Pattern.quote(TapReceiverActivity.UID_PREFIX) + "\\d+")));
+        assertNotNull("Tap receiver UID not shown", uid);
+        assertEquals("The receiver runs with an unexpected UID",
+                TapReceiverActivity.UID_PREFIX + receiverUid, uid.getText());
+        assertNotEquals("The receiver runs in the sample app's UID",
+                TapReceiverActivity.UID_PREFIX + Process.myUid(), uid.getText());
+        receiver = By.pkg(receiverPackage);
     }
 
     @After
@@ -115,9 +125,8 @@ public class CrossUidPassThroughTest {
         OverlayResult result = showFullScreenOverlay(alpha, CrossUidPassThrough.WHEN_SYSTEM_ALLOWS);
 
         assertTrue("show failed: " + result.getFailure(), result.isSuccess());
-        tapSearchBarThroughOverlay();
-        assertTrue("The tap did not reach Settings",
-                device.wait(Until.hasObject(SEARCH_FIELD), TIMEOUT_MS));
+        tapReceiverThroughOverlay();
+        assertTrue("The tap did not reach the receiver", awaitTaps(1, TIMEOUT_MS));
     }
 
     @Test
@@ -147,25 +156,27 @@ public class CrossUidPassThroughTest {
         float dispatched = dispatchedOverlayAlpha;
         Log.i(TAG, "Maximum obscuring opacity " + maximum + ", dispatched overlay alpha " + dispatched);
         if (dispatched <= maximum + ALPHA_TOLERANCE) {
-            tapSearchBarThroughOverlay();
+            tapReceiverThroughOverlay();
             assertTrue("The platform lowered the overlay to " + dispatched
-                            + " but the tap did not reach Settings",
-                    device.wait(Until.hasObject(SEARCH_FIELD), TIMEOUT_MS));
+                    + " but the tap did not reach the receiver", awaitTaps(1, TIMEOUT_MS));
         } else {
             String mode = Settings.Global.getString(context.getContentResolver(), "block_untrusted_touches");
             assumeTrue("Untrusted touches are not in block mode: " + mode, mode == null || "2".equals(mode));
-            tapSearchBarThroughOverlay();
+            tapReceiverThroughOverlay();
             assertFalse("The platform delivered a tap through an overlay at alpha " + dispatched,
-                    device.wait(Until.hasObject(SEARCH_FIELD), BLOCKED_OBSERVATION_MS));
+                    awaitTaps(1, BLOCKED_OBSERVATION_MS));
+            assertTrue("The receiver's tap count changed unexpectedly",
+                    device.hasObject(By.copy(receiver).text(TapReceiverActivity.TAPS_PREFIX + 0)));
         }
     }
 
     /**
      * Waits until the input dispatcher lists the overlay as a visible application overlay of this
-     * UID and returns its alpha, the value the cross-UID opacity rule uses. Other lines of this UID
-     * can precede it while the window is set up, such as an unnamed, invisible layer of unknown
-     * type. API 31 prints {@code visible=} and {@code type=}; later APIs print {@code inputConfig=}
-     * flags, where {@code NOT_VISIBLE} marks a window that is not ready.
+     * UID and returns its alpha, the value the cross-UID opacity rule uses. Other lines of this UID,
+     * such as an invisible layer of unknown type, can precede it. The overlay is also listed as
+     * invisible while a window in front hides non-system overlays, in which case a tap never passes
+     * through it. API 31 prints {@code visible=} and {@code type=}; later APIs print
+     * {@code inputConfig=} flags, where {@code NOT_VISIBLE} marks an invisible window.
      */
     private float awaitOverlayInputWindowAlpha() throws IOException {
         String owner = "ownerUid=" + Process.myUid() + ",";
@@ -232,10 +243,10 @@ public class CrossUidPassThroughTest {
         return result[0];
     }
 
-    private void tapSearchBarThroughOverlay() {
-        UiObject2 searchBar = findSearchBar();
-        assertNotNull("Settings search bar not found under the overlay", searchBar);
-        Point target = searchBar.getVisibleCenter();
+    private void tapReceiverThroughOverlay() {
+        UiObject2 tapArea = device.findObject(By.copy(receiver).desc(TapReceiverActivity.TAP_AREA_DESCRIPTION));
+        assertNotNull("Tap receiver not found under the overlay", tapArea);
+        Point target = tapArea.getVisibleCenter();
         boolean[] covered = new boolean[1];
         instrumentation.runOnMainSync(() -> {
             View view = overlay.getView();
@@ -249,12 +260,9 @@ public class CrossUidPassThroughTest {
         device.click(target.x, target.y);
     }
 
-    private UiObject2 findSearchBar() {
-        BySelector byId = By.res(Pattern.compile("com\\.android\\.settings:id/search_(action_)?bar"));
-        UiObject2 searchBar = device.wait(Until.findObject(byId), TIMEOUT_MS);
-        if (searchBar == null) {
-            searchBar = device.findObject(By.text(Pattern.compile("Search [Ss]ettings")));
-        }
-        return searchBar;
+    /** Returns whether the receiver shows exactly {@code taps} taps within {@code timeoutMs}. */
+    private boolean awaitTaps(int taps, long timeoutMs) {
+        return device.wait(Until.hasObject(By.copy(receiver).text(TapReceiverActivity.TAPS_PREFIX + taps)),
+                timeoutMs);
     }
 }
