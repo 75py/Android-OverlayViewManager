@@ -48,15 +48,16 @@ import static org.junit.Assume.assumeTrue;
  * Device check for application overlays in {@link OverlayTouchMode#PASS_THROUGH} above another
  * application's window. Since Android 12 the input dispatcher drops touches that pass through a
  * window owned by a different UID unless that window's opacity is at most
- * {@link InputManager#getMaximumObscuringOpacityForTouch()}. The Settings app is the other UID and
- * its search bar is the touch target: a delivered tap opens the search screen's text field.
+ * {@link InputManager#getMaximumObscuringOpacityForTouch()}; for a non-touchable application
+ * overlay above that maximum, the window manager lowers the window alpha to the maximum instead.
+ * The Settings app is the other UID and its search bar is the touch target: a delivered tap opens
+ * the search screen's text field.
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 @RunWith(AndroidJUnit4.class)
 public class CrossUidPassThroughTest {
 
     private static final long TIMEOUT_MS = 5000;
-    private static final long BLOCKED_OBSERVATION_MS = 3000;
 
     @Rule
     public GrantOverlayPermissionRule grantPermissionRule = new GrantOverlayPermissionRule();
@@ -111,18 +112,17 @@ public class CrossUidPassThroughTest {
     }
 
     @Test
-    public void opaqueSameUidOnly_isBlockedByThePlatform() {
-        // SAME_UID_ONLY skips the library's opacity admission; the platform's default
-        // untrusted-touch mode then drops the cross-UID tap.
-        String mode = Settings.Global.getString(context.getContentResolver(), "block_untrusted_touches");
-        assumeTrue("Untrusted touches are not in block mode: " + mode, mode == null || "2".equals(mode));
+    public void opaqueSameUidOnly_isDimmedByThePlatformAndPassesTheTap() {
+        // SAME_UID_ONLY only skips the library's opacity admission. The window manager lowers the
+        // opaque overlay to the maximum obscuring opacity, so the cross-UID tap still arrives.
+        assumeTrue("The device allows fully opaque pass-through", maximumObscuringOpacity() < 1f);
 
         OverlayResult result = showFullScreenOverlay(1f, CrossUidPassThrough.SAME_UID_ONLY);
 
         assertTrue("show failed: " + result.getFailure(), result.isSuccess());
         tapSearchBarThroughOverlay();
-        assertFalse("The platform delivered a tap through an opaque cross-UID overlay",
-                device.wait(Until.hasObject(By.clazz(EditText.class)), BLOCKED_OBSERVATION_MS));
+        assertTrue("The tap did not reach Settings",
+                device.wait(Until.hasObject(By.clazz(EditText.class)), TIMEOUT_MS));
     }
 
     private float maximumObscuringOpacity() {

@@ -132,7 +132,7 @@ A grant can be revoked after the check. Always inspect the subsequent operation 
 ## Touch, positioning, and brightness
 
 - `PASS_THROUGH` does not receive touches; `INTERACTIVE` receives View interactions; `DRAGGABLE` adds library drag handling. Install click listeners on the managed View.
-- `CrossUidPassThrough.SAME_UID_ONLY` is the default. Opt into `WHEN_SYSTEM_ALLOWS` only when passing touches to another app is required. Android's opacity and window policies can reject this with `PASS_THROUGH_OPACITY_EXCEEDED` or `PASS_THROUGH_UNSUPPORTED`; the library cannot guarantee another app receives the touch.
+- `CrossUidPassThrough.SAME_UID_ONLY` is the default. Opt into `WHEN_SYSTEM_ALLOWS` only when passing touches to another app is required. Android's opacity and window policies can reject this with `PASS_THROUGH_OPACITY_EXCEEDED` or `PASS_THROUGH_UNSUPPORTED`; the library cannot guarantee another app receives the touch. `SAME_UID_ONLY` does not block touches to other apps: on Android 12+ the system lowers a pass-through application overlay above the maximum obscuring opacity (0.8 by default) to that value and still passes the touch through.
 - Geometry uses the owning window's bounds and insets. Obtain slider limits from the host window, with a compatible fallback on older supported APIs. `allowOutsideBounds` relaxes normal bounds handling; it does not guarantee placement over system bars or other restricted areas.
 - `screenBrightness` is an optional Activity-scope setting. Supplying it to an application overlay is an argument error.
 

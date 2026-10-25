@@ -16,8 +16,26 @@
 
 package com.nagopy.android.overlayviewmanager
 
-/** Controls cross-UID pass-through when the platform permits it. */
+/**
+ * Controls whether the library checks an application [OverlayTouchMode.PASS_THROUGH] overlay
+ * against Android's cross-UID touch opacity limit before attaching it.
+ *
+ * Neither value blocks touches from reaching another application. On Android 12 (API 31) and
+ * later, the platform lowers a non-touchable application overlay whose alpha exceeds
+ * `InputManager.getMaximumObscuringOpacityForTouch()` (0.8 by default) to that maximum and lets
+ * touches through.
+ */
 public enum class CrossUidPassThrough {
+    /**
+     * The default. The library makes no cross-UID claim and runs no opacity check; the platform
+     * may still deliver touches to another application and dim the overlay as described above.
+     */
     SAME_UID_ONLY,
+
+    /**
+     * Requests cross-UID pass-through. On API 31+ the library rejects a show or update with
+     * [OverlayFailure.PASS_THROUGH_OPACITY_EXCEEDED] instead of letting the platform dim the
+     * overlay, or with [OverlayFailure.PASS_THROUGH_UNSUPPORTED] when the maximum is unavailable.
+     */
     WHEN_SYSTEM_ALLOWS,
 }
