@@ -1,6 +1,6 @@
 # T04c/T09/T11/T12: PR61の採用と統合
 
-- 状態: ユーザー指示により統合済み（T12の端末確認・配布方法の反映・T13は未完了）
+- 状態: ユーザー指示により統合済み。2026-10-25追記: 別UID透過をAPI36で確認（PR64）、配布はJitPack継続。T13は未完了
 - 関連タスク: T04c, T09 stage 2, T11, T12
 - 記録担当: Claude司令塔（Opus 5.5 / Claude Code、サブエージェントなし）
 - 関連PR / head SHA: PR61 `99c918e720c93f20663eef379e4d2bcb63bc6888` → merge `2c256a83d5e41d9deaa6541c350d55bce1f7b108`、PR62 `96bf3fed06cdaf66c760d9eb32070a5fccf70bb6` → merge `208588f4fba70d16d69f154f95615785fd08cfba`、PR60 `9432a900dc625838705080e71e4350280629047f` → merge `9776926d28ad5577279d59a77f9f03a1aa231414`
@@ -23,6 +23,10 @@
 | 2026-10-18 15:38 JST | Claude | レビュー指摘1・2をPR62で修正し、draftで作成。CI run 39104750420が成功 | PR62 |
 | 2026-10-18 16:34 JST | ユーザー | マージを許可。ClaudeがPR61をマージ。PR62はClaudeのready化が拒否されたため、ユーザーが自分でready化・マージ | 対話 |
 | 2026-10-18 JST | ユーザー | PR60は推奨どおり統合、端末確認を許可、配布はJitPackをやめMaven Centralを検討 | 対話 |
+| 2026-10-18 JST | ユーザー | 需要を検討した結果、JitPack継続・mainへ実績として公開・その後は最小限の保守（案B）を選択。Maven Central移行は見送り | 対話 |
+| 2026-10-25 JST | ユーザー | API36エミュレータで端末テストを実行。初回1件失敗 | b2a927e、`build/t12-connected.log` |
+| 2026-10-25 JST | ユーザー | `SAME_UID_ONLY`の列挙名は変えず、説明を直す案を選択 | 対話 |
+| 2026-10-25 JST | ユーザー | 修正版を再実行し、sample 9/9成功 | b2c484e、PR64 |
 
 ## 判断結果・理由
 
@@ -62,3 +66,35 @@ PR62はClaude側のPRで、規約上はCodexの対向承認が必要だった。
 ## 計画・実装・検証への影響
 
 T04、T04c、T09は統合済みに更新した。T11は一部統合（配布方法の変更待ち）、T12は作業中（端末確認待ち）とした。T04c/T06のPR40フォローアップ3件のうち、可視性と暫定listenerの2件を完了扱いにした。DISPOSED診断KDocの件は未確認のまま残す。
+
+## 2026-10-25追記: T12の別UID透過確認と配布方針
+
+### 配布
+
+ユーザーはライブラリの需要を検討し、案Bを選んだ。3.0.0は実績としてmainへ出し、配布は設定済みのJitPackを続け、その後は最小限の保守とする。上記「未解決事項」のT11（Maven Central移行）と指摘4の「JitPackビルドは不要になる見込み」は、この判断で取り消す。JitPackビルドはタグ作成後に確認する。
+
+### 別UIDアプリへのタッチ透過
+
+PR64（`claude/3.0.0/t12-cross-uid`）で`sample`に`CrossUidPassThroughTest`（API31+）を追加した。画面全体のアプリオーバーレイの下に設定アプリ（UID 1000）を置き、検索バーをタップして、検索画面のEditTextが出るかで到達を判定する。
+
+ユーザーがemulator-5554（API36、Foldlytics_Pixel_9_Pro_Fold_API_36）で`:core:connectedDebugAndroidTest :sample:connectedDebugAndroidTest`を実行した。b2a927eではcore 2/2成功、sample 8/9成功。失敗は`opaqueSameUidOnly_isBlockedByThePlatform`だった。Claudeがadbで単独再実行し、logcatで次を確認した。
+
+```
+App com.nagopy.android.overlayviewmanager.sample has a system alert window (type = 2038) with FLAG_NOT_TOUCHABLE and LayoutParams.alpha = 1.00 > 0.80, setting alpha to 0.80 to let touches pass through
+```
+
+WindowManagerは、上限を超える非タッチのアプリオーバーレイのalphaを上限まで下げ、タッチを通す。`SAME_UID_ONLY`はライブラリの不透明度チェックを省くだけで、別UIDへのタッチを止めない。設計書もこのモードでの別UID到達については何も約束していないので、実装は仕様どおり。ただし列挙名から「別アプリには届かない」と誤解されうる。
+
+ユーザーは案1（名前は変えず、説明を直す）を選んだ。改名して公開APIを変える案2は採らなかった。b2c484eの変更は次のとおり。
+
+- 3件目のテストを`opaqueSameUidOnly_isDimmedByThePlatformAndPassesTheTap`（到達を確認）に置き換えた。
+- `CrossUidPassThrough`にKDocを追加した。
+- READMEと移行ガイドに、`SAME_UID_ONLY`でも別UIDにタッチが届き、alphaが0.8へ下がることを追記した。
+
+ユーザーの再実行でsample 9/9成功、skipなし。
+
+### 残り
+
+- T12: API23/26/35の端末テストはDevin申告のみで未再現。API36以外での再実行はユーザーの判断に委ねる。
+- PR64はClaude側のPRで、Codexの対向承認が規約上必要。Codex司令塔は稼働していないため、ユーザーの許可で統合する。
+- T13: `release/3.0.0`の作成とmain向けPR。

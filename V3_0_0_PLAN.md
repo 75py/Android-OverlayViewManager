@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-10-18 JST: T04c・T09 stage 2・T11を統合済み、T12は端末確認待ち**。2026-09-20にユーザー依頼のDevinがPR61（`work/3.0.0-devin`、head `99c918e`）でT04c/T09 stage 2/T11/T12を一括実装。Claude司令塔がレビュー・承認後、ユーザー許可で2c256a8へ統合。レビュー指摘のJVM可視性と文書修正をPR62で208588fへ統合。中断記録PR60も9776926へ統合。別UIDアプリへのタッチ透過の端末確認、配布方法（JitPack廃止・Maven Central移行）の決定と反映、T13が残る。Codex司令塔は今回未稼働で、PR62のCodex対向承認はなくユーザー許可でマージした。
+- 状態: **2026-10-25 JST: 別UIDアプリへのタッチ透過をAPI36で確認（PR64）、配布はJitPack継続に決定。次はT13**。2026-10-18時点: T04c・T09 stage 2・T11を統合済み。2026-09-20にユーザー依頼のDevinがPR61（`work/3.0.0-devin`、head `99c918e`）でT04c/T09 stage 2/T11/T12を一括実装。Claude司令塔がレビュー・承認後、ユーザー許可で2c256a8へ統合。レビュー指摘のJVM可視性と文書修正をPR62で208588fへ統合。中断記録PR60も9776926へ統合。別UIDアプリへのタッチ透過の端末確認とT13が残っていた。配布はユーザーの判断でJitPack継続、Maven Central移行は見送り。Codex司令塔は今回未稼働で、PR62のCodex対向承認はなくユーザー許可でマージした。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -121,8 +121,8 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 統合済み（T09a PR42 65c7e95、stage 2はPR61 2c256a8）。Kotlinの`OverlaySpec(allowOutsideBounds = true)`/`copy`は未検出で、移行ガイドに既知の制限として記載 |
 | T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
-| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 一部統合: version 3.0.0/id10とjitpack.ymlはPR61。publishToMavenLocal・R8 consumer確認はDevin申告で未再現。2026-10-18にユーザーがJitPack廃止・Maven Central移行の意向を表明、配布設定と文書は未対応 |
-| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 作業中: PR61で端末テスト追加、API23/26/35/36結果はDevin申告で未再現。CIはassemble/unit/lintのみ。別UIDアプリへのタッチ透過は未確認でrelease-blocking |
+| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 一部統合: version 3.0.0/id10とjitpack.ymlはPR61。publishToMavenLocal・R8 consumer確認はDevin申告で未再現。2026-10-18にユーザーがJitPack継続を決定（Maven Central移行は見送り）。JitPackビルドはタグ作成後に確認する |
+| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 作業中: 2026-10-25にユーザー端末のAPI36エミュレータでcore 2/2・sample 9/9成功（PR64の別UID透過テスト3件を含む）。API23/26/35はDevin申告のみで未再現。CIはassemble/unit/lintのみ |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
 
 T02とT01、T04とT07などは編集範囲が独立する場合に並列実行する。T03中のビルド検証や、T04〜T06・T08の同一coreファイル変更は直列化する。大きいタスクはファイル所有範囲が明確な小PRへ分割してよい。
@@ -579,3 +579,7 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 ### 2026-10-18 JST: PR61・PR62・PR60の統合
 
 ユーザーの「どこまで終わったか」の確認を受け、Claude司令塔（Opus 5.5）が状態を調査。2026-09-20にユーザー依頼のDevinがPR61でT04c/T09 stage 2/T11/T12を実装していた。ユーザーはPR61の採用・レビュー・マージを指示。Claudeが全差分をレビューし、承認コメントを付けた。PR61はユーザー許可で2c256a8へ統合。レビュー指摘のうちJVM可視性と文書をPR62で修正し、CI成功後、ユーザーのコマンドで208588fへ統合。PR60はおすすめどおり記録として9776926へ統合。サンドボックス制約によりGradle・端末試験はローカルで再現していない。詳細は[統合記録](docs/coordination/3.0.0/2026-10-18-pr61-integration.md)。
+
+### 2026-10-25 JST: T12の別UID透過確認と配布方針
+
+ユーザーは配布をJitPack継続とし、3.0.0を実績としてmainへ出した後は最小限の保守とする方針を選んだ（Maven Central移行は見送り）。ClaudeがPR64で`CrossUidPassThroughTest`（API31+、設定アプリの検索バーを透過タップ）を追加し、ユーザーの端末でAPI36エミュレータ実行した。初回は「不透明な`SAME_UID_ONLY`はAndroidが遮断する」という想定が外れて1件失敗。WindowManagerはFLAG_NOT_TOUCHABLEのアプリオーバーレイのalphaを上限0.8へ下げてタッチを通す。ユーザーは列挙名を変えず説明を直す案を選び、テスト・KDoc・README・移行ガイドを修正。再実行でsample 9/9成功。詳細は[統合記録](docs/coordination/3.0.0/2026-10-18-pr61-integration.md)の2026-10-25追記。
