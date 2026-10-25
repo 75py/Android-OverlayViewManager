@@ -74,6 +74,10 @@ public class CrossUidPassThroughTest {
     private static final BySelector SEARCH_FIELD =
             By.clazz(Pattern.compile("android\\.widget\\.(EditText|AutoCompleteTextView)"));
     private static final Pattern DISPATCHED_ALPHA = Pattern.compile("[ ,]alpha=([0-9.]+)");
+    /** {@code TYPE_APPLICATION_OVERLAY} as API 31 prints a window type in {@code dumpsys input}. */
+    private static final Pattern OVERLAY_TYPE =
+            Pattern.compile("[ ,]type=(APPLICATION_OVERLAY|2038|0x0*7f6)(,|\\s|$)");
+    private static final Pattern ANY_TYPE = Pattern.compile("[ ,]type=");
 
     @Rule
     public GrantOverlayPermissionRule grantPermissionRule = new GrantOverlayPermissionRule();
@@ -82,6 +86,7 @@ public class CrossUidPassThroughTest {
     private UiDevice device;
     private Context context;
     private OverlayView<View> overlay;
+    private float dispatchedOverlayAlpha = Float.NaN;
 
     @Before
     public void setUp() {
@@ -129,7 +134,7 @@ public class CrossUidPassThroughTest {
     }
 
     @Test
-    public void opaqueSameUidOnly_followsThePlatformOpacityPolicy() throws IOException {
+    public void opaqueSameUidOnly_followsThePlatformOpacityPolicy() {
         // SAME_UID_ONLY only skips the library's opacity admission, so the platform decides. With
         // the opacity clamp the overlay is lowered to the maximum and the tap arrives; without it
         // the overlay stays opaque and the default untrusted-touch mode drops the tap.
@@ -139,7 +144,7 @@ public class CrossUidPassThroughTest {
         OverlayResult result = showFullScreenOverlay(1f, CrossUidPassThrough.SAME_UID_ONLY);
 
         assertTrue("show failed: " + result.getFailure(), result.isSuccess());
-        float dispatched = dispatchedOverlayAlpha();
+        float dispatched = dispatchedOverlayAlpha;
         Log.i(TAG, "Maximum obscuring opacity " + maximum + ", dispatched overlay alpha " + dispatched);
         if (dispatched <= maximum + ALPHA_TOLERANCE) {
             tapSearchBarThroughOverlay();
@@ -156,22 +161,44 @@ public class CrossUidPassThroughTest {
     }
 
     /**
-     * Returns the overlay's alpha as the input dispatcher sees it, which is the value its cross-UID
-     * opacity rule uses. The overlay is the only window of this UID: Settings is in front.
+     * Waits until the input dispatcher lists the overlay as a visible application overlay of this
+     * UID and returns its alpha, the value the cross-UID opacity rule uses. Other lines of this UID
+     * can precede it while the window is set up, such as an unnamed, invisible layer of unknown
+     * type. API 31 prints {@code visible=} and {@code type=}; later APIs print {@code inputConfig=}
+     * flags, where {@code NOT_VISIBLE} marks a window that is not ready.
      */
-    private float dispatchedOverlayAlpha() throws IOException {
+    private float awaitOverlayInputWindowAlpha() throws IOException {
         String owner = "ownerUid=" + Process.myUid() + ",";
         long deadline = SystemClock.uptimeMillis() + TIMEOUT_MS;
+        String[] lines;
         do {
-            for (String line : device.executeShellCommand("dumpsys input").split("\n")) {
+            lines = device.executeShellCommand("dumpsys input").split("\n");
+            for (String line : lines) {
                 Matcher alpha = DISPATCHED_ALPHA.matcher(line);
-                if (line.contains(owner) && alpha.find()) {
+                if (line.contains(owner) && isReadyOverlayInputWindow(line) && alpha.find()) {
+                    Log.i(TAG, "Overlay input window: " + line.trim());
                     return Float.parseFloat(alpha.group(1));
                 }
             }
             SystemClock.sleep(100);
         } while (SystemClock.uptimeMillis() < deadline);
-        throw new AssertionError("No input window with " + owner + " in dumpsys input");
+        for (String line : lines) {
+            if (line.contains(owner)) {
+                Log.i(TAG, "Input window of this UID: " + line.trim());
+            }
+        }
+        throw new AssertionError("No visible overlay input window with " + owner + " in dumpsys input");
+    }
+
+    private static boolean isReadyOverlayInputWindow(String line) {
+        if (line.contains("visible=") && !line.contains("visible=true")) {
+            return false;
+        }
+        if (line.contains("inputConfig=")
+                && (line.contains("NOT_VISIBLE") || !line.contains("NOT_TOUCHABLE"))) {
+            return false;
+        }
+        return !ANY_TYPE.matcher(line).find() || OVERLAY_TYPE.matcher(line).find();
     }
 
     private float maximumObscuringOpacity() {
@@ -193,7 +220,15 @@ public class CrossUidPassThroughTest {
             overlay = OverlayViewManager.getInstance().newOverlayView(view, spec);
             result[0] = overlay.show();
         });
+        instrumentation.waitForIdleSync();
         device.waitForIdle();
+        if (result[0].isSuccess()) {
+            try {
+                dispatchedOverlayAlpha = awaitOverlayInputWindowAlpha();
+            } catch (IOException exception) {
+                throw new AssertionError("dumpsys input failed", exception);
+            }
+        }
         return result[0];
     }
 
