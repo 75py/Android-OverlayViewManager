@@ -13,7 +13,6 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -67,6 +66,13 @@ public class CrossUidPassThroughTest {
     private static final long TIMEOUT_MS = 5000;
     private static final long BLOCKED_OBSERVATION_MS = 3000;
     private static final float ALPHA_TOLERANCE = 0.005f;
+    /**
+     * The search screen's text field: {@code android.widget.EditText} on API 36, and the
+     * {@code AutoCompleteTextView} of a {@code SearchView} ({@code android:id/search_src_text}) on
+     * API 31. Every check, including the blocked case, uses this one selector.
+     */
+    private static final BySelector SEARCH_FIELD =
+            By.clazz(Pattern.compile("android\\.widget\\.(EditText|AutoCompleteTextView)"));
     private static final Pattern DISPATCHED_ALPHA = Pattern.compile("[ ,]alpha=([0-9.]+)");
 
     @Rule
@@ -86,7 +92,7 @@ public class CrossUidPassThroughTest {
         context.startActivity(new Intent(Settings.ACTION_SETTINGS)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         assertNotNull("Settings search bar not found", findSearchBar());
-        assertFalse("A text field is already shown", device.hasObject(By.clazz(EditText.class)));
+        assertFalse("A text field is already shown", device.hasObject(SEARCH_FIELD));
     }
 
     @After
@@ -106,7 +112,7 @@ public class CrossUidPassThroughTest {
         assertTrue("show failed: " + result.getFailure(), result.isSuccess());
         tapSearchBarThroughOverlay();
         assertTrue("The tap did not reach Settings",
-                device.wait(Until.hasObject(By.clazz(EditText.class)), TIMEOUT_MS));
+                device.wait(Until.hasObject(SEARCH_FIELD), TIMEOUT_MS));
     }
 
     @Test
@@ -139,13 +145,13 @@ public class CrossUidPassThroughTest {
             tapSearchBarThroughOverlay();
             assertTrue("The platform lowered the overlay to " + dispatched
                             + " but the tap did not reach Settings",
-                    device.wait(Until.hasObject(By.clazz(EditText.class)), TIMEOUT_MS));
+                    device.wait(Until.hasObject(SEARCH_FIELD), TIMEOUT_MS));
         } else {
             String mode = Settings.Global.getString(context.getContentResolver(), "block_untrusted_touches");
             assumeTrue("Untrusted touches are not in block mode: " + mode, mode == null || "2".equals(mode));
             tapSearchBarThroughOverlay();
             assertFalse("The platform delivered a tap through an overlay at alpha " + dispatched,
-                    device.wait(Until.hasObject(By.clazz(EditText.class)), BLOCKED_OBSERVATION_MS));
+                    device.wait(Until.hasObject(SEARCH_FIELD), BLOCKED_OBSERVATION_MS));
         }
     }
 
