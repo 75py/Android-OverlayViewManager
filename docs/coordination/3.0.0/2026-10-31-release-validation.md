@@ -152,3 +152,11 @@ API31/35/36のfreeform設定を元のnullへ復元し、専用API23/26/31/35/36�
 PR65 head `ca3f7e0809a966e842d19ba7ea7d102a8ef48b86` の最終文書差分と検証説明を確認。API23行の単一SHA表記は実際の6+20件のソースへ訂正するよう依頼し、Codex承認にも正確な組合せを明記した。[対向承認6542296295](https://github.com/75py/Android-OverlayViewManager/pull/65#issuecomment-6542296295)、[CI41193177729成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41193177729)、base work/3.0.0、同一head、CLEANを再確認。`--match-head-commit`付き通常mergeで19:35:55 JSTに `497a5e2a6348ffbadd9455813d9bcf388012ebcc` へ統合した。
 
 残る作業は本台帳PR63の現head対向承認/CI/統合と、合意済み統合SHAからのrelease/3.0.0作成・main向けPR。mainマージ、タグ、JitPack正式公開は行わない。最終PRには本記録・移行ガイド・既知制約・検証matrixを参照し、Claudeへ確認を依頼する。
+
+### リリースPR作成完了
+
+PR63 head `a47d95cb64f75fc87aa98c158b0bfc92af6b531a` に対する[Claude APPROVE 6542332736](https://github.com/75py/Android-OverlayViewManager/pull/63#issuecomment-6542332736)と[CI41193528060成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41193528060)、base・head・CLEANを確認。19:41:14 JSTに `395f2ff10109068451611a7f3573eb75b2fa923c` へ通常merge。承認済みa47d95cとtree差分なしを確認した。
+
+同SHAからOrca管理worktree `release-3.0.0` / branch `release/3.0.0` を作成してpushし、[Release 3.0.0 PR #66](https://github.com/75py/Android-OverlayViewManager/pull/66)をmain向けに作成した。PR本文には移行ガイド、検証、既知制約、API31のfreeform未検証、JitPackのタグ後確認、承認/CI参照を記載。Claudeへ本文・base/head・統合SHAの最終確認を依頼した（request `d001c30b-5c8c-4822-b034-72d7f3905057`）。mainへはマージせず、タグと正式公開も行っていない。
+
+この完了記録だけを `fix/3.0.0/release-checkpoint` からrelease向けPRでレビューし、現head承認・CI成功後に統合する。work/3.0.0への反映は同じ承認済みreleaseへのfast-forwardとし、未レビューの差分を直接追加しない。最終的なrelease head・CI・確認コメントはPR66で追跡できる。

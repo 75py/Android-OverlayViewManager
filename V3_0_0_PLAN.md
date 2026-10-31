@@ -4,12 +4,12 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-10-31 JST: リリース候補の最終統合中**。必須API23/26/35/36の端末検証、183 unit tests、Debug/Release、lint、独立Java/Kotlin/R8 consumerが成功。T12で発見した画面外ドラッグとRTL初期配置の修正PR65は現head対向承認・CI成功後497a5e2へ統合済み。最終台帳PR63の対向承認・CIを確認して統合する。追加API31のfreeform2件はhost入力非表示による未検証として明記し、同条件の成功証拠はAPI35/36で保持。両PR統合後にT13のrelease/3.0.0 → main PRを作成する。配布はJitPack継続、タグ後のサービス上ビルド確認を残す。詳細は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
+- 状態: **2026-10-31 JST: main向けリリースPR作成まで完了**。PR65の修正とPR63の最終検証記録を対向承認・CI成功後に統合し、`395f2ff10109068451611a7f3573eb75b2fa923c` から `release/3.0.0` を作成、[Release 3.0.0 PR #66](https://github.com/75py/Android-OverlayViewManager/pull/66) をmain向けに作成した。必須API23/26/35/36、183 unit tests、Debug/Release、lint、独立Java/Kotlin/R8 consumer成功。追加API31のfreeform2件はhost入力非表示による未検証として記録。mainマージ・タグ・正式配布は未実施で今回の範囲外。詳細は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
 - **開始指示受領済み**: 「あなたはcodex側の司令塔として、claudeと一緒に作業を開始してください」。準備中の停止条件を解除し、本書の分担合意・相互承認・検証条件に従って進める。
-- `release/3.0.0` は今は作らず、統合・検証後のリリース候補として作る。
+- `release/3.0.0` は最終統合・検証後の `395f2ff` から作成済み。main向けPRは #66。以後の変更はrelease向けタスクPRと対向承認を経由する。
 - `AGENTS.md`、この計画書、`docs/coordination/3.0.0/` の記録、共有用 `.serena/project.yml` と `.serena/.gitignore` をGit管理する。Serenaのcacheとproject.local.ymlはコミットしない。
 
 停止時点の履歴: [2026-09-13-pause.md](docs/coordination/3.0.0/2026-09-13-pause.md)。現在の再開・担当判断: [2026-09-13-coordinator-resume.md](docs/coordination/3.0.0/2026-09-13-coordinator-resume.md)。
@@ -122,8 +122,8 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 統合済み（T09a PR42 65c7e95、stage 2はPR61 2c256a8）。Kotlinの`OverlaySpec(allowOutsideBounds = true)`/`copy`は未検出で、移行ガイドに既知の制限として記載 |
 | T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
 | T11 | 3.0.0バージョン・成果物の整備 | Claude実装、Codex最終検証 | T10, T04c | 完了: 3.0.0/id10、AAR/POM/sources/consumer rules/lint.jar、独立Java/Kotlin/R8 consumer成功。JitPackサービス上のビルドはユーザー判断に従いタグ作成後 |
-| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 検証完了、PR65統合済み。最終記録PR63の対向承認・CI・統合待ち。183 unit tests、必須端末matrix成功。追加API31 freeform2件は前提不成立の未検証（詳細記録参照） |
-| T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 準備済み: PR65/63統合後、合意済みwork/3.0.0のSHAからrelease分岐とmain向けPRを作成する。mainマージ・タグ・配布は対象外 |
+| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 完了: PR65/63の対向承認・CI成功を確認し395f2ffへ統合。183 unit tests、必須端末matrix成功。追加API31 freeform2件は前提不成立の未検証（詳細記録参照） |
+| T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 完了: 395f2ffからrelease/3.0.0を作成しmain向けPR66を作成。mainマージ・タグ・配布は未実施・対象外 |
 
 T02とT01、T04とT07などは編集範囲が独立する場合に並列実行する。T03中のビルド検証や、T04〜T06・T08の同一coreファイル変更は直列化する。大きいタスクはファイル所有範囲が明確な小PRへ分割してよい。
 
@@ -232,13 +232,13 @@ T02とT01、T04とT07などは編集範囲が独立する場合に並列実行�
 
 ### T12 / T13: 統合とリリース候補
 
-- [x] 実装タスクのPR・相手承認・統合SHA・検証根拠を照合する（PR61/62は記録済みユーザー指示による例外を明記）。最終記録PR63は対向承認待ち。
-- [x] 計画書と司令塔間ログをGit管理し、分担・異論・判断・承認の経緯を記録する。最終台帳はPR63でレビュー/統合する。
+- [x] 実装タスクのPR・相手承認・統合SHA・検証根拠を照合する（PR61/62は記録済みユーザー指示による例外を明記）。最終記録PR63もa47d95cへのClaude承認・CI成功後に統合済み。
+- [x] 計画書と司令塔間ログをGit管理し、分担・異論・判断・承認の経緯を記録する。最終台帳はPR63でレビュー/統合済み。
 - [x] Debug/Releaseビルド、全ローカルテスト、lint、consumer試験を最終製品候補で実行する（以後test/doc変更のみ、詳細SHAは最終検証記録）。
 - [x] 合意したAPI23/26/35/36の端末で、権限拒否/許可、実表示、再表示、別UID透過、ドラッグ、画面再生成を確認する。SDK対象外と追加API31のfreeform未検証は最終記録で区別する。
 - [x] 現AGENTS.mdに従い両司令塔が直接、公開API・移行・配布・状態遷移を相互確認する（追加subagentなし）。
-- [ ] 合意した統合SHAから `release/3.0.0` を作成してpushする。
-- [ ] `release/3.0.0` → `main` のPRを作成する。版、変更要約、移行方法、検証結果、既知の制限、関連PRを記載し、相手司令塔へレビューを依頼する。
+- [x] 合意した統合SHA `395f2ff` から `release/3.0.0` を作成してpushする。
+- [x] `release/3.0.0` → `main` のPR #66を作成する。版、変更要約、移行方法、検証結果、既知の制限、関連PRを記載し、Claude司令塔へ最終確認を依頼済み。
 - [ ] ユーザーへreleaseブランチ、main向けPR URL、実施済み検証、残課題、利用したエージェント構成を報告する。
 
 受け入れ条件: 検証済みリリース候補のmain向けPRが存在する。未解決の不具合・未実施試験・承認状態を隠さない。
@@ -595,3 +595,7 @@ PR64は最終文書と記録の対向確認・現headの承認/CI確認を経て
 T04〜T11の詳細チェックを既存PRと今回の最終検証証拠へ照合した。必須端末matrixとconsumerが成功。PR65/63の現head承認とCIの確認後にreleaseへ進む。追加API31のfreeform2件は未検証のまま明記し、必須API35/36で同条件の成功を確認済み。詳細な不具合発見・差戻し・設計判断・SHA・件数は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
 
 PR65はhead `ca3f7e0809a966e842d19ba7ea7d102a8ef48b86`、[Codex対向承認](https://github.com/75py/Android-OverlayViewManager/pull/65#issuecomment-6542296295)、[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41193177729)を確認し、19:35:55 JSTに `497a5e2a6348ffbadd9455813d9bcf388012ebcc` へ通常merge。mainへのmergeは行っていない。最終台帳PR63の現head承認/CI/統合後にreleaseを作成する。
+
+### 2026-10-31: T13のリリースPR作成完了
+
+PR63 head `a47d95cb64f75fc87aa98c158b0bfc92af6b531a` の[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/63#issuecomment-6542332736)と[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41193528060)を確認し、19:41:14 JSTに `395f2ff10109068451611a7f3573eb75b2fa923c` へ通常merge。承認済みheadと同一treeであることを確認し、同SHAからrelease/3.0.0を作成/push、[main向けPR66](https://github.com/75py/Android-OverlayViewManager/pull/66)を作成した。最後の計画・ログ更新はrelease向け文書PRで相互確認し、承認済みreleaseへのfast-forwardでwork/3.0.0にも同期する。製品コードを追加変更しない。
