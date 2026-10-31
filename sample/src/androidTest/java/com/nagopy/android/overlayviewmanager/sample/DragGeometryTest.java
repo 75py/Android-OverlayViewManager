@@ -395,14 +395,21 @@ public class DragGeometryTest {
     /** Drags toward the middle of the display, then back, so both window positions get hit-tested. */
     private void assertDragAndReturnTrackGesture() {
         int[] start = locationOnScreen();
-        DisplayMetrics metrics = displayMetrics();
+        Rect area = dragArea();
         int step = ViewConfiguration.get(host).getScaledTouchSlop() + dp(16);
         int size = dp(OVERLAY_SIZE_DP);
-        int dx = (start[0] + size / 2 < metrics.widthPixels / 2 ? 1 : -1) * step * GESTURE_STEPS;
-        int dy = (start[1] + size / 2 < metrics.heightPixels / 2 ? 1 : -1) * step * GESTURE_STEPS;
+        int dx = (start[0] + size / 2 < area.centerX() ? 1 : -1) * step * GESTURE_STEPS;
+        int dy = (start[1] + size / 2 < area.centerY() ? 1 : -1) * step * GESTURE_STEPS;
 
         assertDragTracksGesture(size / 2, size / 2, dx, dy);
         assertDragTracksGesture(size / 2, size / 2, -dx, -dy);
+    }
+
+    /** The part of the display the window can use. The frame is a placeholder when it has no limits. */
+    private Rect dragArea() {
+        Rect area = new Rect(0, 0, uiDevice.getDisplayWidth(), uiDevice.getDisplayHeight());
+        assertTrue("The frame is off the display: " + frame(), area.intersect(frame()));
+        return area;
     }
 
     private void assertDragPastLeftEdgeTracksGesture() {
