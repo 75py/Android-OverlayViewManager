@@ -10,6 +10,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
@@ -24,19 +25,28 @@ class GrantOverlayPermissionRule implements TestRule {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
-                UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-                String pkg = InstrumentationRegistry.getInstrumentation()
-                        .getTargetContext().getPackageName();
-                try (ParcelFileDescriptor pfd = automation.executeShellCommand(
-                        "appops set " + pkg + " SYSTEM_ALERT_WINDOW allow");
-                     BufferedReader reader = new BufferedReader(new InputStreamReader(
-                             new ParcelFileDescriptor.AutoCloseInputStream(pfd)))) {
-                    while (reader.readLine() != null) {
-                        // drain output
-                    }
-                }
+                setOverlayOp("allow");
                 base.evaluate();
             }
         };
+    }
+
+    /** Sets the sample app's SYSTEM_ALERT_WINDOW app-op to the given mode, such as "allow" or "deny". */
+    static void setOverlayOp(String mode) throws IOException {
+        String pkg = InstrumentationRegistry.getInstrumentation()
+                .getTargetContext().getPackageName();
+        executeShellCommand("appops set " + pkg + " SYSTEM_ALERT_WINDOW " + mode);
+    }
+
+    /** Runs a shell command and waits for it to finish. */
+    static void executeShellCommand(String command) throws IOException {
+        UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try (ParcelFileDescriptor pfd = automation.executeShellCommand(command);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(
+                     new ParcelFileDescriptor.AutoCloseInputStream(pfd)))) {
+            while (reader.readLine() != null) {
+                // drain output
+            }
+        }
     }
 }

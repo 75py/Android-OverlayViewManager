@@ -1,6 +1,7 @@
 /* Copyright 2026 75py. Licensed under the Apache License, Version 2.0. */
 package com.nagopy.android.overlayviewmanager.internal
 
+import android.view.Gravity
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -40,5 +41,25 @@ class OverlayGeometryTest {
             assertEquals(case.name, case.expectedWindowX, OverlayGeometry.screenToWindowX(case.screenX, case.frameLeft))
             assertEquals(case.name, case.expectedWindowY, OverlayGeometry.screenToWindowY(case.screenY, case.frameTop))
         }
+    }
+
+    @Test
+    fun horizontalOffsetSign_isNegativeOnlyForRightGravity() {
+        assertEquals(-1, OverlayGeometry.horizontalOffsetSign(Gravity.RIGHT))
+        assertEquals(-1, OverlayGeometry.horizontalOffsetSign(Gravity.BOTTOM or Gravity.RIGHT))
+        assertEquals(1, OverlayGeometry.horizontalOffsetSign(Gravity.LEFT))
+        assertEquals(1, OverlayGeometry.horizontalOffsetSign(Gravity.CENTER_HORIZONTAL))
+        assertEquals(1, OverlayGeometry.horizontalOffsetSign(Gravity.FILL_HORIZONTAL))
+        assertEquals(1, OverlayGeometry.horizontalOffsetSign(Gravity.NO_GRAVITY))
+    }
+
+    @Test
+    fun verticalOffsetSign_isNegativeOnlyForBottomGravity() {
+        assertEquals(-1, OverlayGeometry.verticalOffsetSign(Gravity.BOTTOM))
+        assertEquals(-1, OverlayGeometry.verticalOffsetSign(Gravity.BOTTOM or Gravity.RIGHT))
+        assertEquals(1, OverlayGeometry.verticalOffsetSign(Gravity.TOP))
+        assertEquals(1, OverlayGeometry.verticalOffsetSign(Gravity.CENTER_VERTICAL))
+        assertEquals(1, OverlayGeometry.verticalOffsetSign(Gravity.FILL_VERTICAL))
+        assertEquals(1, OverlayGeometry.verticalOffsetSign(Gravity.NO_GRAVITY))
     }
 }
