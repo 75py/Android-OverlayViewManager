@@ -20,10 +20,10 @@ import android.os.Build
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
-import android.view.Gravity
 import androidx.annotation.MainThread
 import com.nagopy.android.overlayviewmanager.internal.Logger
 import com.nagopy.android.overlayviewmanager.internal.MaximumObscuringOpacity
+import com.nagopy.android.overlayviewmanager.internal.OverlayGeometry
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import com.nagopy.android.overlayviewmanager.internal.PassThroughOpacityRegistry
 
@@ -293,7 +293,7 @@ public class OverlayView<T : View> private constructor(
     private fun layoutParams(value: OverlaySpec): WindowManager.LayoutParams = WindowManager.LayoutParams().apply {
         width = value.width
         height = value.height
-        gravity = Gravity.getAbsoluteGravity(value.gravity, view.layoutDirection)
+        gravity = OverlayGeometry.absoluteGravity(value.gravity, view)
         x = value.x
         y = value.y
         horizontalMargin = value.horizontalMargin

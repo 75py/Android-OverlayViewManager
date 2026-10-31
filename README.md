@@ -133,7 +133,7 @@ A grant can be revoked after the check. Always inspect the subsequent operation 
 
 - `PASS_THROUGH` does not receive touches; `INTERACTIVE` receives View interactions; `DRAGGABLE` adds library drag handling. Install click listeners on the managed View.
 - `CrossUidPassThrough.SAME_UID_ONLY` is the default. Opt into `WHEN_SYSTEM_ALLOWS` only when passing touches to another app is required. Android's opacity and window policies can reject this with `PASS_THROUGH_OPACITY_EXCEEDED` or `PASS_THROUGH_UNSUPPORTED`; the library cannot guarantee another app receives the touch.
-- Geometry uses the owning window's bounds and insets. Obtain slider limits from the host window, with a compatible fallback on older supported APIs. `allowOutsideBounds` relaxes normal bounds handling; it does not guarantee placement over system bars or other restricted areas.
+- Geometry uses the owning window's bounds and insets. Obtain slider limits from the host window, with a compatible fallback on older supported APIs. `allowOutsideBounds` relaxes normal bounds handling; it does not guarantee placement over system bars or other restricted areas. A drag normalizes `spec` to top-left offsets without margins; with `allowOutsideBounds` it keeps the gravity and margins and only changes `x` and `y`.
 - `screenBrightness` is an optional Activity-scope setting. Supplying it to an application overlay is an argument error.
 
 Factories, operations, and `view`/`spec` access belong on the main thread. Only `state` and `lastFailure` are thread-safe handle reads. `OverlayPermission` is immutable and thread-safe. Timber's logging entry point accepts background-thread calls.

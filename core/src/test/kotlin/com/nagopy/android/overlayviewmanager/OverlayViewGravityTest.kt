@@ -5,6 +5,7 @@
 package com.nagopy.android.overlayviewmanager
 
 import android.content.pm.ApplicationInfo
+import android.content.res.Configuration
 import android.os.Build
 import android.view.Gravity
 import android.view.View
@@ -12,6 +13,7 @@ import android.view.WindowManager
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -19,8 +21,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Verifies the coordinate model's "resolved gravity is always absolute" guarantee through
- * [OverlayView]'s existing `GravityCompat.getAbsoluteGravity` call in `layoutParams()` -- this
- * library does not maintain a second, parallel gravity-resolution implementation for tests.
+ * [OverlayView]'s `layoutParams()`, which resolves gravity with `OverlayGeometry.absoluteGravity`.
  *
  * These tests use `manifest = Config.NONE`, like the rest of this suite, so the test `Application`
  * has no manifest declaring `android:supportsRtl="true"`. `View`'s real layout-direction
@@ -59,6 +60,19 @@ class OverlayViewGravityTest {
         val params = backend.lastParams!!
         assertEquals(Gravity.TOP or Gravity.LEFT, params.gravity)
         assertEquals(0, params.gravity and Gravity.RELATIVE_LAYOUT_DIRECTION)
+    }
+
+    @Test fun inheritedRtlConfiguration_resolvesStartGravityBeforeTheViewIsAttached() {
+        enableRtlSupport()
+        val application = RuntimeEnvironment.getApplication()
+        val rtl = Configuration(application.resources.configuration).apply { setLocale(Locale("ar")) }
+        val view = View(application.createConfigurationContext(rtl))
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+
+        assertEquals(Gravity.TOP or Gravity.RIGHT, backend.lastParams!!.gravity)
     }
 
     private fun enableRtlSupport() {
