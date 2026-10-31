@@ -598,6 +598,32 @@ public class DragGeometryTest {
         host = resizedHost;
         uiDevice.waitForIdle();
         Log.i(TAG, "freeform origin=" + Arrays.toString(decorOrigin(host)));
+
+        // On API 31 a task created with empty bounds stays invisible after resizing, and touches
+        // go to the launcher. Nothing about a drag can be tested there.
+        assumeTrue("The platform did not show the freeform window", awaitVisibleHostWindow());
+    }
+
+    /**
+     * Waits for the host's window to be visible to the input system. API 31 prints
+     * {@code visible=}; later APIs print {@code inputConfig=} flags with {@code NOT_VISIBLE}.
+     */
+    private boolean awaitVisibleHostWindow() throws Exception {
+        String window = SampleStartActivity.class.getName();
+        long deadline = SystemClock.uptimeMillis() + TIMEOUT_MS;
+        while (SystemClock.uptimeMillis() < deadline) {
+            for (String line : uiDevice.executeShellCommand("dumpsys input").split("\n")) {
+                if (!line.contains(window)) {
+                    continue;
+                }
+                if (line.contains("visible=true")
+                        || line.contains("inputConfig=") && !line.contains("NOT_VISIBLE")) {
+                    return true;
+                }
+            }
+            SystemClock.sleep(POLL_MS);
+        }
+        return false;
     }
 
     private Activity awaitActivityAwayFromTheDisplayOrigin() {
