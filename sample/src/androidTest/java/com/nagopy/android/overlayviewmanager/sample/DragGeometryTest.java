@@ -206,9 +206,9 @@ public class DragGeometryTest {
     public void activityScope_inSplitScreen() {
         assumeTrue("Split screen is not available on this device", uiAutomation.performGlobalAction(
                 AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN));
+        splitScreen = true;
         Activity splitHost = awaitMultiWindowActivity();
         assumeTrue("The host did not enter split screen", splitHost != null);
-        splitScreen = true;
         host = splitHost;
         showActivityOverlay(newView(host), spec(false));
         Log.i(TAG, "splitScreen frame=" + frame());
@@ -362,6 +362,9 @@ public class DragGeometryTest {
         int left = locationOnScreen()[0];
         assertTrue("Without allowOutsideBounds the window should stay on screen, left=" + left,
                 left >= 0);
+        assertTrue("The window should have moved to the frame's left edge, left=" + left
+                        + ", start=" + start[0] + ", frame=" + frame(),
+                left < start[0] && left <= frame().left + TOLERANCE_PX);
     }
 
     /**
