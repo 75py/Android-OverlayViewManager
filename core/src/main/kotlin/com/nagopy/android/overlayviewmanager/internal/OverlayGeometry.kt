@@ -1,6 +1,7 @@
 /* Copyright 2026 75py. Licensed under the Apache License, Version 2.0. */
 package com.nagopy.android.overlayviewmanager.internal
 
+import android.content.pm.ApplicationInfo
 import android.view.Gravity
 import android.view.View
 import androidx.annotation.RestrictTo
@@ -62,16 +63,19 @@ internal object OverlayGeometry {
         if (absoluteGravity and Gravity.VERTICAL_GRAVITY_MASK == Gravity.BOTTOM) -1 else 1
 
     /**
-     * Resolves [gravity] against [view]'s layout direction. A view that inherits its direction has
-     * no resolved direction until it is attached, and `getLayoutDirection` then reports LTR, so
-     * the first show falls back to the configuration the view will inherit.
+     * Resolves [gravity] against [view]'s layout direction. A view that inherits its direction, or
+     * declares one in XML, has no resolved direction until it is measured, and
+     * `getLayoutDirection` then reports LTR. Before that, the direction the view would inherit is
+     * the best estimate available. A direction declared in XML cannot be read at all, so
+     * [com.nagopy.android.overlayviewmanager.OverlayView] corrects the estimate after the first
+     * layout.
      */
-    internal fun absoluteGravity(gravity: Int, view: View): Int {
-        val direction = if (view.isLayoutDirectionResolved) {
-            view.layoutDirection
-        } else {
-            view.resources.configuration.layoutDirection
-        }
-        return Gravity.getAbsoluteGravity(gravity, direction)
+    internal fun absoluteGravity(gravity: Int, view: View): Int =
+        Gravity.getAbsoluteGravity(gravity, layoutDirection(view))
+
+    private fun layoutDirection(view: View): Int = when {
+        view.isLayoutDirectionResolved -> view.layoutDirection
+        view.context.applicationInfo.flags and ApplicationInfo.FLAG_SUPPORTS_RTL == 0 -> View.LAYOUT_DIRECTION_LTR
+        else -> view.resources.configuration.layoutDirection
     }
 }

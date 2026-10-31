@@ -104,8 +104,9 @@ public class OverlayView<T : View> private constructor(
             return failure(OverlayFailure.PERMISSION_DENIED, null)
         }
         admitPassThroughOpacity(candidate, managedView)?.let { return failure(it, null) }
+        val params = layoutParams(candidate)
         try {
-            backendOrThrow().show(managedView, layoutParams(candidate))
+            backendOrThrow().show(managedView, params)
         } catch (exception: Exception) {
             return failure(classify(exception), exception)
         }
@@ -113,6 +114,7 @@ public class OverlayView<T : View> private constructor(
         accept(candidate, nextDragListener(candidate))
         currentState = OverlayState.ATTACHED
         installDetachListener(managedView)
+        correctGravityAfterFirstLayout(managedView, params.gravity)
         return success(changed = true)
     }
 
@@ -234,6 +236,37 @@ public class OverlayView<T : View> private constructor(
             }
         }
         managedView?.let(::release)
+    }
+
+    /**
+     * Re-applies the gravity if the first measure resolved a layout direction other than the one
+     * [show] had to estimate. See [OverlayGeometry.absoluteGravity].
+     */
+    private fun correctGravityAfterFirstLayout(managedView: T, shownGravity: Int) {
+        if (managedView.isLayoutDirectionResolved) return
+        managedView.addOnLayoutChangeListener(object : View.OnLayoutChangeListener {
+            override fun onLayoutChange(
+                v: View,
+                left: Int,
+                top: Int,
+                right: Int,
+                bottom: Int,
+                oldLeft: Int,
+                oldTop: Int,
+                oldRight: Int,
+                oldBottom: Int,
+            ) {
+                v.removeOnLayoutChangeListener(this)
+                if (currentState != OverlayState.ATTACHED) return
+                val params = layoutParams(effectiveSpec)
+                if (params.gravity == shownGravity) return
+                try {
+                    backendOrThrow().update(managedView, params)
+                } catch (exception: Exception) {
+                    Logger.w(exception, "Could not correct the gravity after the first layout")
+                }
+            }
+        })
     }
 
     private fun installDetachListener(managedView: T) {

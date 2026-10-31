@@ -4,6 +4,7 @@
  */
 package com.nagopy.android.overlayviewmanager
 
+import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.os.Build
@@ -16,6 +17,7 @@ import org.junit.Test
 import java.util.Locale
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Robolectric
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
@@ -64,9 +66,7 @@ class OverlayViewGravityTest {
 
     @Test fun inheritedRtlConfiguration_resolvesStartGravityBeforeTheViewIsAttached() {
         enableRtlSupport()
-        val application = RuntimeEnvironment.getApplication()
-        val rtl = Configuration(application.resources.configuration).apply { setLocale(Locale("ar")) }
-        val view = View(application.createConfigurationContext(rtl))
+        val view = View(rtlContext())
         val backend = RecordingBackend()
         val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
 
@@ -75,15 +75,74 @@ class OverlayViewGravityTest {
         assertEquals(Gravity.TOP or Gravity.RIGHT, backend.lastParams!!.gravity)
     }
 
+    @Test fun rtlConfiguration_isIgnoredWhenTheApplicationDoesNotSupportRtl() {
+        val view = View(rtlContext())
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+
+        assertEquals(Gravity.TOP or Gravity.LEFT, backend.lastParams!!.gravity)
+    }
+
+    @Test fun declaredLtrInAnRtlConfiguration_isCorrectedAfterTheFirstLayout() {
+        enableRtlSupport()
+        val attributes = Robolectric.buildAttributeSet()
+            .addAttribute(android.R.attr.layoutDirection, "ltr")
+            .build()
+        val view = View(rtlContext(), attributes)
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+        // The declared direction cannot be read yet, so the first show uses the configuration.
+        assertEquals(Gravity.TOP or Gravity.RIGHT, backend.lastParams!!.gravity)
+
+        layOut(view)
+
+        assertEquals(Gravity.TOP or Gravity.LEFT, backend.lastParams!!.gravity)
+        assertEquals(1, backend.updateCalls)
+    }
+
+    @Test fun inheritedDirection_needsNoCorrectionAfterTheFirstLayout() {
+        enableRtlSupport()
+        val view = View(RuntimeEnvironment.getApplication())
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+        layOut(view)
+
+        assertEquals(0, backend.updateCalls)
+    }
+
+    private fun rtlContext(): Context {
+        val application = RuntimeEnvironment.getApplication()
+        val rtl = Configuration(application.resources.configuration).apply { setLocale(Locale("ar")) }
+        return application.createConfigurationContext(rtl)
+    }
+
+    private fun layOut(view: View) {
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(100, View.MeasureSpec.EXACTLY),
+        )
+        view.layout(0, 0, 100, 100)
+    }
+
     private fun enableRtlSupport() {
         val info = RuntimeEnvironment.getApplication().applicationInfo
         info.flags = info.flags or ApplicationInfo.FLAG_SUPPORTS_RTL
     }
 
     private class RecordingBackend : OverlayWindowManager() {
+        var updateCalls = 0
         var lastParams: WindowManager.LayoutParams? = null
         override fun show(view: View, params: WindowManager.LayoutParams) { lastParams = WindowManager.LayoutParams().also { it.copyFrom(params) } }
-        override fun update(view: View, params: WindowManager.LayoutParams) { lastParams = WindowManager.LayoutParams().also { it.copyFrom(params) } }
+        override fun update(view: View, params: WindowManager.LayoutParams) {
+            updateCalls++
+            lastParams = WindowManager.LayoutParams().also { it.copyFrom(params) }
+        }
         override fun hide(view: View) = Unit
     }
 }
