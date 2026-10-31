@@ -15,4 +15,12 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Runs in the test APK's own process and UID, so it is a cross-UID touch target for the
+             sample app's overlays. Exported so that the shell can start it. -->
+        <activity
+            android:name="com.nagopy.android.overlayviewmanager.sample.TapReceiverActivity"
+            android:exported="true" />
+    </application>
 </manifest>
