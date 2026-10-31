@@ -33,11 +33,15 @@ class GrantOverlayPermissionRule implements TestRule {
 
     /** Sets the sample app's SYSTEM_ALERT_WINDOW app-op to the given mode, such as "allow" or "deny". */
     static void setOverlayOp(String mode) throws IOException {
-        UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         String pkg = InstrumentationRegistry.getInstrumentation()
                 .getTargetContext().getPackageName();
-        try (ParcelFileDescriptor pfd = automation.executeShellCommand(
-                "appops set " + pkg + " SYSTEM_ALERT_WINDOW " + mode);
+        executeShellCommand("appops set " + pkg + " SYSTEM_ALERT_WINDOW " + mode);
+    }
+
+    /** Runs a shell command and waits for it to finish. */
+    static void executeShellCommand(String command) throws IOException {
+        UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try (ParcelFileDescriptor pfd = automation.executeShellCommand(command);
              BufferedReader reader = new BufferedReader(new InputStreamReader(
                      new ParcelFileDescriptor.AutoCloseInputStream(pfd)))) {
             while (reader.readLine() != null) {

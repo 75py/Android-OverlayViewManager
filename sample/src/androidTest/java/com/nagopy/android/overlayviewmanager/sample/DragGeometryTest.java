@@ -1,9 +1,9 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
-import android.accessibilityservice.AccessibilityService;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -71,8 +71,15 @@ public class DragGeometryTest {
     private static final int START_X_DP = 24;
     private static final int START_Y_DP = 48;
     private static final int GESTURE_STEPS = 3;
+    private static final float MARGIN = .05f;
     private static final int TOLERANCE_PX = 1;
     private static final long DOWN_SETTLE_MS = 300;
+    /**
+     * Input resampling extrapolates a move that follows the previous one by 20ms or less, up to
+     * half a step past the pointer. That is correct for a live finger, whose next event replaces
+     * it, but a single injected move would leave the window there, so the moves are spaced apart.
+     */
+    private static final long MOVE_INTERVAL_MS = 40;
     private static final long TIMEOUT_MS = 3000;
     private static final long POLL_MS = 20;
 
@@ -90,7 +97,7 @@ public class DragGeometryTest {
     private View target;
     private OverlayView<View> overlay;
     private boolean rotated;
-    private boolean splitScreen;
+    private boolean freeform;
 
     @Before
     public void setUp() {
@@ -112,8 +119,8 @@ public class DragGeometryTest {
             uiDevice.setOrientationNatural();
             uiDevice.unfreezeRotation();
         }
-        if (splitScreen) {
-            uiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN);
+        if (freeform) {
+            instrumentation.runOnMainSync(() -> host.finish());
             uiDevice.waitForIdle();
         }
     }
@@ -180,12 +187,61 @@ public class DragGeometryTest {
     public void activityScope_outsideBoundsNotAllowed_staysOnScreen() {
         showActivityOverlay(newView(host), spec(false));
         assertDragPastLeftEdgeStaysOnScreen();
+        // A new gesture starts from where the window really is, with no dead zone.
+        assertDragAndReturnTrackGesture();
     }
 
     @Test
     public void applicationScope_outsideBoundsNotAllowed_staysOnScreen() {
         showApplicationOverlay(newView(host.getApplicationContext()), spec(false));
         assertDragPastLeftEdgeStaysOnScreen();
+        // A new gesture starts from where the window really is, with no dead zone.
+        assertDragAndReturnTrackGesture();
+    }
+
+    @Test
+    public void activityScope_clampedAtShow_tracksFromItsRealLocation() {
+        showActivityOverlay(newView(host), clampedAtShowSpec());
+        assertDragAndReturnTrackGesture();
+    }
+
+    @Test
+    public void applicationScope_clampedAtShow_tracksFromItsRealLocation() {
+        showApplicationOverlay(newView(host.getApplicationContext()), clampedAtShowSpec());
+        assertDragAndReturnTrackGesture();
+    }
+
+    @Test
+    public void activityScope_bottomEndGravityWithMargins() {
+        showActivityOverlay(newView(host), spec(false, Gravity.BOTTOM | Gravity.END, MARGIN));
+        assertDragAndReturnTrackGesture();
+    }
+
+    @Test
+    public void applicationScope_centerGravityWithMargins() {
+        showApplicationOverlay(newView(host.getApplicationContext()),
+                spec(false, Gravity.CENTER, MARGIN));
+        assertDragAndReturnTrackGesture();
+    }
+
+    @Test
+    public void activityScope_allowOutsideBounds_bottomEndGravityWithMargins() {
+        showActivityOverlay(newView(host), spec(true, Gravity.BOTTOM | Gravity.END, MARGIN));
+        assertDragAndReturnTrackGesture();
+    }
+
+    @Test
+    public void applicationScope_allowOutsideBounds_centerGravityWithMargins() {
+        showApplicationOverlay(newView(host.getApplicationContext()),
+                spec(true, Gravity.CENTER, MARGIN));
+        assertDragAndReturnTrackGesture();
+    }
+
+    @Test
+    public void applicationScope_allowOutsideBounds_rtl() {
+        showApplicationOverlay(newView(rtlContext(host.getApplicationContext())), spec(true));
+        assertStartGravityResolvedToRightEdge();
+        assertDragAndReturnTrackGesture();
     }
 
     @Test
@@ -201,17 +257,19 @@ public class DragGeometryTest {
         assertDragAndReturnTrackGesture();
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.P)
     @Test
-    public void activityScope_inSplitScreen() {
-        assumeTrue("Split screen is not available on this device", uiAutomation.performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN));
-        splitScreen = true;
-        Activity splitHost = awaitMultiWindowActivity();
-        assumeTrue("The host did not enter split screen", splitHost != null);
-        host = splitHost;
+    public void activityScope_inFreeformWindow() throws Exception {
+        moveHostToFreeformWindow();
         showActivityOverlay(newView(host), spec(false));
-        Log.i(TAG, "splitScreen frame=" + frame());
+        assertDragAndReturnTrackGesture();
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.P)
+    @Test
+    public void activityScope_allowOutsideBounds_inFreeformWindow() throws Exception {
+        moveHostToFreeformWindow();
+        showActivityOverlay(newView(host), spec(true));
         assertDragAndReturnTrackGesture();
     }
 
@@ -254,10 +312,16 @@ public class DragGeometryTest {
     }
 
     private OverlaySpec spec(boolean allowOutsideBounds) {
+        return spec(allowOutsideBounds, Gravity.TOP | Gravity.START, 0f);
+    }
+
+    private OverlaySpec spec(boolean allowOutsideBounds, int gravity, float margin) {
         return new OverlaySpec.Builder()
                 .setWidth(dp(OVERLAY_SIZE_DP))
                 .setHeight(dp(OVERLAY_SIZE_DP))
-                .setGravity(Gravity.TOP | Gravity.START)
+                .setGravity(gravity)
+                .setHorizontalMargin(margin)
+                .setVerticalMargin(margin)
                 .setX(dp(START_X_DP))
                 .setY(dp(START_Y_DP))
                 .setTouchMode(OverlayTouchMode.DRAGGABLE)
@@ -265,9 +329,14 @@ public class DragGeometryTest {
                 .build();
     }
 
+    /** An offset that puts the window past the left edge, where the system clamps it. */
+    private OverlaySpec clampedAtShowSpec() {
+        return spec(false).toBuilder().setX(-dp(OVERLAY_SIZE_DP) * 2).build();
+    }
+
     private View newView(Context context) {
         return onMain(() -> {
-            View view = new TouchLoggingView(context);
+            View view = new View(context);
             view.setBackgroundColor(Color.MAGENTA);
             return view;
         });
@@ -345,6 +414,9 @@ public class DragGeometryTest {
 
         assertTrue("The window should extend past the left edge, left=" + locationOnScreen()[0],
                 locationOnScreen()[0] < 0);
+
+        // A new gesture on the part still on screen brings the window back.
+        assertDragTracksGesture(touchOffsetX, dp(OVERLAY_SIZE_DP) / 2, -dx, 0);
     }
 
     private void assertDragPastLeftEdgeStaysOnScreen() {
@@ -396,6 +468,7 @@ public class DragGeometryTest {
                 int movedY = dy * i / GESTURE_STEPS;
                 lastX = startX + movedX;
                 lastY = startY + movedY;
+                SystemClock.sleep(MOVE_INTERVAL_MS);
                 inject(downTime, MotionEvent.ACTION_MOVE, lastX, lastY);
                 awaitLocation("Move " + i + "/" + GESTURE_STEPS, origin[0] + movedX, origin[1] + movedY);
             }
@@ -410,11 +483,9 @@ public class DragGeometryTest {
     }
 
     private void inject(long downTime, int action, int x, int y) {
-        long eventTime = SystemClock.uptimeMillis();
-        MotionEvent event = MotionEvent.obtain(downTime, eventTime, action, x, y, 0);
+        MotionEvent event = MotionEvent.obtain(
+                downTime, SystemClock.uptimeMillis(), action, x, y, 0);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        Log.i(TAG, "inject " + MotionEvent.actionToString(action) + " t=" + eventTime
-                + " x=" + x + " y=" + y);
         try {
             assertTrue("Could not inject " + MotionEvent.actionToString(action),
                     uiAutomation.injectInputEvent(event, true));
@@ -485,6 +556,34 @@ public class DragGeometryTest {
         }
     }
 
+    /**
+     * Relaunches the host in a freeform window, which has a non-zero origin. The device must
+     * support freeform windows, as `settings put global enable_freeform_support 1` provides; the
+     * test skips otherwise and does not change that setting.
+     */
+    private void moveHostToFreeformWindow() throws Exception {
+        instrumentation.runOnMainSync(() -> host.finish());
+        uiDevice.waitForIdle();
+        ComponentName component =
+                new ComponentName(instrumentation.getTargetContext(), SampleStartActivity.class);
+        GrantOverlayPermissionRule.executeShellCommand(
+                "am start -W --windowingMode 5 -n " + component.flattenToString());
+        Activity freeformHost = awaitMultiWindowActivity();
+        assumeTrue("The host did not enter a freeform window", freeformHost != null);
+        host = freeformHost;
+        freeform = true;
+        uiDevice.waitForIdle();
+
+        int[] origin = new int[2];
+        onMain(() -> {
+            host.getWindow().getDecorView().getLocationOnScreen(origin);
+            return null;
+        });
+        Log.i(TAG, "freeform origin=" + Arrays.toString(origin));
+        assertTrue("A freeform window should have a non-zero origin: " + Arrays.toString(origin),
+                origin[0] > 0 && origin[1] > 0);
+    }
+
     private Activity awaitMultiWindowActivity() {
         long deadline = SystemClock.uptimeMillis() + TIMEOUT_MS * 2;
         while (SystemClock.uptimeMillis() < deadline) {
@@ -540,21 +639,5 @@ public class DragGeometryTest {
 
     private interface MainCall<T> {
         T run();
-    }
-
-    /** Logs what the view receives, to compare it with the injected events. */
-    private static final class TouchLoggingView extends View {
-        TouchLoggingView(Context context) {
-            super(context);
-        }
-
-        @Override
-        public boolean dispatchTouchEvent(MotionEvent event) {
-            Log.i(TAG, "receive " + MotionEvent.actionToString(event.getActionMasked())
-                    + " t=" + event.getEventTime() + " rawX=" + event.getRawX()
-                    + " rawY=" + event.getRawY() + " x=" + event.getX() + " y=" + event.getY()
-                    + " history=" + event.getHistorySize());
-            return super.dispatchTouchEvent(event);
-        }
     }
 }
