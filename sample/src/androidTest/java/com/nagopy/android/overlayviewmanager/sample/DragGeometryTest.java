@@ -599,8 +599,8 @@ public class DragGeometryTest {
         uiDevice.waitForIdle();
         Log.i(TAG, "freeform origin=" + Arrays.toString(decorOrigin(host)));
 
-        // On API 31 a task created with empty bounds stays invisible after resizing, and touches
-        // go to the launcher. Nothing about a drag can be tested there.
+        // On API 31 a task created with empty bounds may stay invisible after resizing, and touches
+        // then go to the launcher. Nothing about a drag can be tested there.
         assumeTrue("The platform did not show the freeform window", awaitVisibleHostWindow());
     }
 
