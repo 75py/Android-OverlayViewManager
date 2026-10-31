@@ -75,9 +75,11 @@ public class DragGeometryTest {
     private static final int TOLERANCE_PX = 1;
     private static final long DOWN_SETTLE_MS = 300;
     /**
-     * Input resampling extrapolates a move that follows the previous one by 20ms or less, up to
-     * half a step past the pointer. That is correct for a live finger, whose next event replaces
-     * it, but a single injected move would leave the window there, so the moves are spaced apart.
+     * Input resampling can predict a move past the pointer from the pointer's speed. That is right
+     * for a live finger, whose next event replaces it, but no event follows a single injected move,
+     * and the window would stay there. How far apart the moves must be varies by Android version,
+     * so each move is repeated at the same position, like a finger coming to rest. The speed is
+     * then zero and the view receives the exact position.
      */
     private static final long MOVE_INTERVAL_MS = 40;
     private static final long TIMEOUT_MS = 3000;
@@ -475,6 +477,8 @@ public class DragGeometryTest {
                 int movedY = dy * i / GESTURE_STEPS;
                 lastX = startX + movedX;
                 lastY = startY + movedY;
+                SystemClock.sleep(MOVE_INTERVAL_MS);
+                inject(downTime, MotionEvent.ACTION_MOVE, lastX, lastY);
                 SystemClock.sleep(MOVE_INTERVAL_MS);
                 inject(downTime, MotionEvent.ACTION_MOVE, lastX, lastY);
                 awaitLocation("Move " + i + "/" + GESTURE_STEPS, origin[0] + movedX, origin[1] + movedY);
