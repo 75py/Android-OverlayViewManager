@@ -2,7 +2,7 @@
 
 OverlayViewManager manages Android overlay views with explicit configuration, synchronous operation results, and Activity or application ownership. Java and Kotlin callers use the same API.
 
-This branch documents **3.0.0 (unreleased)**. For an existing 2.x application, start with the [migration guide](docs/migration/2.x-to-3.0.md). Release verification and publication are still pending; do not assume a published 3.0.0 artifact is available.
+This branch documents **3.0.0 (unreleased)**. For an existing 2.x application, start with the [migration guide](docs/migration/2.x-to-3.0.md). It has not been published yet, so do not assume a 3.0.0 artifact is available.
 
 ## Requirements and installation
 
@@ -29,7 +29,7 @@ dependencies {
 }
 ```
 
-The final 3.0.0 publication and consumer checks remain part of release preparation. See the [sample project](sample/) for source dependencies during development.
+The JitPack build of these coordinates can only be checked once a 3.0.0 tag exists. See the [sample project](sample/) for source dependencies during development.
 
 ## Initialize once per process
 
@@ -181,7 +181,13 @@ See [the 3.0.0 migration guide](docs/migration/2.x-to-3.0.md) and these sample s
 
  The library does not provide background execution, a foreground service, notifications, or automatic permission recovery. The host owns those responsibilities for long-running application overlays. OS and device window policies still apply.
 
-The release's device matrix, including cross-UID pass-through and edge-to-edge positioning, is tracked in [V3_0_0_PLAN.md](V3_0_0_PLAN.md) and is not yet complete.
+Device tests ran on emulators at API 23, 26, 31, 35 and 36. Results and the exact builds are recorded in [V3_0_0_PLAN.md](V3_0_0_PLAN.md).
+
+Known limits:
+
+- With `allowOutsideBounds`, fill gravity changes the window's size during a drag instead of moving it.
+- A layout direction declared in XML cannot be read before the first measure. If it differs from the configuration, an overlay using `START` or `END` can appear on the estimated side until its first layout.
+- The bundled lint check inspects `OverlaySpec.Builder.setAllowOutsideBounds` only, not Kotlin constructor or `copy` arguments.
 
 ## License
 
