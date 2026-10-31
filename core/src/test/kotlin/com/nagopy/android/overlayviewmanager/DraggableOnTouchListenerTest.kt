@@ -1,9 +1,11 @@
 package com.nagopy.android.overlayviewmanager
 
 import android.app.Activity
+import android.content.pm.ApplicationInfo
 import android.graphics.Rect
 import android.os.Build
 import android.os.Looper
+import android.view.Gravity
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -130,6 +132,143 @@ class DraggableOnTouchListenerTest {
         assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 330f + slop + 20, 545f))
         assertEquals(200 + slop + 20, overlay.spec.x)
         assertEquals(465, overlay.spec.y)
+    }
+
+    @Test fun boundedDragNormalizesToTopLeftWithoutMargins() {
+        val view = PositionedView(screenX = 300, screenY = 500, visibleFrameTop = 60)
+        val overlay = OverlayView.create(
+            view,
+            OverlayScope.ACTIVITY,
+            RecordingBackend(),
+            OverlaySpec(
+                gravity = Gravity.BOTTOM or Gravity.RIGHT,
+                x = 40,
+                y = 80,
+                horizontalMargin = .1f,
+                verticalMargin = .2f,
+                touchMode = OverlayTouchMode.DRAGGABLE,
+            ),
+        )
+        overlay.show()
+        val slop = touchSlop(view)
+
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 310f, 520f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 310f + slop + 20, 545f))
+
+        assertEquals(300 + slop + 20, overlay.spec.x)
+        assertEquals(465, overlay.spec.y)
+        assertEquals(Gravity.TOP or Gravity.LEFT, overlay.spec.gravity)
+        assertEquals(0f, overlay.spec.horizontalMargin, 0f)
+        assertEquals(0f, overlay.spec.verticalMargin, 0f)
+    }
+
+    @Test fun newGestureRebasesOntoTheRealLocationOfAClampedWindow() {
+        // The spec asks for far left of the frame; the system clamped the window to x = 0.
+        val view = PositionedView(screenX = 0, screenY = 500, visibleFrameTop = 60)
+        val overlay = OverlayView.create(
+            view,
+            OverlayScope.ACTIVITY,
+            RecordingBackend(),
+            OverlaySpec(gravity = Gravity.TOP or Gravity.LEFT, x = -300, y = 440, touchMode = OverlayTouchMode.DRAGGABLE),
+        )
+        overlay.show()
+        val slop = touchSlop(view)
+
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 10f, 520f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 10f + slop + 20, 520f))
+
+        assertEquals(slop + 20, overlay.spec.x)
+    }
+
+    @Test fun allowOutsideBoundsDragKeepsGravityAndMarginsAndIgnoresThePlaceholderFrame() {
+        val view = PositionedView(
+            screenX = 300,
+            screenY = 500,
+            visibleFrameTop = NO_LIMITS_FRAME_ORIGIN,
+            visibleFrameLeft = NO_LIMITS_FRAME_ORIGIN,
+        )
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(
+            view,
+            OverlayScope.ACTIVITY,
+            backend,
+            OverlaySpec(
+                gravity = Gravity.CENTER,
+                x = 10,
+                y = 20,
+                horizontalMargin = .1f,
+                verticalMargin = .2f,
+                allowOutsideBounds = true,
+                touchMode = OverlayTouchMode.DRAGGABLE,
+            ),
+        )
+        overlay.show()
+        val slop = touchSlop(view)
+
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 310f, 520f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 310f + slop + 20, 545f))
+
+        assertEquals(10 + slop + 20, overlay.spec.x)
+        assertEquals(45, overlay.spec.y)
+        assertEquals(Gravity.CENTER, overlay.spec.gravity)
+        assertEquals(.1f, overlay.spec.horizontalMargin, 0f)
+        assertEquals(.2f, overlay.spec.verticalMargin, 0f)
+        // Goes through the real WindowManager.LayoutParams built by OverlayView.layoutParams(),
+        // not just the immutable OverlaySpec snapshot.
+        assertEquals(10 + slop + 20, backend.lastParams!!.x)
+        assertEquals(45, backend.lastParams!!.y)
+    }
+
+    @Test fun allowOutsideBoundsDragInvertsTheDeltaForRightAndBottomGravity() {
+        val view = PositionedView(100, 240, NO_LIMITS_FRAME_ORIGIN, NO_LIMITS_FRAME_ORIGIN)
+        val overlay = OverlayView.create(
+            view,
+            OverlayScope.ACTIVITY,
+            RecordingBackend(),
+            OverlaySpec(
+                gravity = Gravity.BOTTOM or Gravity.RIGHT,
+                x = 100,
+                y = 200,
+                allowOutsideBounds = true,
+                touchMode = OverlayTouchMode.DRAGGABLE,
+            ),
+        )
+        overlay.show()
+        val slop = touchSlop(view)
+
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 300f, 500f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 300f + slop + 20, 525f))
+        assertEquals(100 - slop - 20, overlay.spec.x)
+        assertEquals(175, overlay.spec.y)
+
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 300f + slop + 10, 520f))
+        assertEquals(100 - slop - 10, overlay.spec.x)
+        assertEquals(180, overlay.spec.y)
+    }
+
+    @Test fun allowOutsideBoundsDragResolvesEndGravityAgainstTheLayoutDirection() {
+        val info = RuntimeEnvironment.getApplication().applicationInfo
+        info.flags = info.flags or ApplicationInfo.FLAG_SUPPORTS_RTL
+        val view = PositionedView(100, 240, NO_LIMITS_FRAME_ORIGIN, NO_LIMITS_FRAME_ORIGIN)
+        view.layoutDirection = View.LAYOUT_DIRECTION_RTL
+        val overlay = OverlayView.create(
+            view,
+            OverlayScope.ACTIVITY,
+            RecordingBackend(),
+            OverlaySpec(
+                gravity = Gravity.TOP or Gravity.END,
+                x = 100,
+                allowOutsideBounds = true,
+                touchMode = OverlayTouchMode.DRAGGABLE,
+            ),
+        )
+        overlay.show()
+        val slop = touchSlop(view)
+
+        // Under RTL, END is the left edge, so a rightward drag grows the offset.
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 300f, 500f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 300f + slop + 20, 500f))
+        assertEquals(100 + slop + 20, overlay.spec.x)
     }
 
     @Test fun downMoveCancelRestoresOriginalAlphaWithoutResettingCoordinates() {
@@ -548,6 +687,11 @@ class DraggableOnTouchListenerTest {
         override fun getWindowVisibleDisplayFrame(outRect: Rect) {
             outRect.set(visibleFrameLeft, visibleFrameTop, 1080, 1920)
         }
+    }
+
+    private companion object {
+        /** The placeholder frame's origin under `FLAG_LAYOUT_NO_LIMITS`, as seen on API 35. */
+        const val NO_LIMITS_FRAME_ORIGIN = -100000
     }
 
     private class RecordingBackend(var updateFailure: Throwable? = null) : OverlayWindowManager() {

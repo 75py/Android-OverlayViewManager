@@ -18,12 +18,13 @@ package com.nagopy.android.overlayviewmanager
 
 import android.os.Build
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.view.Gravity
 import androidx.annotation.MainThread
 import com.nagopy.android.overlayviewmanager.internal.Logger
 import com.nagopy.android.overlayviewmanager.internal.MaximumObscuringOpacity
+import com.nagopy.android.overlayviewmanager.internal.OverlayGeometry
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import com.nagopy.android.overlayviewmanager.internal.PassThroughOpacityRegistry
 
@@ -45,6 +46,8 @@ public class OverlayView<T : View> private constructor(
     private var backend: OverlayWindowManager? = backend
     private var ownedView: T? = view
     private var detachListener: View.OnAttachStateChangeListener? = null
+    private var gravityCorrection: View.OnLayoutChangeListener? = null
+    private var appliedGravity: Int = Gravity.NO_GRAVITY
     /**
      * Invoked exactly once, from [release], to deregister this handle from the owning Activity's
      * entry in `ActivityOverlayRegistry`. Cleared immediately after invocation so that the closure
@@ -104,15 +107,18 @@ public class OverlayView<T : View> private constructor(
             return failure(OverlayFailure.PERMISSION_DENIED, null)
         }
         admitPassThroughOpacity(candidate, managedView)?.let { return failure(it, null) }
+        val params = layoutParams(candidate)
         try {
-            backendOrThrow().show(managedView, layoutParams(candidate))
+            backendOrThrow().show(managedView, params)
         } catch (exception: Exception) {
             return failure(classify(exception), exception)
         }
+        appliedGravity = params.gravity
         updatePassThroughOpacityRegistration(candidate)
         accept(candidate, nextDragListener(candidate))
         currentState = OverlayState.ATTACHED
         installDetachListener(managedView)
+        installGravityCorrection(managedView)
         return success(changed = true)
     }
 
@@ -142,8 +148,9 @@ public class OverlayView<T : View> private constructor(
         if (spec == effectiveSpec) return success(changed = false)
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         admitPassThroughOpacity(spec, managedView)?.let { return failure(it, null) }
+        val params = layoutParams(spec)
         try {
-            backendOrThrow().update(managedView, layoutParams(spec))
+            backendOrThrow().update(managedView, params)
         } catch (exception: Exception) {
             if (isNotAttached(exception)) {
                 reconcileExternalDetach()
@@ -151,6 +158,7 @@ public class OverlayView<T : View> private constructor(
             }
             return failure(classify(exception), exception)
         }
+        appliedGravity = params.gravity
         updatePassThroughOpacityRegistration(spec)
         accept(spec, nextDragListener)
         return success(changed = true)
@@ -176,7 +184,7 @@ public class OverlayView<T : View> private constructor(
         }
         libraryRemovalInProgress = false
         currentState = OverlayState.CONFIGURED
-        removeDetachListener(managedView)
+        removeAttachmentListeners(managedView)
         PassThroughOpacityRegistry.unregister(this)
         return success(changed = true)
     }
@@ -236,6 +244,50 @@ public class OverlayView<T : View> private constructor(
         managedView?.let(::release)
     }
 
+    /**
+     * Re-applies the gravity if the first measure resolved a layout direction other than the one
+     * [show] and [update] had to estimate. See [OverlayGeometry.absoluteGravity]. No caller is
+     * waiting for this operation, so a failure is only reported through [lastFailure].
+     *
+     * A view notifies a snapshot of its listeners, so a host listener that runs first can hide or
+     * dispose this handle and this one still runs, which is why it checks the state.
+     */
+    private fun installGravityCorrection(managedView: T) {
+        if (managedView.isLayoutDirectionResolved) return
+        val listener = object : View.OnLayoutChangeListener {
+            override fun onLayoutChange(
+                v: View,
+                left: Int,
+                top: Int,
+                right: Int,
+                bottom: Int,
+                oldLeft: Int,
+                oldTop: Int,
+                oldRight: Int,
+                oldBottom: Int,
+            ) {
+                removeGravityCorrection(managedView)
+                if (currentState != OverlayState.ATTACHED) return
+                val params = layoutParams(effectiveSpec)
+                if (params.gravity == appliedGravity) return
+                try {
+                    backendOrThrow().update(managedView, params)
+                    appliedGravity = params.gravity
+                } catch (exception: Exception) {
+                    Logger.w(exception, "Could not correct the gravity after the first layout")
+                    if (isNotAttached(exception)) reconcileExternalDetach() else failure(classify(exception), exception)
+                }
+            }
+        }
+        gravityCorrection = listener
+        managedView.addOnLayoutChangeListener(listener)
+    }
+
+    private fun removeGravityCorrection(managedView: T) {
+        gravityCorrection?.let(managedView::removeOnLayoutChangeListener)
+        gravityCorrection = null
+    }
+
     private fun installDetachListener(managedView: T) {
         val listener = object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) = Unit
@@ -247,20 +299,21 @@ public class OverlayView<T : View> private constructor(
         managedView.addOnAttachStateChangeListener(listener)
     }
 
-    private fun removeDetachListener(managedView: T) {
+    private fun removeAttachmentListeners(managedView: T) {
         detachListener?.let(managedView::removeOnAttachStateChangeListener)
         detachListener = null
+        removeGravityCorrection(managedView)
     }
 
     private fun reconcileExternalDetach() {
         currentState = OverlayState.CONFIGURED
         currentFailure = OverlayFailure.NOT_ATTACHED
-        ownedView?.let(::removeDetachListener)
+        ownedView?.let(::removeAttachmentListeners)
         PassThroughOpacityRegistry.unregister(this)
     }
 
     private fun release(managedView: T) {
-        removeDetachListener(managedView)
+        removeAttachmentListeners(managedView)
         managedView.setOnTouchListener(null)
         effectiveDragListener = null
         ownedView = null
@@ -293,7 +346,7 @@ public class OverlayView<T : View> private constructor(
     private fun layoutParams(value: OverlaySpec): WindowManager.LayoutParams = WindowManager.LayoutParams().apply {
         width = value.width
         height = value.height
-        gravity = Gravity.getAbsoluteGravity(value.gravity, view.layoutDirection)
+        gravity = OverlayGeometry.absoluteGravity(value.gravity, view)
         x = value.x
         y = value.y
         horizontalMargin = value.horizontalMargin

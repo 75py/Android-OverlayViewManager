@@ -21,6 +21,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import androidx.annotation.RestrictTo
 import androidx.annotation.VisibleForTesting
 import com.nagopy.android.overlayviewmanager.internal.Logger
 import com.nagopy.android.overlayviewmanager.internal.OverlayGeometry
@@ -31,9 +32,11 @@ import kotlin.math.abs
  * Library-owned drag gesture for [OverlayTouchMode.DRAGGABLE]. It is not part of the 3.0 public
  * API: Kotlin consumers cannot see this `internal` declaration, and no public member exposes it.
  *
- * `x`/`y` are always converted from screen space into the target window's layout space using
- * [OverlayGeometry] and [OverlayWindowFrame] -- see [OverlayGeometry] for the coordinate model.
- * A drag is not applied to the spec until [ViewConfiguration.getScaledTouchSlop] is exceeded.
+ * `x`/`y` are converted from screen space into the target window's layout space using
+ * [OverlayGeometry] and [OverlayWindowFrame]. With `allowOutsideBounds` there is no usable frame,
+ * so the pointer's delta is added to the spec's offsets instead -- see [OverlayGeometry] for the
+ * coordinate model. A drag is not applied to the spec until
+ * [ViewConfiguration.getScaledTouchSlop] is exceeded.
  *
  * ## Consumption policy
  *
@@ -60,6 +63,7 @@ import kotlin.math.abs
  * pointer itself lifts while others remain, tracking rebases onto a remaining pointer's current
  * position instead of its stale prior position, so the overlay does not jump.
  */
+@RestrictTo(RestrictTo.Scope.LIBRARY)
 internal class DraggableOnTouchListener<T : View>(
     private val overlayView: OverlayView<T>,
 ) : View.OnTouchListener {
@@ -72,8 +76,6 @@ internal class DraggableOnTouchListener<T : View>(
     private var downRawY = 0f
     private var lastRawX = 0f
     private var lastRawY = 0f
-    private var originWindowX = 0
-    private var originWindowY = 0
     private var posX = 0f
     private var posY = 0f
     internal var backupAlpha: Float = overlayView.spec.alpha
@@ -113,15 +115,19 @@ internal class DraggableOnTouchListener<T : View>(
         lastRawY = downRawY
         backupAlpha = overlayView.spec.alpha
 
-        // Convert the view's current screen location into the target window's layout space
-        // instead of assuming the display origin or a fixed status-bar inset.
-        val location = IntArray(2)
-        view.getLocationOnScreen(location)
-        val frame = OverlayWindowFrame.of(view)
-        originWindowX = OverlayGeometry.screenToWindowX(location[0], frame.left)
-        originWindowY = OverlayGeometry.screenToWindowY(location[1], frame.top)
-        posX = originWindowX.toFloat()
-        posY = originWindowY.toFloat()
+        val spec = overlayView.spec
+        if (spec.allowOutsideBounds) {
+            posX = spec.x.toFloat()
+            posY = spec.y.toFloat()
+        } else {
+            // Convert the view's current screen location into the target window's layout space
+            // instead of assuming the display origin or a fixed status-bar inset.
+            val location = IntArray(2)
+            view.getLocationOnScreen(location)
+            val frame = OverlayWindowFrame.of(view)
+            posX = OverlayGeometry.screenToWindowX(location[0], frame.left).toFloat()
+            posY = OverlayGeometry.screenToWindowY(location[1], frame.top).toFloat()
+        }
 
         consumesFromDown = !view.isClickable && !view.isLongClickable
         return consumesFromDown
@@ -145,22 +151,19 @@ internal class DraggableOnTouchListener<T : View>(
         // Only ever advance from the last successfully applied position: if the backend rejects
         // this attempt, the next move recomputes the full delta since that last success instead
         // of compounding an unapplied displacement.
-        val candidateX = posX + (rawX - lastRawX)
-        val candidateY = posY + (rawY - lastRawY)
-        val result = if (!dragApplied) {
-            overlayView.update(
-                overlayView.spec.toBuilder()
-                    .setAlpha(backupAlpha * 0.6f)
-                    .setVerticalMargin(0f)
-                    .setHorizontalMargin(0f)
-                    .setX(candidateX.toInt())
-                    .setY(candidateY.toInt())
-                    .setGravity(Gravity.TOP or Gravity.LEFT)
-                    .build(),
-            )
+        val spec = overlayView.spec
+        val placement = if (dragApplied || spec.allowOutsideBounds) {
+            spec
         } else {
-            overlayView.update(overlayView.spec.copy(x = candidateX.toInt(), y = candidateY.toInt()))
+            spec.copy(gravity = Gravity.TOP or Gravity.LEFT, horizontalMargin = 0f, verticalMargin = 0f)
         }
+        val gravity = OverlayGeometry.absoluteGravity(placement.gravity, view)
+        val candidateX = posX + OverlayGeometry.horizontalOffsetSign(gravity) * (rawX - lastRawX)
+        val candidateY = posY + OverlayGeometry.verticalOffsetSign(gravity) * (rawY - lastRawY)
+        val alpha = if (dragApplied) spec.alpha else backupAlpha * 0.6f
+        val result = overlayView.update(
+            placement.copy(x = candidateX.toInt(), y = candidateY.toInt(), alpha = alpha),
+        )
         Logger.d("candidateX:%f, candidateY:%f, applied:%b", candidateX, candidateY, result.isSuccess)
         if (result.isSuccess) {
             posX = candidateX

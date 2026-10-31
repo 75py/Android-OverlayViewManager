@@ -11,6 +11,11 @@ import androidx.annotation.RestrictTo
  * chosen positioning reference: it works against the view's own window without creating a second/
  * auxiliary window and without requiring `SYSTEM_ALERT_WINDOW` for the activity scope.
  *
+ * It only applies without `allowOutsideBounds`. `FLAG_LAYOUT_NO_LIMITS` makes the framework report
+ * a placeholder rectangle of about 100000px in each direction, which would throw the window far
+ * off screen if it were used as an origin. The drag path does not query the frame in that mode;
+ * see [OverlayGeometry].
+ *
  * ## What is and is not verified by this module's unit tests
  *
  * Coverage is not one uniform setup: the frame-adapter and drag-path fixture tests
