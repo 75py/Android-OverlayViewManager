@@ -4,12 +4,14 @@
  */
 package com.nagopy.android.overlayviewmanager
 
+import android.app.Activity
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.os.Build
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import com.nagopy.android.overlayviewmanager.internal.OverlayWindowManager
 import org.junit.Assert.assertEquals
@@ -86,11 +88,7 @@ class OverlayViewGravityTest {
     }
 
     @Test fun declaredLtrInAnRtlConfiguration_isCorrectedAfterTheFirstLayout() {
-        enableRtlSupport()
-        val attributes = Robolectric.buildAttributeSet()
-            .addAttribute(android.R.attr.layoutDirection, "ltr")
-            .build()
-        val view = View(rtlContext(), attributes)
+        val view = viewDeclaringLtrInAnRtlConfiguration()
         val backend = RecordingBackend()
         val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
 
@@ -104,6 +102,86 @@ class OverlayViewGravityTest {
         assertEquals(1, backend.updateCalls)
     }
 
+    @Test fun hideBeforeTheFirstLayout_removesTheCorrection() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+        overlay.hide()
+        layOut(view)
+
+        assertEquals(0, backend.updateCalls)
+    }
+
+    @Test fun disposeBeforeTheFirstLayout_removesTheCorrection() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+        overlay.dispose()
+        layOut(view)
+
+        assertEquals(0, backend.updateCalls)
+    }
+
+    @Test fun showHideShow_appliesOneCorrection() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+        overlay.hide()
+        overlay.show()
+        layOut(view)
+
+        assertEquals(Gravity.TOP or Gravity.LEFT, backend.lastParams!!.gravity)
+        assertEquals(1, backend.updateCalls)
+    }
+
+    @Test fun externalDetachBeforeTheFirstLayout_removesTheCorrection() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+        overlay.show()
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val content = activity.findViewById<ViewGroup>(android.R.id.content)
+
+        content.addView(view)
+        content.removeView(view)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+        layOut(view)
+
+        assertEquals(0, backend.updateCalls)
+    }
+
+    @Test fun failedCorrection_isClassifiedAndKeepsTheOverlayAttached() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+        overlay.show()
+        backend.updateFailure = SecurityException("denied")
+
+        layOut(view)
+
+        assertEquals(OverlayFailure.PERMISSION_DENIED, overlay.lastFailure)
+        assertEquals(OverlayState.ATTACHED, overlay.state)
+    }
+
+    @Test fun correctionOfADetachedWindow_reconcilesTheState() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+        overlay.show()
+        backend.updateFailure = IllegalArgumentException("View not attached to window manager")
+
+        layOut(view)
+
+        assertEquals(OverlayFailure.NOT_ATTACHED, overlay.lastFailure)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+    }
+
     @Test fun inheritedDirection_needsNoCorrectionAfterTheFirstLayout() {
         enableRtlSupport()
         val view = View(RuntimeEnvironment.getApplication())
@@ -114,6 +192,14 @@ class OverlayViewGravityTest {
         layOut(view)
 
         assertEquals(0, backend.updateCalls)
+    }
+
+    private fun viewDeclaringLtrInAnRtlConfiguration(): View {
+        enableRtlSupport()
+        val attributes = Robolectric.buildAttributeSet()
+            .addAttribute(android.R.attr.layoutDirection, "ltr")
+            .build()
+        return View(rtlContext(), attributes)
     }
 
     private fun rtlContext(): Context {
@@ -137,10 +223,12 @@ class OverlayViewGravityTest {
 
     private class RecordingBackend : OverlayWindowManager() {
         var updateCalls = 0
+        var updateFailure: Exception? = null
         var lastParams: WindowManager.LayoutParams? = null
         override fun show(view: View, params: WindowManager.LayoutParams) { lastParams = WindowManager.LayoutParams().also { it.copyFrom(params) } }
         override fun update(view: View, params: WindowManager.LayoutParams) {
             updateCalls++
+            updateFailure?.let { throw it }
             lastParams = WindowManager.LayoutParams().also { it.copyFrom(params) }
         }
         override fun hide(view: View) = Unit
