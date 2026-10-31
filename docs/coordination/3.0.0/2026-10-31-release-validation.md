@@ -10,20 +10,21 @@ Orca runtime `52f3b92b-a534-4d1e-a1db-d0e22a749584`。Codex `term_cf3261ec-1c55-
 
 ## PR64・PR63の整合
 
-Claudeが既存Codex記録 `49622cc` と `3e05597` をPR64へ取り込み、head `9974c488e3afa4462eeb675ba04f16ed27052c0f` をpush。Codexはtreeが `3e05597` と同一で、CI `41189303564` が成功したことを確認した。製品・端末テストは前回検証候補から変更されていない。PR63の古いSettings検証と「次はT13」の断定を訂正し、10月18日の採用経緯は保持する。
+Claudeが既存Codex記録 `49622cc` と `3e05597` をPR64へ取り込み、head `9974c488e3afa4462eeb675ba04f16ed27052c0f` をpush。Codexはtreeが `3e05597` と同一で、CI `41189303564` が成功したことを確認した。製品・端末テストは前回検証候補から変更されていない。Claudeの記録承認[6541798467](https://github.com/75py/Android-OverlayViewManager/pull/64#issuecomment-6541798467)とCodexのコード承認[6541804856](https://github.com/75py/Android-OverlayViewManager/pull/64#issuecomment-6541804856)、現head CI成功・base・CLEANを確認し、2026-10-31 18:40:54 JSTに通常mergeで `5c8219b500291230eb423e3ba961e52663cc9df4` へ統合した。PR63の古いSettings検証と「次はT13」の断定を訂正し、10月18日の採用経緯は保持する。
 
 ## 現在の検証結果
 
 - `3e05597`（PR64 headとtree同一）でcore/opt-timber/sampleのDebug・Release assemble、4 module unit tests、3 module lint、core/sample androidTest APK compileを一括実行し成功。
 - unit tests: core 107、opt-timber 40、lint 12、sample 4、計163件。failure/error/skip 0。
 - lint: エラー0。警告 core 9、opt-timber 4、sample 61。警告内訳と最終差分は後続チェックで照合する。
+- API35専用AVDでcore 2/2・sample 9/9成功（skipなし、PR64を含む全既存suite）。`/private/tmp/ovm-release-api35-connected.log` と `ovm-release-evidence-20261031/api35-pr64` に結果を保存。
 - buildログ: `/private/tmp/ovm-release-validation-build.log`。この一時パスだけを永続証跡とは扱わず、検証SHAと結果を本記録へ残す。
 
 ## 残る受け入れ条件
 
 | 項目 | 状態 |
 | --- | --- |
-| PR63/64の現head相互承認・CI・統合 | 進行中 |
+| PR63/64の現head相互承認・CI・統合 | PR64統合済み、PR63レビュー待ち |
 | API23/26/35/36 core/sampleの最終端末試験 | 進行中 |
 | 両scope、RTL、非ゼロ原点、edge-to-edge、画面外配置の実画面ドラッグとDOWN時no-jump | Claudeが追加試験を実装、Codexが実行 |
 | 権限なしActivity操作、拒否→許可→再表示、回転・マルチウィンドウ | 既存証拠の照合と不足分の端末検証 |

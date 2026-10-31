@@ -580,9 +580,11 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 ユーザーの「どこまで終わったか」の確認を受け、Claude司令塔（Opus 5.5）が状態を調査。2026-09-20にユーザー依頼のDevinがPR61でT04c/T09 stage 2/T11/T12を実装していた。ユーザーはPR61の採用・レビュー・マージを指示。Claudeが全差分をレビューし、承認コメントを付けた。PR61はユーザー許可で2c256a8へ統合。レビュー指摘のうちJVM可視性と文書をPR62で修正し、CI成功後、ユーザーのコマンドで208588fへ統合。PR60はおすすめどおり記録として9776926へ統合。サンドボックス制約によりGradle・端末試験はローカルで再現していない。詳細は[統合記録](docs/coordination/3.0.0/2026-10-18-pr61-integration.md)。
 
-### 2026-10-25 JST: T12の別UID透過確認と配布方針
+### 2026-10-25 JST: PR64のAPI31/36再検証（T12全体の完了とは区別）
 
-ユーザーはJitPack継続と最小限の保守を選択し、Maven Central移行は見送った。PR64初期版のSettings方式は、Settings自身がoverlayを隠すため別UID透過の証拠にならないとCodexが確認。Claudeがtest APK内の別UID受信Activityへ置換し、CodexがAPI31初期版・更新版・API36で各3/3成功を確認した。不透明overlayはAPI31の両imageで遮断、API36でalpha補正後に到達した。APIレベルだけで補正の有無を断定しない説明へ修正。詳細は[PR64再検証記録](docs/coordination/3.0.0/2026-10-25-pr64-device-validation.md)。この限定試験をT12全体の完了とは扱わない。
+Codexレビュー後、Settingsが非システムoverlayを隠すため、以前のSettingsに対する成功結果を別UID透過の証拠から除外した。Claudeがtest APK内の別UID受信Activityへ変更。候補 `c9d8334f358a72217419947ddc3bc2bb57c61e9a` をCodexがAPI31初期r02・更新r03・API36で実行し、各3/3成功（skipなし）。API31はalpha1.0で遮断、API36は約0.8へ補正して到達する。詳細・所有権合意・再現情報は[PR64再検証記録](docs/coordination/3.0.0/2026-10-25-pr64-device-validation.md)。
+
+PR64は最終文書と記録の対向確認・現headの承認/CI確認を経て統合する。今回mergeは未実行。PR63の「端末確認済み／次はT13」は旧Settings結果に基づくため、統合時に本checkpointと整合する。API23/26/35を含むT12の他のrelease-blocking項目は今回未検証で、T12全体やT13着手条件を充足したとは扱わない。JitPack継続のユーザー判断は維持する。
 
 ### 2026-10-31 JST: 最終検証とリリースPR作成の再開
 
