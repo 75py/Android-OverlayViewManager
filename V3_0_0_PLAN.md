@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-09-14 02:30 JSTのユーザー指示で再開**。T08まで統合済み。T07寿命管理はPR54で6c9e2aaへ統合済み。40 unit tests・lint・3 module build成功、最終SHAの対向承認・CI成功を確認。T10a/sampleとT10b/移行文書はPR57・PR56で統合完了。T04cはcommit2の7d5af7bまで保存済み。2026-09-14 02:30 JSTのユーザー指示で再開し、Claudeの既存実装所有権を確認済み。T05/T06の端末検証はT12のrelease-blocking項目として維持する。
+- 状態: **2026-10-31 JST: リリース候補の最終統合中**。必須API23/26/35/36の端末検証、183 unit tests、Debug/Release、lint、独立Java/Kotlin/R8 consumerが成功。T12で発見した画面外ドラッグとRTL初期配置の修正PR65は現head対向承認・CI成功後497a5e2へ統合済み。最終台帳PR63の対向承認・CIを確認して統合する。追加API31のfreeform2件はhost入力非表示による未検証として明記し、同条件の成功証拠はAPI35/36で保持。両PR統合後にT13のrelease/3.0.0 → main PRを作成する。配布はJitPack継続、タグ後のサービス上ビルド確認を残す。詳細は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -111,19 +111,19 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T01 | 3.0 API・互換性・ライフサイクル設計 | Codex主担当、Claude協議 | T00 | 統合済み |
 | T02 | CI導入・既存lintエラー解消 | Claude | T00 | 統合済み |
 | T03 | ビルド・依存・SDKの更新 | Codex（Claudeから残修正を移管） | T01, T02 | 統合済み |
-| T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 作業中 |
+| T04 | 表示状態とスレッド処理の修正（T04a〜cの集約行） | Codex | T01, T03 | 統合済み（T04a〜c） |
 | T04a | 不変設定・結果・状態型の追加 | Codex | T01, T03 | 統合済み（補足PR36も統合） |
 | T04b | 同期表示状態機械の段階移行 | Codex | T04a | 統合済み（PR40、3e960b8） |
-| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認 | T07, T10 | 既存Claude worktreeでcommit2の7d5af7bを保存。core105 tests成功。effort変更がoperation_unknownのため02:54 JSTに現在ターンを中断・保持。commit3途中の7ファイルWIPを保存、未検証。JVM可視性監査・全module検証は未完了 |
-| T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 作業中（T05a/T05b統合済みbeafd014、端末検証はT12のrelease-blocking項目） |
-| T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み（PR49 b105885、端末検証はT12で未完了） |
+| T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認（実際はDevin実装・Claudeレビュー） | T07, T10 | 統合済み: PR61 2c256a8（Devin再実装、旧Claude worktreeの7d5af7b/WIPは不採用）、JVM可視性の追補PR62 208588f。両PRともCI成功。PR62はCodex承認なし・ユーザー許可でマージ |
+| T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 実装統合済み。必須matrixの権限・実座標検証成功、追加修正PR65を497a5e2へ統合済み |
+| T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み。別UIDはPR64で検証/統合、最終drag/freeformはAPI35/36成功。PR65を497a5e2へ統合済み |
 | T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `c13acee`、40 tests成功・lintエラー0/警告2・3 module build成功。最終相互承認・CI成功後6c9e2aaへ統合済み |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
-| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 作業中（T09a PR42統合済み65c7e95、stage 2待ち） |
+| T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 統合済み（T09a PR42 65c7e95、stage 2はPR61 2c256a8）。Kotlinの`OverlaySpec(allowOutsideBounds = true)`/`copy`は未検出で、移行ガイドに既知の制限として記載 |
 | T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
-| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 未着手 |
-| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 未着手 |
-| T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
+| T11 | 3.0.0バージョン・成果物の整備 | Claude実装、Codex最終検証 | T10, T04c | 完了: 3.0.0/id10、AAR/POM/sources/consumer rules/lint.jar、独立Java/Kotlin/R8 consumer成功。JitPackサービス上のビルドはユーザー判断に従いタグ作成後 |
+| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 検証完了、PR65統合済み。最終記録PR63の対向承認・CI・統合待ち。183 unit tests、必須端末matrix成功。追加API31 freeform2件は前提不成立の未検証（詳細記録参照） |
+| T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 準備済み: PR65/63統合後、合意済みwork/3.0.0のSHAからrelease分岐とmain向けPRを作成する。mainマージ・タグ・配布は対象外 |
 
 T02とT01、T04とT07などは編集範囲が独立する場合に並列実行する。T03中のビルド検証や、T04〜T06・T08の同一coreファイル変更は直列化する。大きいタスクはファイル所有範囲が明確な小PRへ分割してよい。
 
@@ -163,80 +163,80 @@ T02とT01、T04とT07などは編集範囲が独立する場合に並列実行�
 
 ### T04: 表示状態・スレッド
 
-- [ ] addView失敗後にisVisibleがtrueになる問題を再現して修正する。
-- [ ] workerのshowがキュー待ち中にmainのhideが先行する問題を再現して修正する。
-- [ ] WindowManager操作と状態遷移を一体で直列化し、可変LayoutParamsの共有も契約に合わせて扱う。
-- [ ] add/update/removeの失敗通知、失敗後の再試行、連続show/hide/updateを確認する。
+- [x] addView失敗後にisVisibleがtrueになる問題を再現して修正する。
+- [x] workerのshowがキュー待ち中にmainのhideが先行する問題を再現して修正する。
+- [x] WindowManager操作と状態遷移を一体で直列化し、可変LayoutParamsの共有も契約に合わせて扱う。
+- [x] add/update/removeの失敗通知、失敗後の再試行、連続show/hide/updateを確認する。
 
 受け入れ条件: 権限未許可→許可→再表示、無効token、キュー順序、重複操作の回帰テストが通り、実表示と状態が矛盾しない。
 
 ### T05 / T06: 監視・座標・操作
 
-- [ ] `setDraggable(true).show(); setDraggable(false); hide();` の監視解除漏れを修正する。
-- [ ] Activity内ドラッグがシステムオーバーレイ権限に依存しないようにする。
-- [ ] ScreenMonitorの追加ウィンドウ方式を再評価し、対象ウィンドウのInsets・座標とWindowMetrics等を使う方針を検討する。
-- [ ] Android 12以降の非タッチウィンドウ・不透明度・複数重なりへの対応を行う。alphaを一律0.8にするだけで完了としない。
-- [ ] DOWN/MOVE/UP/CANCEL、クリックとドラッグの区別、タッチ消費、multitouch、画面外配置を確認する。
-- [ ] 回転、RTL、ステータス/ナビゲーションバー、edge-to-edge、マルチウィンドウで座標を確認する。
+- [x] `setDraggable(true).show(); setDraggable(false); hide();` の監視解除漏れを修正する。
+- [x] Activity内ドラッグがシステムオーバーレイ権限に依存しないようにする。
+- [x] ScreenMonitorの追加ウィンドウ方式を再評価し、対象ウィンドウのInsets・座標とWindowMetrics等を使う方針を検討する。
+- [x] Android 12以降の非タッチウィンドウ・不透明度・複数重なりへの対応を行う。alphaを一律0.8にするだけで完了としない。
+- [x] DOWN/MOVE/UP/CANCEL、クリックとドラッグの区別、タッチ消費、multitouch、画面外配置を確認する。
+- [x] 回転、RTL、ステータス/ナビゲーションバー、edge-to-edge、マルチウィンドウで座標を確認する。
 
 受け入れ条件: 権限なしのActivity内ドラッグ、監視終了、別UIDアプリへのタッチ透過を確認でき、対応範囲・制限が明文化されている。
 
 ### T07: Timber
 
-- [ ] ログバッファ変更とTextView更新を安全に直列化する。
-- [ ] `maxLines` の0・負数・縮小時の仕様を定め、境界テストを追加する。
-- [ ] 高頻度ログによるUI負荷、複数行ログ、Activity登録と表示・終了を確認する。
-- [ ] Timberの対応バージョンと公開依存関係を確認する。
+- [x] ログバッファ変更とTextView更新を安全に直列化する。
+- [x] `maxLines` の0・負数・縮小時の仕様を定め、境界テストを追加する。
+- [x] 高頻度ログによるUI負荷、複数行ログ、Activity登録と表示・終了を確認する。
+- [x] Timberの対応バージョンと公開依存関係を確認する。
 
 受け入れ条件: 背景・同時ログでUIスレッド違反やコレクション競合がなく、保持量・更新負荷が制御される。
 
 ### T08: 寿命と解放
 
-- [ ] WeakHashMapの値からActivityが間接保持される懸念を、参照経路・画面再生成・必要に応じヒープで確認する。
-- [ ] Activity終了時のwindow、cache、listenerの解放を設計に合わせて実装する。
-- [ ] 再initで既存の監視windowが残らないことを確認する。
-- [ ] アプリ外表示のContextと明示的な終了処理を検証する。
+- [x] WeakHashMapの値からActivityが間接保持される懸念を、参照経路・画面再生成・必要に応じヒープで確認する。
+- [x] Activity終了時のwindow、cache、listenerの解放を設計に合わせて実装する。
+- [x] 再initで既存の監視windowが残らないことを確認する。
+- [x] アプリ外表示のContextと明示的な終了処理を検証する。
 
 受け入れ条件: 破棄済みActivityや終了済みwindowの不要な保持がなく、再初期化と終了が定義通り。未再現の懸念を修正済みと報告しない。
 
 ### T09: lint
 
-- [ ] `lintPublish`でAARへlint.jarを同梱する。
-- [ ] IssueRegistryのAPI互換性・vendor等の宣言を現行lintへ合わせる。
-- [ ] Detectorで宣言クラス・引数数・定数値を確認し、同名の他APIで誤警告・例外を出さない。
-- [ ] Java/Kotlin、quick fix、実際のjarロード、別consumerでの検出を検証する。
-- [ ] 3.0で変更する公開APIに検査内容を合わせる。
+- [x] `lintPublish`でAARへlint.jarを同梱する。
+- [x] IssueRegistryのAPI互換性・vendor等の宣言を現行lintへ合わせる。
+- [x] Detectorで宣言クラス・引数数・定数値を確認し、同名の他APIで誤警告・例外を出さない。
+- [x] Java/Kotlin、quick fix、実際のjarロード、別consumerでの検出を検証する。
+- [x] 3.0で変更する公開APIに検査内容を合わせる。
 
 受け入れ条件: 生成AARを取り込む別アプリで必要な警告が出て、無関係なコードには反応しない。
 
 ### T10: 利用例・文書
 
-- [ ] READMEにActivity内表示とアプリ外表示の動く例を分けて載せる。
-- [ ] 権限設定からの復帰・再確認、表示参照の保持・終了、スレッド契約を説明する。
-- [ ] sampleのHTML表示コードと実装を同期する。可能なら実装から生成し、package-private APIの案内を除く。
-- [ ] 対応OSと制限、長時間表示とアプリ側のサービス責任、現在のAndroid制限を公式仕様で確認して説明する。
-- [ ] CHANGELOGと2.x→3.0移行ガイドを作る。破壊的変更・置換例を網羅する。
-- [ ] 見た目や操作の変更はスクリーンショット・動画をPRへ添える。
+- [x] READMEにActivity内表示とアプリ外表示の動く例を分けて載せる。
+- [x] 権限設定からの復帰・再確認、表示参照の保持・終了、スレッド契約を説明する。
+- [x] sampleのHTML表示コードと実装を同期する。可能なら実装から生成し、package-private APIの案内を除く。
+- [x] 対応OSと制限、長時間表示とアプリ側のサービス責任、現在のAndroid制限を公式仕様で確認して説明する。
+- [x] CHANGELOGと2.x→3.0移行ガイドを作る。破壊的変更・置換例を網羅する。
+- [x] 見た目や操作の変更はスクリーンショット・動画をPRへ添える。
 
 受け入れ条件: 公開APIだけで例がコンパイル・動作し、初回未許可と終了まで説明されている。
 
 ### T11: バージョン・配布
 
-- [ ] `version.properties`を3.0.0へ更新する。現在の値は2.0.0 / id=9。sample用versionCodeの増分と既存公開履歴の整合を確認する。
-- [ ] core / opt-timberの成果物バージョン、artifactId、POM、公開APIに現れる依存のapi/implementationを確認する。
-- [ ] Release AAR、sources、consumer rules、lint.jar、ライセンスを確認する。
-- [ ] 新しいconsumerからRelease成果物を取り込み、依存解決・R8有効ビルド・利用例を確認する。
-- [ ] JitPack等の配布手順・必要なJDK設定・導入座標を確認する。ここでは正式公開しない。
+- [x] `version.properties`を3.0.0へ更新する。変更前の値は2.0.0 / id=9、現在は3.0.0 / id=10。sample用versionCodeの増分と既存公開履歴の整合を確認する。
+- [x] core / opt-timberの成果物バージョン、artifactId、POM、公開APIに現れる依存のapi/implementationを確認する。
+- [x] Release AAR、sources、consumer rules、lint.jar、ライセンスを確認する。
+- [x] 新しいconsumerからRelease成果物を取り込み、依存解決・R8有効ビルド・利用例を確認する。
+- [x] JitPack等の配布手順・必要なJDK設定・導入座標を確認する。ここでは正式公開しない。
 
 受け入れ条件: 3.0.0の成果物が一貫し、別consumerから利用でき、配布手順が再現可能。
 
 ### T12 / T13: 統合とリリース候補
 
-- [ ] 全タスクのPR・相手承認・統合SHA・検証根拠を照合する。
-- [ ] 計画書と司令塔間ログがGit管理され、分担・異論・判断・承認の経緯を追跡できることを確認する。
-- [ ] Debug/Releaseビルド、全ローカルテスト、lint、consumer試験を統合状態で実行する。
-- [ ] 合意したAPIレベルの端末で、権限拒否/許可、実表示、再表示、別アプリへの透過、ドラッグ、画面再生成を確認する。未実施なら完了扱いにしない。
-- [ ] 両司令塔が独立レビュー担当を立て、公開API・移行・配布・状態遷移を最終確認する。
+- [x] 実装タスクのPR・相手承認・統合SHA・検証根拠を照合する（PR61/62は記録済みユーザー指示による例外を明記）。最終記録PR63は対向承認待ち。
+- [x] 計画書と司令塔間ログをGit管理し、分担・異論・判断・承認の経緯を記録する。最終台帳はPR63でレビュー/統合する。
+- [x] Debug/Releaseビルド、全ローカルテスト、lint、consumer試験を最終製品候補で実行する（以後test/doc変更のみ、詳細SHAは最終検証記録）。
+- [x] 合意したAPI23/26/35/36の端末で、権限拒否/許可、実表示、再表示、別UID透過、ドラッグ、画面再生成を確認する。SDK対象外と追加API31のfreeform未検証は最終記録で区別する。
+- [x] 現AGENTS.mdに従い両司令塔が直接、公開API・移行・配布・状態遷移を相互確認する（追加subagentなし）。
 - [ ] 合意した統合SHAから `release/3.0.0` を作成してpushする。
 - [ ] `release/3.0.0` → `main` のPRを作成する。版、変更要約、移行方法、検証結果、既知の制限、関連PRを記載し、相手司令塔へレビューを依頼する。
 - [ ] ユーザーへreleaseブランチ、main向けPR URL、実施済み検証、残課題、利用したエージェント構成を報告する。
@@ -443,8 +443,8 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 ### T04c / T06 follow-ups from PR40
 
-- [ ] constructorのJava公開可視性を最終API監査で閉じる（RestrictToだけをaccess controlと扱わない）。
-- [ ] 暫定public DraggableOnTouchListener/custom listener setterをT06/T04cで除去・内部化する。
+- [x] constructorのJava公開可視性を最終API監査で閉じる（RestrictToだけをaccess controlと扱わない）。PR62でprivate constructorと`@JvmSynthetic`の内部factoryに変更し、reflectionテストで保護。
+- [x] 暫定public DraggableOnTouchListener/custom listener setterをT06/T04cで除去・内部化する。PR61でsetter除去・`internal class`化。
 - [ ] DISPOSED show/updateのdiagnostic保持KDocを補足し、合意済みnullability方針を適用する。
 
 ### 2026-09-12 18:32 JST: 利用制限に伴う分担変更
@@ -576,8 +576,22 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 02:37 JST: 実effort不一致に加え、Orca注意喚起入力が同ID再確認でoperation_unknownとなった。Claude画面はInterruptedで待機、途中成果は保持。medium設定と端末入力状態の確認が必要なblockerとして記録し、重複入力・実装・統合は行わない。
 
+### 2026-10-18 JST: PR61・PR62・PR60の統合
+
+ユーザーの「どこまで終わったか」の確認を受け、Claude司令塔（Opus 5.5）が状態を調査。2026-09-20にユーザー依頼のDevinがPR61でT04c/T09 stage 2/T11/T12を実装していた。ユーザーはPR61の採用・レビュー・マージを指示。Claudeが全差分をレビューし、承認コメントを付けた。PR61はユーザー許可で2c256a8へ統合。レビュー指摘のうちJVM可視性と文書をPR62で修正し、CI成功後、ユーザーのコマンドで208588fへ統合。PR60はおすすめどおり記録として9776926へ統合。サンドボックス制約によりGradle・端末試験はローカルで再現していない。詳細は[統合記録](docs/coordination/3.0.0/2026-10-18-pr61-integration.md)。
+
 ### 2026-10-25 JST: PR64のAPI31/36再検証（T12全体の完了とは区別）
 
 Codexレビュー後、Settingsが非システムoverlayを隠すため、以前のSettingsに対する成功結果を別UID透過の証拠から除外した。Claudeがtest APK内の別UID受信Activityへ変更。候補 `c9d8334f358a72217419947ddc3bc2bb57c61e9a` をCodexがAPI31初期r02・更新r03・API36で実行し、各3/3成功（skipなし）。API31はalpha1.0で遮断、API36は約0.8へ補正して到達する。詳細・所有権合意・再現情報は[PR64再検証記録](docs/coordination/3.0.0/2026-10-25-pr64-device-validation.md)。
 
 PR64は最終文書と記録の対向確認・現headの承認/CI確認を経て統合する。今回mergeは未実行。PR63の「端末確認済み／次はT13」は旧Settings結果に基づくため、統合時に本checkpointと整合する。API23/26/35を含むT12の他のrelease-blocking項目は今回未検証で、T12全体やT13着手条件を充足したとは扱わない。JitPack継続のユーザー判断は維持する。
+
+### 2026-10-31 JST: 最終検証とリリースPR作成の再開
+
+ユーザーは両司令塔の連携でmain向けPR作成まで進め、通常判断は双方で相談し確認を減らすよう指示した。ClaudeはPR63/plan/logをCodexへ移管し、CodexがGradle/SDK/端末・成果物検証と統合を直列化する。ClaudeはPR64と不足する座標等の端末テスト、公開API・配布・利用文書の最終レビューを担当する。新規サブエージェントは起動しない。最終SHAの相互承認とCI条件は維持する。詳細は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
+
+### 2026-10-31: 最終検証完了・統合待ち
+
+T04〜T11の詳細チェックを既存PRと今回の最終検証証拠へ照合した。必須端末matrixとconsumerが成功。PR65/63の現head承認とCIの確認後にreleaseへ進む。追加API31のfreeform2件は未検証のまま明記し、必須API35/36で同条件の成功を確認済み。詳細な不具合発見・差戻し・設計判断・SHA・件数は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
+
+PR65はhead `ca3f7e0809a966e842d19ba7ea7d102a8ef48b86`、[Codex対向承認](https://github.com/75py/Android-OverlayViewManager/pull/65#issuecomment-6542296295)、[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41193177729)を確認し、19:35:55 JSTに `497a5e2a6348ffbadd9455813d9bcf388012ebcc` へ通常merge。mainへのmergeは行っていない。最終台帳PR63の現head承認/CI/統合後にreleaseを作成する。
