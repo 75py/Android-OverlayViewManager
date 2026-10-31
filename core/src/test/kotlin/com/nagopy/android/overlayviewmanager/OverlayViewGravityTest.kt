@@ -102,6 +102,47 @@ class OverlayViewGravityTest {
         assertEquals(1, backend.updateCalls)
     }
 
+    @Test fun updateBeforeTheFirstLayout_isCorrectedFromTheLastAppliedGravity() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+
+        overlay.show()
+        overlay.update(overlay.spec.copy(gravity = Gravity.TOP or Gravity.END))
+        // Both estimates use the RTL configuration, so START went right and END went left.
+        assertEquals(Gravity.TOP or Gravity.LEFT, backend.lastParams!!.gravity)
+
+        layOut(view)
+
+        assertEquals(Gravity.TOP or Gravity.RIGHT, backend.lastParams!!.gravity)
+    }
+
+    @Test fun hostListenerHidingTheOverlayDuringTheFirstLayout_skipsTheCorrection() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+        view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> overlay.hide() }
+
+        overlay.show()
+        layOut(view)
+
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+        assertEquals(0, backend.updateCalls)
+    }
+
+    @Test fun hostListenerDisposingTheOverlayDuringTheFirstLayout_skipsTheCorrection() {
+        val view = viewDeclaringLtrInAnRtlConfiguration()
+        val backend = RecordingBackend()
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(gravity = Gravity.TOP or Gravity.START))
+        view.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> overlay.dispose() }
+
+        overlay.show()
+        layOut(view)
+
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertEquals(0, backend.updateCalls)
+    }
+
     @Test fun hideBeforeTheFirstLayout_removesTheCorrection() {
         val view = viewDeclaringLtrInAnRtlConfiguration()
         val backend = RecordingBackend()

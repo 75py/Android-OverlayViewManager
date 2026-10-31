@@ -18,6 +18,7 @@ package com.nagopy.android.overlayviewmanager
 
 import android.os.Build
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import androidx.annotation.MainThread
@@ -46,6 +47,7 @@ public class OverlayView<T : View> private constructor(
     private var ownedView: T? = view
     private var detachListener: View.OnAttachStateChangeListener? = null
     private var gravityCorrection: View.OnLayoutChangeListener? = null
+    private var appliedGravity: Int = Gravity.NO_GRAVITY
     /**
      * Invoked exactly once, from [release], to deregister this handle from the owning Activity's
      * entry in `ActivityOverlayRegistry`. Cleared immediately after invocation so that the closure
@@ -111,11 +113,12 @@ public class OverlayView<T : View> private constructor(
         } catch (exception: Exception) {
             return failure(classify(exception), exception)
         }
+        appliedGravity = params.gravity
         updatePassThroughOpacityRegistration(candidate)
         accept(candidate, nextDragListener(candidate))
         currentState = OverlayState.ATTACHED
         installDetachListener(managedView)
-        installGravityCorrection(managedView, params.gravity)
+        installGravityCorrection(managedView)
         return success(changed = true)
     }
 
@@ -145,8 +148,9 @@ public class OverlayView<T : View> private constructor(
         if (spec == effectiveSpec) return success(changed = false)
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         admitPassThroughOpacity(spec, managedView)?.let { return failure(it, null) }
+        val params = layoutParams(spec)
         try {
-            backendOrThrow().update(managedView, layoutParams(spec))
+            backendOrThrow().update(managedView, params)
         } catch (exception: Exception) {
             if (isNotAttached(exception)) {
                 reconcileExternalDetach()
@@ -154,6 +158,7 @@ public class OverlayView<T : View> private constructor(
             }
             return failure(classify(exception), exception)
         }
+        appliedGravity = params.gravity
         updatePassThroughOpacityRegistration(spec)
         accept(spec, nextDragListener)
         return success(changed = true)
@@ -241,10 +246,13 @@ public class OverlayView<T : View> private constructor(
 
     /**
      * Re-applies the gravity if the first measure resolved a layout direction other than the one
-     * [show] had to estimate. See [OverlayGeometry.absoluteGravity]. No caller is waiting for this
-     * operation, so a failure is only reported through [lastFailure].
+     * [show] and [update] had to estimate. See [OverlayGeometry.absoluteGravity]. No caller is
+     * waiting for this operation, so a failure is only reported through [lastFailure].
+     *
+     * A view notifies a snapshot of its listeners, so a host listener that runs first can hide or
+     * dispose this handle and this one still runs, which is why it checks the state.
      */
-    private fun installGravityCorrection(managedView: T, shownGravity: Int) {
+    private fun installGravityCorrection(managedView: T) {
         if (managedView.isLayoutDirectionResolved) return
         val listener = object : View.OnLayoutChangeListener {
             override fun onLayoutChange(
@@ -259,10 +267,12 @@ public class OverlayView<T : View> private constructor(
                 oldBottom: Int,
             ) {
                 removeGravityCorrection(managedView)
+                if (currentState != OverlayState.ATTACHED) return
                 val params = layoutParams(effectiveSpec)
-                if (params.gravity == shownGravity) return
+                if (params.gravity == appliedGravity) return
                 try {
                     backendOrThrow().update(managedView, params)
+                    appliedGravity = params.gravity
                 } catch (exception: Exception) {
                     Logger.w(exception, "Could not correct the gravity after the first layout")
                     if (isNotAttached(exception)) reconcileExternalDetach() else failure(classify(exception), exception)
