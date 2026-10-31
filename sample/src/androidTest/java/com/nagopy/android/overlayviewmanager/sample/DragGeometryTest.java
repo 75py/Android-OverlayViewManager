@@ -587,14 +587,40 @@ public class DragGeometryTest {
         freeform = true;
         uiDevice.waitForIdle();
 
-        int[] origin = new int[2];
-        onMain(() -> {
-            host.getWindow().getDecorView().getLocationOnScreen(origin);
-            return null;
+        // A new freeform task may have empty bounds and cover the display, as on API 31. Resizing
+        // can recreate the Activity, so the host is looked up again afterwards.
+        int width = uiDevice.getDisplayWidth();
+        int height = uiDevice.getDisplayHeight();
+        GrantOverlayPermissionRule.executeShellCommand("am task resize " + host.getTaskId() + " "
+                + width / 5 + " " + height / 5 + " " + width * 4 / 5 + " " + height * 4 / 5);
+        Activity resizedHost = awaitActivityAwayFromTheDisplayOrigin();
+        assumeTrue("The freeform window has no origin to test", resizedHost != null);
+        host = resizedHost;
+        uiDevice.waitForIdle();
+        Log.i(TAG, "freeform origin=" + Arrays.toString(decorOrigin(host)));
+    }
+
+    private Activity awaitActivityAwayFromTheDisplayOrigin() {
+        long deadline = SystemClock.uptimeMillis() + TIMEOUT_MS * 2;
+        while (SystemClock.uptimeMillis() < deadline) {
+            Activity activity = onMain(this::findMultiWindowActivity);
+            if (activity != null) {
+                int[] origin = decorOrigin(activity);
+                if (origin[0] > 0 && origin[1] > 0) {
+                    return activity;
+                }
+            }
+            SystemClock.sleep(POLL_MS);
+        }
+        return null;
+    }
+
+    private int[] decorOrigin(Activity activity) {
+        return onMain(() -> {
+            int[] origin = new int[2];
+            activity.getWindow().getDecorView().getLocationOnScreen(origin);
+            return origin;
         });
-        Log.i(TAG, "freeform origin=" + Arrays.toString(origin));
-        assumeTrue("The freeform window has no origin to test: " + Arrays.toString(origin),
-                origin[0] > 0 || origin[1] > 0);
     }
 
     private Activity awaitMultiWindowActivity() {
