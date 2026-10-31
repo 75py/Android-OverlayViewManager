@@ -1,6 +1,6 @@
 # T04c/T09/T11/T12: PR61の採用と統合
 
-- 状態: ユーザー指示により統合済み。2026-10-25追記: 別UID透過をAPI36で確認（PR64）、配布はJitPack継続。T13は未完了
+- 状態: PR61/62/60は統合済み。配布はJitPack継続。10月25日の別UID試験は受信Activity方式の結果で置換（末尾参照）。T12全体とT13は最終検証記録で管理
 - 関連タスク: T04c, T09 stage 2, T11, T12
 - 記録担当: Claude司令塔（Opus 5.5 / Claude Code、サブエージェントなし）
 - 関連PR / head SHA: PR61 `99c918e720c93f20663eef379e4d2bcb63bc6888` → merge `2c256a83d5e41d9deaa6541c350d55bce1f7b108`、PR62 `96bf3fed06cdaf66c760d9eb32070a5fccf70bb6` → merge `208588f4fba70d16d69f154f95615785fd08cfba`、PR60 `9432a900dc625838705080e71e4350280629047f` → merge `9776926d28ad5577279d59a77f9f03a1aa231414`
@@ -73,28 +73,14 @@ T04、T04c、T09は統合済みに更新した。T11は一部統合（配布方�
 
 ユーザーはライブラリの需要を検討し、案Bを選んだ。3.0.0は実績としてmainへ出し、配布は設定済みのJitPackを続け、その後は最小限の保守とする。上記「未解決事項」のT11（Maven Central移行）と指摘4の「JitPackビルドは不要になる見込み」は、この判断で取り消す。JitPackビルドはタグ作成後に確認する。
 
-### 別UIDアプリへのタッチ透過
+### 別UIDアプリへのタッチ透過（後続レビューを反映）
 
-PR64（`claude/3.0.0/t12-cross-uid`）で`sample`に`CrossUidPassThroughTest`（API31+）を追加した。画面全体のアプリオーバーレイの下に設定アプリ（UID 1000）を置き、検索バーをタップして、検索画面のEditTextが出るかで到達を判定する。
+初期のPR64はSettingsの検索バーをタップする方式で、API36のsample 9/9成功を報告した。しかしCodexの後続検証で、Settingsは非システムoverlayを非表示にするため、タッチ透過の証拠として不適切と判明した。この旧結果から別UID透過を完了扱いにしない。
 
-ユーザーがemulator-5554（API36、Foldlytics_Pixel_9_Pro_Fold_API_36）で`:core:connectedDebugAndroidTest :sample:connectedDebugAndroidTest`を実行した。b2a927eではcore 2/2成功、sample 8/9成功。失敗は`opaqueSameUidOnly_isBlockedByThePlatform`だった。Claudeがadbで単独再実行し、logcatで次を確認した。
+Claudeはtest APK内の別UID受信Activityへ置き換え、表示中overlayの入力windowとタップ点の包含、受信側UID、実際のタップ回数をassertした。CodexがAPI31初期r02、API31更新r03、API36で各3/3成功を確認した。API31ではalpha 1.0で遮断、API36では約0.8へ補正され到達した。公開列挙名はユーザー選択どおり維持し、補正の有無はビルドに依存する説明へ更新した。
 
-```
-App com.nagopy.android.overlayviewmanager.sample has a system alert window (type = 2038) with FLAG_NOT_TOUCHABLE and LayoutParams.alpha = 1.00 > 0.80, setting alpha to 0.80 to let touches pass through
-```
-
-WindowManagerは、上限を超える非タッチのアプリオーバーレイのalphaを上限まで下げ、タッチを通す。`SAME_UID_ONLY`はライブラリの不透明度チェックを省くだけで、別UIDへのタッチを止めない。設計書もこのモードでの別UID到達については何も約束していないので、実装は仕様どおり。ただし列挙名から「別アプリには届かない」と誤解されうる。
-
-ユーザーは案1（名前は変えず、説明を直す）を選んだ。改名して公開APIを変える案2は採らなかった。b2c484eの変更は次のとおり。
-
-- 3件目のテストを`opaqueSameUidOnly_isDimmedByThePlatformAndPassesTheTap`（到達を確認）に置き換えた。
-- `CrossUidPassThrough`にKDocを追加した。
-- READMEと移行ガイドに、`SAME_UID_ONLY`でも別UIDにタッチが届き、alphaが0.8へ下がることを追記した。
-
-ユーザーの再実行でsample 9/9成功、skipなし。
+正確な候補SHA、fingerprint、実行コマンド、相互レビュー、CIは[PR64再検証記録](2026-10-25-pr64-device-validation.md)を参照する。上の10月18日時点のMaven Central案は、ユーザーのJitPack継続判断で取り消された。
 
 ### 残り
 
-- T12: API23/26/35の端末テストはDevin申告のみで未再現。API36以外での再実行はユーザーの判断に委ねる。
-- PR64はClaude側のPRで、Codexの対向承認が規約上必要。Codex司令塔は稼働していないため、ユーザーの許可で統合する。
-- T13: `release/3.0.0`の作成とmain向けPR。
+T12の他の端末条件、成果物/consumerの最終照合、PR63/64の現head承認・CI・統合を経てT13へ進む。API31/36の3テストだけで全体の完了とは扱わない。[10月31日の最終検証記録](2026-10-31-release-validation.md)へ引き継ぐ。

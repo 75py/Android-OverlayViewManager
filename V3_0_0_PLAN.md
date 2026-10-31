@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-10-25 JST: 別UIDアプリへのタッチ透過をAPI36で確認（PR64）、配布はJitPack継続に決定。次はT13**。2026-10-18時点: T04c・T09 stage 2・T11を統合済み。2026-09-20にユーザー依頼のDevinがPR61（`work/3.0.0-devin`、head `99c918e`）でT04c/T09 stage 2/T11/T12を一括実装。Claude司令塔がレビュー・承認後、ユーザー許可で2c256a8へ統合。レビュー指摘のJVM可視性と文書修正をPR62で208588fへ統合。中断記録PR60も9776926へ統合。別UIDアプリへのタッチ透過の端末確認とT13が残っていた。配布はユーザーの判断でJitPack継続、Maven Central移行は見送り。Codex司令塔は今回未稼働で、PR62のCodex対向承認はなくユーザー許可でマージした。
+- 状態: **2026-10-31 JST: main向けリリースPR作成まで再開**。T04c・T09 stage 2・T11の版/配布設定はPR61/62で統合済み。PR64の別UID受信ActivityによるAPI31初期版・更新版・API36の各3件成功を採用し、旧Settings方式の成功結果は採用しない。PR63/64の記録整合と統合、T05/T06の座標・権限・構成変更の端末検証、最終成果物確認・相互レビューを経てT13へ進む。配布はJitPack継続。現在の受け入れ条件と進捗は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)を参照する。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
 - 準備文書・共有設定を1646b3bへコミット済み。ユーザーの開始指示を受け、同コミットをorigin/work/3.0.0へ初回pushした。以降の変更は個別PRと相互承認を経由する。
@@ -121,8 +121,8 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 統合済み（T09a PR42 65c7e95、stage 2はPR61 2c256a8）。Kotlinの`OverlaySpec(allowOutsideBounds = true)`/`copy`は未検出で、移行ガイドに既知の制限として記載 |
 | T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
-| T11 | 3.0.0バージョン・成果物の整備 | Claude | T10, T04c | 一部統合: version 3.0.0/id10とjitpack.ymlはPR61。publishToMavenLocal・R8 consumer確認はDevin申告で未再現。2026-10-18にユーザーがJitPack継続を決定（Maven Central移行は見送り）。JitPackビルドはタグ作成後に確認する |
-| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 作業中: 2026-10-25にユーザー端末のAPI36エミュレータでcore 2/2・sample 9/9成功（PR64の別UID透過テスト3件を含む）。API23/26/35はDevin申告のみで未再現。CIはassemble/unit/lintのみ |
+| T11 | 3.0.0バージョン・成果物の整備 | Claude実装、Codex最終検証 | T10, T04c | version 3.0.0/id10とjitpack.ymlはPR61で統合済み。最終Release AAR・POM・sources・Java/Kotlin consumer・R8の検証中。JitPackサービス上のビルドはユーザー判断に従いタグ作成後 |
+| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 作業中。PR64のAPI31初期/更新・API36の別UID試験は各3件成功。旧Settings方式は無効。API23/26/35/36の全体試験とT05/T06の権限・ドラッグ座標・構成変更を最終検証記録で管理 |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 未着手 |
 
 T02とT01、T04とT07などは編集範囲が独立する場合に並列実行する。T03中のビルド検証や、T04〜T06・T08の同一coreファイル変更は直列化する。大きいタスクはファイル所有範囲が明確な小PRへ分割してよい。
@@ -582,4 +582,8 @@ T03はClaude報告でAGP9.2.1・Gradle9.4.1/JDK17・compile/target36/minSdk23の
 
 ### 2026-10-25 JST: T12の別UID透過確認と配布方針
 
-ユーザーは配布をJitPack継続とし、3.0.0を実績としてmainへ出した後は最小限の保守とする方針を選んだ（Maven Central移行は見送り）。ClaudeがPR64で`CrossUidPassThroughTest`（API31+、設定アプリの検索バーを透過タップ）を追加し、ユーザーの端末でAPI36エミュレータ実行した。初回は「不透明な`SAME_UID_ONLY`はAndroidが遮断する」という想定が外れて1件失敗。WindowManagerはFLAG_NOT_TOUCHABLEのアプリオーバーレイのalphaを上限0.8へ下げてタッチを通す。ユーザーは列挙名を変えず説明を直す案を選び、テスト・KDoc・README・移行ガイドを修正。再実行でsample 9/9成功。詳細は[統合記録](docs/coordination/3.0.0/2026-10-18-pr61-integration.md)の2026-10-25追記。
+ユーザーはJitPack継続と最小限の保守を選択し、Maven Central移行は見送った。PR64初期版のSettings方式は、Settings自身がoverlayを隠すため別UID透過の証拠にならないとCodexが確認。Claudeがtest APK内の別UID受信Activityへ置換し、CodexがAPI31初期版・更新版・API36で各3/3成功を確認した。不透明overlayはAPI31の両imageで遮断、API36でalpha補正後に到達した。APIレベルだけで補正の有無を断定しない説明へ修正。詳細は[PR64再検証記録](docs/coordination/3.0.0/2026-10-25-pr64-device-validation.md)。この限定試験をT12全体の完了とは扱わない。
+
+### 2026-10-31 JST: 最終検証とリリースPR作成の再開
+
+ユーザーは両司令塔の連携でmain向けPR作成まで進め、通常判断は双方で相談し確認を減らすよう指示した。ClaudeはPR63/plan/logをCodexへ移管し、CodexがGradle/SDK/端末・成果物検証と統合を直列化する。ClaudeはPR64と不足する座標等の端末テスト、公開API・配布・利用文書の最終レビューを担当する。新規サブエージェントは起動しない。最終SHAの相互承認とCI条件は維持する。詳細は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
