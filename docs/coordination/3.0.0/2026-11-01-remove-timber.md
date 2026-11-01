@@ -1,6 +1,6 @@
 # 2026-11-01 Timber連携の削除
 
-状態: **Codex検証完了、PR68の現head承認・CI・統合待ち**。承認はまだ出ていない。
+状態: **PR68の対向承認・CI成功を確認し、`8794018` へ統合済み**。`work/3.0.0` も同期済み。文書追記後を含む最新release headのCI・Claude確認は [PR66](https://github.com/75py/Android-OverlayViewManager/pull/66) のchecksとSHA付きコメントで追跡する。
 
 ## 経緯
 
@@ -100,7 +100,12 @@ Codexが[JitPack公式の複数モジュールの説明](https://docs.jitpack.io
 - 公開artifact1つの成果物: Codexがlocal Mavenとcore単体のJava/Kotlin R8 consumerで確認済み。
 - JitPackサービス上の実ビルドと座標解決: 未確認。従来どおりタグ後に確認する。
 
-## 判断待ち
+## 統合結果
 
-- Codex: 本記録を含む現headの対向承認とCI確認、`release/3.0.0` へのmerge。
-- ユーザー: PR66のCIと承認の取り直し後に、mainへのmergeとタグ付けを判断する。
+CodexはPR68 head `d773e7e83890aeaa4eae9e95750c4fe2b8c02391` の全差分・記録を確認し、[対向承認](https://github.com/75py/Android-OverlayViewManager/pull/68#issuecomment-6555266404)を記録した。[CI41286948503成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41286948503)、base、同一head、CLEANをマージ直前に再確認し、`--match-head-commit` を指定した通常mergeで `8794018bcc6d67d338982bfaeaddef78db821540` へ統合した。承認headとtree差分がないことも確認した。
+
+`release/3.0.0` と `work/3.0.0` を同SHAへ同期し、[PR66の本文と統合コメント](https://github.com/75py/Android-OverlayViewManager/pull/66#issuecomment-6555284723)を更新した。最終記録2ファイルはClaudeからCodexへ所有を戻した（request `d23b3f0d-44b7-49b5-a466-6d59c0f1b7b8` とClaudeの同意）。この追記は文書のみで、最終release headのCIとClaude確認はPR66で追跡する。
+
+## 残る公開判断
+
+mainへのmerge、タグ作成、正式公開は未実施。公開決定時にREADMEの未公開表記とCHANGELOGの日付を確定し、タグ後にJitPackサービス上のビルドと座標解決を確認する。
