@@ -58,6 +58,17 @@ Codex側の結果（実行はすべてCodex。`320f671` と `a908cb4` の差はH
 | 起動画面とHTML表示 | `a908cb4` で再構築したAPK | メニューからTimberが消えSAMPLE3になったこと、Sample1とSample3の `TAG` 宣言を実画面で確認 |
 | CI | `a908cb4` | run `41286372506` 成功 |
 
+実行コマンド（review worktree）:
+
+```sh
+ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ./gradlew :core:assembleDebug :sample:assembleDebug :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest :core:lintDebug :sample:lintDebug :sample:assembleRelease :sample:assembleDebugAndroidTest :core:publishToMavenLocal -Dmaven.repo.local=/private/tmp/ovm-remove-timber-maven-20261101
+./gradlew -p /private/tmp/ovm-remove-timber-consumer-20261101 :app:assembleRelease :app:lintRelease --refresh-dependencies
+ANDROID_SERIAL=emulator-5580 ./gradlew :sample:connectedDebugAndroidTest
+./gradlew :sample:assembleDebug
+```
+
+最後の行は `a908cb4` のUI確認用の再構築。
+
 成果物のSHA256（`320f671`）:
 
 - sample APK: `76077cf20b2f89876b70bcfc3ef41937470afaac4982beb645b0ebb8729692d5`
