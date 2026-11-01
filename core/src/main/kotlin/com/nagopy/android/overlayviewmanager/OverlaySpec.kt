@@ -24,6 +24,15 @@ import android.view.ViewGroup
  *
  * Scope-specific rules are applied by the overlay factory. This value only validates its own
  * dimensions and normalized numeric properties.
+ *
+ * This type remains a data class throughout 3.x. New properties will be appended at the end
+ * with default values to preserve source compatibility for Kotlin constructor/copy calls and
+ * Java [Builder] usage. Java callers must use [Builder], rather than the primary constructor
+ * or generated copy method.
+ *
+ * Across 3.x minor versions, binary compatibility of constructor/copy calls from already
+ * compiled intermediate libraries is not guaranteed. Recompile those libraries against the
+ * selected version when upgrading; default values do not preserve the old JVM signatures.
  */
 public data class OverlaySpec constructor(
     public val width: Int = ViewGroup.LayoutParams.WRAP_CONTENT,

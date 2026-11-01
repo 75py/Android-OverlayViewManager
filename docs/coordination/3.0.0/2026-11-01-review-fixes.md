@@ -19,7 +19,9 @@ A4: `sample/screenshots/3.0.0/api36-timber.png` は参照なしで削除。設�
 
 A5: Javaだけの利用アプリにもkotlin-stdlibが推移的に入ることを移行ガイドに追記。
 
-## C1〜C4: ユーザー判断待ちの推奨案（未実装）
+## C1〜C4: 判断前の推奨案（履歴）
+
+以下は当初の提案。2026-11-01のユーザー決定は後述の「C1〜C4のユーザー決定と追加端末検証」で確定し、この提案より優先する。
 
 ### C1: OverlaySpec
 
@@ -94,7 +96,7 @@ ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ANDROID_SERIAL=emulator-5580 ./gr
 
 [PR71](https://github.com/75py/Android-OverlayViewManager/pull/71) head `e344aa5c05420b8c75be6a84b332090812c09ac4` は、[Codex承認](https://github.com/75py/Android-OverlayViewManager/pull/71#issuecomment-6555825058)と[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41290698222)、base/head/CLEAN/readyを確認し、`--match-head-commit` の通常mergeで `4b9b2a78cbc1ca89e1994c35d00343ae57bd7905` へ統合した。レビュー済みheadと統合SHAのcore/sampleソース/lint/build設定に差分なし。PR70のCI・文書・画像削除も同時に含む。PR71本文の検証コマンドはCodexが実行した一時Maven repository引数とconsumerを含む完全形に揃えた。
 
-今回の記録追記は文書だけで製品/テスト/build変更なし。最終release headとwork/3.0.0の同期、SHA付きClaude確認、CIは[PR66](https://github.com/75py/Android-OverlayViewManager/pull/66)の最新コメント/checksで追跡する。mainへのマージ・タグ・正式公開は実行しない。C1〜C4は引き続き提案のみで、ユーザー判断待ち。
+今回の記録追記は文書だけで製品/テスト/build変更なし。最終release headとwork/3.0.0の同期、SHA付きClaude確認、CIは[PR66](https://github.com/75py/Android-OverlayViewManager/pull/66)の最新コメント/checksで追跡する。mainへのマージ・タグ・正式公開は実行しない。この時点ではC1〜C4は提案のみでユーザー判断待ちだった。後述の追加依頼で判断が確定した。
 
 再現情報（候補e344aa5）:
 
@@ -104,3 +106,19 @@ ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ANDROID_SERIAL=emulator-5580 ./gr
 - sample test APK SHA256: `e0e93fb1aee652533953d4bc9835df7daf4d6c1bc7230a0ac9491a6675fa3576`
 
 PR72初稿 `63cf89b` の対向レビューで、Claudeは計画冒頭の旧134 testsが「現行候補」と読める点を指摘した。Codexは「Timber削除時点の候補」と時点を明記して161件の最新結果と区別した。製品コードの追加変更はない。
+
+
+## C1〜C4のユーザー決定と追加端末検証
+
+2026-11-01、ユーザーは `release/3.0.0` の `c1eafebdd04e2a3f77f84a6154d766c6d9a06980` を基点に、以下を明示決定した。上の推奨案を採用したという意味ではなく、この決定が現行方針となる。
+
+| 項目 | ユーザー決定・今回の対応 |
+| --- | --- |
+| C1 | `OverlaySpec` はdata classを維持。3.xの新プロパティはデフォルト値付きで末尾に追加する。Kotlinのconstructor/copy呼び出しとJava Builder利用のソース互換を保つ一方、コンパイル済み中間ライブラリのconstructor/copyに関するバイナリ互換はマイナーバージョン間で保証しない。JavaはBuilderを使う。KDocと移行ガイドへ明記する。 |
+| C2 | 現状維持。internalパッケージの宣言は `@RestrictTo(LIBRARY_GROUP)` とinternalパッケージ名の慣習で保護し、コードは変更しない。 |
+| C3 | 3.0.0ではAPI互換チェックを導入しない。3.0.0タグをbaselineに、3.1着手前の導入タスクを計画に追加。binary-compatibility-validatorとKotlin Gradle plugin組み込みABI validationの比較、およびAGP 9のbuilt-in Kotlinとの組合せ検証を含む。 |
+| C4 | 現状維持。AGENTS・計画・連携記録・共有設定をmainにもそのまま含める。移動や削除はしない。 |
+
+分担: Codexが専用worktree `codex-compatibility-device-validation` / `fix/3.0.0/compatibility-device-validation` でKDoc・migration・計画・本記録の編集、Gradle/AVD検証、PR、統合を所有する。既存Claude司令塔（Opus 5.5 / high）は対向レビューを担当し、元のcore KDoc所有権を今回の範囲でCodexへ移管した。端末送信request `008e4871-05f5-4d50-9e27-2e8956d18d94` に対しClaudeが明示合意。追加子agentは起動しない。
+
+受け入れ条件: 公開APIシグネチャ・enum・README未公開表記・CHANGELOG日付は不変。指定Gradle全タスクとPR CI成功、最低API23のsample connected試験を再実行し、可能なAPI26/35も実行。失敗時は修正せず原因・再現手順を報告する。release向けPRは現head対向承認とCI後に統合し、PR66へ統合SHA/CI結果をコメントする。mainマージ・タグ・正式公開はしない。現在検証中で、成功結果は未確定。

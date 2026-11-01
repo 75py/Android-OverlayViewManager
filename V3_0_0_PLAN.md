@@ -4,7 +4,9 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 2026-11-01追加依頼: PR66レビューの削除中再入・drag alpha・A1〜A5・BはPR70/71で修正・検証し、相互承認とCI成功後に `4b9b2a7` へ統合済み。161 unit tests、API36 sample31件、build/lint/publish/consumer成功。coreと設計書をClaude、CI・移行文書・計画/ログ・検証/統合をCodexが所有する。C1〜C4は推奨案のみでユーザー判断待ち。全PRのbaseはrelease/3.0.0。最新の経過は[レビュー対応記録](docs/coordination/3.0.0/2026-11-01-review-fixes.md)。
+- 2026-11-01最新依頼: C1〜C4のユーザー判断を確定。C1はdata class維持・デフォルト付き末尾追加・Kotlin constructor/copyとJava Builderのソース互換維持・中間ライブラリのconstructor/copyのminor間バイナリ互換非保証、JavaはBuilder。C2はRestrictTo/internalパッケージ慣習の現状維持、C3は3.0導入せず3.1着手前へ、C4は記録類をmainに維持。CodexがKDoc/文書/検証/統合、Claudeが対向レビューを担当。基点c1eafeb、API23必須とAPI26/35のsample connected再検証、指定Gradle全タスク・PR CIは実行中。端末失敗時は修正せず報告する。詳細は[ユーザー決定と追加検証](docs/coordination/3.0.0/2026-11-01-review-fixes.md#c1c4のユーザー決定と追加端末検証)。
+
+- 2026-11-01追加依頼: PR66レビューの削除中再入・drag alpha・A1〜A5・BはPR70/71で修正・検証し、相互承認とCI成功後に `4b9b2a7` へ統合済み。161 unit tests、API36 sample31件、build/lint/publish/consumer成功。coreと設計書をClaude、CI・移行文書・計画/ログ・検証/統合をCodexが所有する。この時点のC1〜C4推奨案は、上記の後続ユーザー決定で確定した。全PRのbaseはrelease/3.0.0。最新の経過は[レビュー対応記録](docs/coordination/3.0.0/2026-11-01-review-fixes.md)。
 
 - Timber削除統合時点の状態: **2026-11-01 JST: [PR68](https://github.com/75py/Android-OverlayViewManager/pull/68)（Timber連携の削除）を対向承認・CI成功後に `8794018` へ統合済み**。`work/3.0.0` も同SHAへfast-forwardして同期した。文書追記後を含む最新のrelease head、CI、SHA付き対向確認は [PR66](https://github.com/75py/Android-OverlayViewManager/pull/66) で追跡する。Timber削除時点の候補は134 unit tests（core 118、lint 12、sample 4）、配布はcoreのみ。Debug/Release、lint、core単体のJava/Kotlin/R8 consumerが成功し、sample全31件をAPI36で再検証した。API23/26/35は2026-10-31の検証結果を維持し、今回は再実行していない。JitPackサービス上の確認はタグ後。mainマージ・タグ・正式配布は未実施で今回の範囲外。詳細は[Timber削除の記録](docs/coordination/3.0.0/2026-11-01-remove-timber.md)。
 - 2026-10-31時点の状態: main向けリリースPR作成まで完了。PR65の修正とPR63の最終検証記録を対向承認・CI成功後に統合し、`395f2ff10109068451611a7f3573eb75b2fa923c` から `release/3.0.0` を作成、[Release 3.0.0 PR #66](https://github.com/75py/Android-OverlayViewManager/pull/66) をmain向けに作成した。必須API23/26/35/36、183 unit tests、Debug/Release、lint、独立Java/Kotlin/R8 consumer成功。追加API31のfreeform2件はhost入力非表示による未検証として記録。mainマージ・タグ・正式配布は未実施で今回の範囲外。詳細は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
@@ -624,3 +626,15 @@ PR68 head `d773e7e83890aeaa4eae9e95750c4fe2b8c02391` の[Codex承認](https://gi
 ### 2026-11-01: リリース前レビュー指摘の修正完了
 
 PR70（CI公開タスク・移行文書・未参照画像）を `87c753d`、PR71（再入・drag alpha・host listener・破棄理由・小修正）を `4b9b2a7` へ、それぞれ現SHAの対向承認とCI成功後に通常merge。旧実装での再現失敗から修正後161 unit tests/skip0、API36 sample31/31、Debug/Release・lintエラー0・publish・独立Java/Kotlin/R8 consumer成功まで確認した。物理実機・API23/26/31/35は今回再実行していない。公開APIシグネチャとenum、README未公開表記、CHANGELOG日付は不変。C1〜C4は未実装の推奨案として[レビュー対応記録](docs/coordination/3.0.0/2026-11-01-review-fixes.md)に保存した。最終文書headの対向確認・CIはPR66を参照。mainマージ・タグ・正式公開は引き続き対象外。
+
+
+## 3.1着手前のタスク: API互換チェックの導入（C3）
+
+ユーザー決定により3.0.0には導入しない。3.0.0タグ作成後、そのタグをAPI baselineとして3.1の開発着手前に以下を完了する。タグ作成自体は今回の作業範囲外。
+
+- [ ] binary-compatibility-validatorとKotlin Gradle plugin組み込みのABI validationを比較し、採用案と理由を記録する。
+- [ ] 両候補についてAGP 9のbuilt-in Kotlinと組み合わせた設定・実行可否を検証する。Kotlin二重適用を避け、利用可能なバージョン・制約を明記する。
+- [ ] 3.0.0タグからbaselineを生成し、CIで意図しない公開API差分を検出するチェックを導入する。
+- [ ] C1の互換性方針に沿う意図的なconstructor/copy差分のレビュー・baseline更新手順を決め、Java Builder/Kotlin consumer検証を併用する。
+
+担当は3.1着手前に確定する。今回の変更は計画追加のみで、プラグイン・ビルド設定・API baselineは追加しない。
