@@ -9,8 +9,6 @@ import java.util.WeakHashMap
 
 /**
  * Synchronous WindowManager adapter. Platform exceptions intentionally reach the handle.
- * Shared with the sibling opt-timber module, so it is restricted to the library group rather
- * than made `internal` -- Kotlin `internal` would not compile in `opt-timber`.
  */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public open class OverlayWindowManager @JvmOverloads constructor(private var windowManager: WindowManager? = null) {

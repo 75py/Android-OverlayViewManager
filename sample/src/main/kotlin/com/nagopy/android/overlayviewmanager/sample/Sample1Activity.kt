@@ -18,6 +18,7 @@ package com.nagopy.android.overlayviewmanager.sample
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.core.widget.TextViewCompat
@@ -26,7 +27,8 @@ import com.nagopy.android.overlayviewmanager.OverlayState
 import com.nagopy.android.overlayviewmanager.OverlayTouchMode
 import com.nagopy.android.overlayviewmanager.OverlayView
 import com.nagopy.android.overlayviewmanager.OverlayViewManager
-import timber.log.Timber
+
+private const val TAG = "Sample1Activity"
 
 /**
  * Activity-scoped overlay written in Kotlin. It is bounded by this Activity's window, so it needs
@@ -62,7 +64,7 @@ class Sample1Activity : BaseSampleWithCodeActivity() {
     fun onClick(view: View) {
         val result = if (overlayView.state == OverlayState.ATTACHED) overlayView.hide() else overlayView.show()
         if (!result.isSuccess) {
-            Timber.w(result.cause, "Sample1 show()/hide() failed: %s", result.failure)
+            Log.w(TAG, "Sample1 show()/hide() failed: ${result.failure}", result.cause)
         }
     }
 
@@ -71,7 +73,7 @@ class Sample1Activity : BaseSampleWithCodeActivity() {
         // disposing here keeps ownership explicit, and a repeated dispose() is a harmless no-op.
         val disposed = overlayView.dispose()
         if (!disposed.isSuccess) {
-            Timber.w(disposed.cause, "Sample1 dispose() failed: %s", disposed.failure)
+            Log.w(TAG, "Sample1 dispose() failed: ${disposed.failure}", disposed.cause)
         }
         super.onDestroy()
     }

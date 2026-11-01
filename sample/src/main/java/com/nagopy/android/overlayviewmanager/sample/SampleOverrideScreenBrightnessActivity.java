@@ -17,6 +17,7 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.SeekBar;
 
@@ -30,8 +31,6 @@ import com.nagopy.android.overlayviewmanager.OverlayView;
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 import com.nagopy.android.overlayviewmanager.sample.databinding.ActivitySampleOverrideScreenBrightnessBinding;
 
-import timber.log.Timber;
-
 /**
  * Activity-scoped, fully transparent overlay whose only job is to carry
  * {@link OverlaySpec#getScreenBrightness()}. Brightness override is available for activity-scoped
@@ -39,6 +38,7 @@ import timber.log.Timber;
  */
 public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBar.OnSeekBarChangeListener {
 
+    private static final String TAG = "SampleBrightness";
     private static final int INITIAL_BRIGHTNESS = 128;
 
     OverlayView<View> overlayView;
@@ -64,7 +64,7 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
     protected void onDestroy() {
         OverlayResult disposed = overlayView.dispose();
         if (!disposed.isSuccess()) {
-            Timber.w(disposed.getCause(), "dispose() failed: %s", disposed.getFailure());
+            Log.w(TAG, "dispose() failed: " + disposed.getFailure(), disposed.getCause());
         }
         super.onDestroy();
     }
@@ -74,7 +74,7 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
                 ? overlayView.hide()
                 : overlayView.show();
         if (!result.isSuccess()) {
-            Timber.w(result.getCause(), "show()/hide() failed: %s", result.getFailure());
+            Log.w(TAG, "show()/hide() failed: " + result.getFailure(), result.getCause());
         }
         binding.setIsOverrideEnabled(overlayView.getState() == OverlayState.ATTACHED);
     }
@@ -87,7 +87,7 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
                 .build();
         OverlayResult updated = overlayView.update(next);
         if (!updated.isSuccess()) {
-            Timber.w(updated.getCause(), "update() failed: %s", updated.getFailure());
+            Log.w(TAG, "update() failed: " + updated.getFailure(), updated.getCause());
         }
         binding.setBrightness(progress);
     }

@@ -599,3 +599,7 @@ PR65はhead `ca3f7e0809a966e842d19ba7ea7d102a8ef48b86`、[Codex対向承認](htt
 ### 2026-10-31: T13のリリースPR作成完了
 
 PR63 head `a47d95cb64f75fc87aa98c158b0bfc92af6b531a` の[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/63#issuecomment-6542332736)と[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41193528060)を確認し、19:41:14 JSTに `395f2ff10109068451611a7f3573eb75b2fa923c` へ通常merge。承認済みheadと同一treeであることを確認し、同SHAからrelease/3.0.0を作成/push、[main向けPR66](https://github.com/75py/Android-OverlayViewManager/pull/66)を作成した。最後の計画・ログ更新はrelease向け文書PRで相互確認し、承認済みreleaseへのfast-forwardでwork/3.0.0にも同期する。製品コードを追加変更しない。
+
+### 2026-11-01: Timber連携の削除（Codex対向レビュー待ち）
+
+ユーザーの判断を受け、前項の「製品コードを追加変更しない」を更新し、公開前に `opt-timber` を削除する変更をrelease/3.0.0向けPRとして提案した。mergeするとPR66のheadが変わるため、PR66の承認とCIは取り直しになる。公開artifactが1つになることによるJitPack座標への影響は未確認。詳細は[Timber削除の記録](docs/coordination/3.0.0/2026-11-01-remove-timber.md)。

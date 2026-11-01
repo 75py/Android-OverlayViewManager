@@ -38,10 +38,10 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble debug builds
-        run: ./gradlew :core:assembleDebug :opt-timber:assembleDebug :sample:assembleDebug
+        run: ./gradlew :core:assembleDebug :sample:assembleDebug
 
       - name: Run unit tests
-        run: ./gradlew :core:testDebugUnitTest :opt-timber:testDebugUnitTest :lint:test :sample:testDebugUnitTest
+        run: ./gradlew :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest
 
       - name: Run Android lint
         run: ./gradlew :core:lintDebug :sample:lintDebug

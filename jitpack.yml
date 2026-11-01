@@ -1,4 +1,4 @@
 jdk:
   - openjdk17
 install:
-  - ./gradlew :core:publishToMavenLocal :opt-timber:publishToMavenLocal
+  - ./gradlew :core:publishToMavenLocal
