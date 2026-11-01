@@ -19,53 +19,67 @@
 pre {
     white-space: pre-wrap;
 }
-
-
 </style>
 <ul>
-    <li>Override brightness of the screen
+    <li>Override the screen brightness with a transparent activity-scoped overlay (OverlaySpec.screenBrightness)
+    <li>Brightness override is available for activity-scoped overlays only
 </ul>
 <pre class="prettyprint">
-public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBarBindingAdapter.OnProgressChanged {
+public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBar.OnSeekBarChangeListener {
 
-    OverlayView&gt;View&lt; overlayView;
+    private static final String TAG = "SampleBrightness";
+    private static final int INITIAL_BRIGHTNESS = 128;
+
+    OverlayView&lt;View&gt; overlayView;
     ActivitySampleOverrideScreenBrightnessBinding binding;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        overlayView = OverlayViewManager.getInstance().newOverlayView(new View(this), this)
-                .setAlpha(0);
-
+        overlayView = OverlayViewManager.getInstance().newOverlayView(
+                new View(this),
+                this,
+                new OverlaySpec.Builder()
+                        .setAlpha(0f)
+                        .setScreenBrightness(INITIAL_BRIGHTNESS / 255f)
+                        .build());
         binding = DataBindingUtil.setContentView(this, R.layout.activity_sample_override_screen_brightness);
-        binding.setBrightness(128);
+        binding.setBrightness(INITIAL_BRIGHTNESS);
         binding.setOnProgressChanged(this);
         binding.setIsOverrideEnabled(false);
     }
 
     @Override
     protected void onDestroy() {
+        OverlayResult disposed = overlayView.dispose();
+        if (!disposed.isSuccess()) {
+            Log.w(TAG, "dispose() failed: " + disposed.getFailure(), disposed.getCause());
+        }
         super.onDestroy();
-        overlayView.hide();
     }
 
     public void onClick(View view) {
-        if (overlayView.isVisible()) {
-            overlayView.hide();
-            binding.setIsOverrideEnabled(false);
-        } else {
-            overlayView.show();
-            binding.setIsOverrideEnabled(true);
+        OverlayResult result = overlayView.getState() == OverlayState.ATTACHED
+                ? overlayView.hide()
+                : overlayView.show();
+        if (!result.isSuccess()) {
+            Log.w(TAG, "show()/hide() failed: " + result.getFailure(), result.getCause());
         }
+        binding.setIsOverrideEnabled(overlayView.getState() == OverlayState.ATTACHED);
     }
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        overlayView.setScreenBrightness(progress / 255f).update();
+        // Start from the effective spec and change only the requested field.
+        OverlaySpec next = overlayView.getSpec().toBuilder()
+                .setScreenBrightness(progress / 255f)
+                .build();
+        OverlayResult updated = overlayView.update(next);
+        if (!updated.isSuccess()) {
+            Log.w(TAG, "update() failed: " + updated.getFailure(), updated.getCause());
+        }
         binding.setBrightness(progress);
     }
 }
 </pre>
-
 <script src="run_prettify.js"></script>

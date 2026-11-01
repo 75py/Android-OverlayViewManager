@@ -25,7 +25,7 @@
 
         <variable
             name="onProgressChanged"
-            type="androidx.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+            type="android.widget.SeekBar.OnSeekBarChangeListener" />
     </data>
 
 
@@ -51,7 +51,7 @@
             android:layout_toEndOf="@+id/lbl_alpha"
             android:layout_toRightOf="@+id/lbl_alpha"
             android:max="100"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{alphaPercentage}" />
     </RelativeLayout>
 </layout>

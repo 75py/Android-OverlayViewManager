@@ -1,0 +1,40 @@
+# Claude司令塔の復旧とT05b開始
+
+- 記録担当: Codex（Astra / medium）
+- 状態: 作業中
+- Codex Run: run_18f7185e91aa
+- Claude Run: run_3ae778449744
+- 関連PR: #41、#44、T05b候補はまだ未作成
+
+## 統合記録の同期
+
+ユーザーの継続指示後、PR42/43が別のCodex side conversationで既に統合されていることをGitHubで確認し、重複mergeせず共有checkoutを同期した。記録PR41はhead aba231dcc4f76b22ab58674d6c518c9f878f02b0、Claude承認5645089011、CI34686311857成功を確認し、857e3c92df5bc919cb791683f254b2bfad97daf0へ統合した。
+
+PR44はPR41に積層されていたためbaseをwork/3.0.0へ変更。編集端末なし・cleanを確認した記録checkoutで最新workをmergeし、53051456ba8a5949ebe930b4aa12f97fcf199e8eへ更新した。Claudeの独立Sonnet5/highレビュー、承認5645618874、CI34690762342成功を確認し、53c2c2acf43c427a87b5359f9bb52c015ce21c92へ統合した。内容差分は従前のbbd95d7と同じ文書2ファイル。
+
+## 終了端末と復旧
+
+旧Claude司令塔term_640dc9cb-9e04-49fb-b5e0-f378eac9596cはexitedを確認。再確認時に既に新端末term_370f23ca-24a2-4331-95e9-95ffd1e18301が存在していたため、新しい司令塔を重複作成しなかった。画面でFable5.1/highと同じ会話のresumeを確認し、復旧指示request15ed99ed-f8f1-43ff-bdf2-b9c88ddc74f6のinput_accepted/turn_startedを確認した。新端末が既存Claude Runへ再bindしconsumer_generation=2となったことをrun-currentで確認した。Codex root terminal29d5648dは変更していない。
+
+それ以前の読み取り確認はClaude側permissions.blockReadsOutsideWorkingDirectoriesによるものだった。Codexは代理で許可画面を操作せずユーザーに確認を依頼した。復旧後は通常のauto modeで作業が進んでいることを確認した。
+
+Claudeの一部の対向連絡がClaude自身のRunへ送られていた。msg_50ae4766327bが同内容をCodex Runへ再送したことを明記しており、Codexはmsg_4d321fe960dbで以後の連絡先をrun:run_18f7185e91aaへ統一するよう訂正した。
+
+## T05bの担当と合意
+
+Claude所有task_90e158c9b86a / ctx_30711ca983ec / term_7c1ce045-cfa3-4961-b13f-718c9bb7f79a、worktree t05b-geometry、branch codex/t05b-geometry、base857e3c9。Sonnet5/high/autoはClaudeの報告値で、手動起動を再利用したOrca receiptのlaunch.effectiveは空。担当のlive作業を確認済み。
+
+msg_50ae4766327b / msg_4d321fe960dbで以下を合意した。
+- target-windowのframe左・上を使うscreen座標からwindow座標への変換。非ゼロ原点、landscape、edge-to-edge、RTL、frame外位置の表駆動テスト。補助windowなし。WindowMetrics/Insetsとの整合はAPI30+で確認。
+- APPLICATION showのpermission helper集約。Activity scopeはpermissionに依存しない。新しいpublic/protected test seamを追加しない。
+- attached update/hide/disposeへpermission preflightを追加しない。実backendのSecurityExceptionをPERMISSION_DENIEDに分類し、update失敗時はATTACHEDと既存effective specを保持する。equal-specのno-opを変えない。hide/disposeは権限がなくてもcleanupを試みる。
+- denied→grant→show retry、grant→show→revoke→失敗update、新handleのrevoke→showを検証する。
+- slop/pointer/opacityはT06、Activity破棄はT08。T10 consumer移行の後にT04c橋渡し除去を行い、循環依存を再導入しない。
+
+Claude環境のJDK読取制限があるため、候補SHAと必要なコマンドを集約してCodex司令塔が直接実行する。追加Codex検証子は起動しない。既知のsandbox失敗を検証のために繰り返す必要はなく、実行前は未検証として引き渡す。
+
+## 20:43 許可確認と事前レビュー
+
+ユーザーから、PR44 head/base読み取り確認を許可したとの返信を受領した。PR44は既に統合済みで、Claude司令塔の通常auto modeとT05bの継続を画面で確認した。これはJDK全体など別のアクセスへの包括的許可とは扱わない。
+
+msg_47cf5ccc42acで統合SHAを共有し、T05bの未コミットhelperに対する事前指摘を伝えた。WindowMetricsをdisplay全体の情報とする説明、任意gravityを持つAPI全体でTOP|LEFTが常に適用されるとの説明、visible frameだけで全window設定を扱えるとの断定は根拠が不足している。合意済みAPI30+ Metrics/Insets整合確認を実装担当・独立レビュー担当が確認し、純粋な座標減算テストとframework上の検証を区別するよう依頼した。候補未確定のため、この時点でT05bの承認・検証成功とは扱わない。

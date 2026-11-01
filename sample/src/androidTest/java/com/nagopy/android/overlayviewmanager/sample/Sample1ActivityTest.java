@@ -1,20 +1,21 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 
-import android.Manifest;
 import android.os.Build;
-import androidx.test.InstrumentationRegistry;
+import android.view.View;
+import android.widget.TextView;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.espresso.Espresso;
 import androidx.test.espresso.ViewInteraction;
 import androidx.test.espresso.matcher.RootMatchers;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.rule.GrantPermissionRule;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
-import com.nagopy.android.overlayviewmanager.OverlayViewManager;
-import com.nagopy.android.overlayviewmanager.internal.ScreenMonitor;
+import com.nagopy.android.overlayviewmanager.OverlaySpec;
+import com.nagopy.android.overlayviewmanager.OverlayState;
+import com.nagopy.android.overlayviewmanager.OverlayTouchMode;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,13 +34,14 @@ import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.JELLY_BEAN_MR2)
 @RunWith(AndroidJUnit4.class)
 public class Sample1ActivityTest {
 
     @Rule
-    public GrantPermissionRule grantPermissionRule = GrantPermissionRule.grant(Manifest.permission.SYSTEM_ALERT_WINDOW);
+    public GrantOverlayPermissionRule grantPermissionRule = new GrantOverlayPermissionRule();
 
     @Rule
     public ActivityTestRule<Sample1Activity> mActivityTestRule = new ActivityTestRule<>(Sample1Activity.class);
@@ -49,10 +51,10 @@ public class Sample1ActivityTest {
 
     @Before
     public void setup() {
+        // SampleApplication already initialized OverlayViewManager on the main thread; init() is
+        // main-thread only, so the instrumentation thread must not call it again here.
         uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         activity = mActivityTestRule.getActivity();
-
-        OverlayViewManager.init(activity.getApplication());
     }
 
     private void waitALittle() {
@@ -86,8 +88,10 @@ public class Sample1ActivityTest {
         appCompatButton2.perform(click());
 
         waitALittle();
-        ScreenMonitor.getInstance().cancelForce();
-
+        // state is a thread-safe read: the show() requested by the button succeeded. lastFailure
+        // is included so a failing run explains why the window was not attached.
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.ATTACHED, activity.getOverlayView().getState());
         ViewInteraction textView4 = onView(
                 allOf(withId(R.id.sample_text_view), withText("click:0"), isDisplayed()))
                 .inRoot(RootMatchers.withDecorView(not(is(activity.getWindow().getDecorView()))));
@@ -99,8 +103,6 @@ public class Sample1ActivityTest {
         textView4.perform(click());
 
         waitALittle();
-        ScreenMonitor.getInstance().cancelForce();
-
         ViewInteraction textView6 = onView(
                 allOf(withId(R.id.sample_text_view), withText("click:1"), isDisplayed()))
                 .inRoot(RootMatchers.withDecorView(not(is(activity.getWindow().getDecorView()))));
@@ -112,12 +114,17 @@ public class Sample1ActivityTest {
 
         for (int i = 0; i < 10; i++) {
             waitALittle();
-            ScreenMonitor.getInstance().cancelForce();
-
             int[] location = new int[2];
-            activity.overlayView.getView().getLocationOnScreen(location);
-            int w = activity.overlayView.getView().getMeasuredWidth();
-            int h = activity.overlayView.getView().getMeasuredHeight();
+            int[] size = new int[2];
+            // OverlayView.getView() is main-thread only.
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                TextView view = activity.getOverlayView().getView();
+                view.getLocationOnScreen(location);
+                size[0] = view.getMeasuredWidth();
+                size[1] = view.getMeasuredHeight();
+            });
+            int w = size[0];
+            int h = size[1];
             int startX = location[0] + w / 2;
             int startY = location[1] + h / 2;
             int step = (int) (100 * new Random().nextDouble() + 50);
@@ -155,5 +162,103 @@ public class Sample1ActivityTest {
             }
             uiDevice.drag(startX, startY, endX, endY, step);
         }
+        // Dragging moves the window but never detaches it.
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.ATTACHED, activity.getOverlayView().getState());
+    }
+
+    @Test
+    public void hideThenShow_reattaches() {
+        waitALittle();
+
+        ViewInteraction button = onView(allOf(withId(R.id.button), isDisplayed()));
+        button.perform(click());
+        waitALittle();
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.ATTACHED, activity.getOverlayView().getState());
+
+        button.perform(click());
+        waitALittle();
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.CONFIGURED, activity.getOverlayView().getState());
+
+        button.perform(click());
+        waitALittle();
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.ATTACHED, activity.getOverlayView().getState());
+    }
+
+    @Test
+    public void activityRecreated_rebuildsAndShowsOverlay() throws Exception {
+        waitALittle();
+
+        onView(allOf(withId(R.id.button), isDisplayed())).perform(click());
+        waitALittle();
+        assertEquals(OverlayState.ATTACHED, activity.getOverlayView().getState());
+
+        activity.runOnUiThread(() -> activity.recreate());
+        waitALittle();
+        Sample1Activity recreated = mActivityTestRule.getActivity();
+        // The recreated Activity owns a fresh, unattached handle.
+        assertEquals(OverlayState.CONFIGURED, recreated.getOverlayView().getState());
+
+        onView(allOf(withId(R.id.button), isDisplayed())).perform(click());
+        waitALittle();
+        assertEquals("lastFailure=" + recreated.getOverlayView().getLastFailure(),
+                OverlayState.ATTACHED, recreated.getOverlayView().getState());
+    }
+
+    @Test
+    public void passThroughTouchMode_deliversClickToWindowBelow() {
+        waitALittle();
+
+        onView(allOf(withId(R.id.button), isDisplayed())).perform(click());
+        waitALittle();
+        assertEquals(OverlayState.ATTACHED, activity.getOverlayView().getState());
+
+        // Center the overlay on the toggle button so the same screen point is inside both.
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            View overlay = activity.getOverlayView().getView();
+            View button = activity.findViewById(R.id.button);
+            int[] overlayPos = new int[2];
+            int[] buttonPos = new int[2];
+            overlay.getLocationOnScreen(overlayPos);
+            button.getLocationOnScreen(buttonPos);
+            OverlaySpec current = activity.getOverlayView().getSpec();
+            OverlaySpec spec = current.toBuilder()
+                    .setX(buttonPos[0] + button.getWidth() / 2 - overlay.getMeasuredWidth() / 2
+                            - overlayPos[0] + current.getX())
+                    .setY(buttonPos[1] + button.getHeight() / 2 - overlay.getMeasuredHeight() / 2
+                            - overlayPos[1] + current.getY())
+                    .build();
+            activity.getOverlayView().update(spec);
+        });
+        waitALittle();
+
+        int[] center = new int[2];
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            View overlay = activity.getOverlayView().getView();
+            int[] overlayPos = new int[2];
+            overlay.getLocationOnScreen(overlayPos);
+            center[0] = overlayPos[0] + overlay.getMeasuredWidth() / 2;
+            center[1] = overlayPos[1] + overlay.getMeasuredHeight() / 2;
+        });
+
+        // In DRAGGABLE mode the overlay itself consumes the tap as a click.
+        uiDevice.click(center[0], center[1]);
+        waitALittle();
+        assertEquals(OverlayState.ATTACHED, activity.getOverlayView().getState());
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
+                assertEquals("click:1", ((TextView) activity.getOverlayView().getView()).getText().toString()));
+
+        // PASS_THROUGH mode lets the same tap reach the button below and hide the overlay.
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
+                activity.getOverlayView().update(activity.getOverlayView().getSpec().toBuilder()
+                        .setTouchMode(OverlayTouchMode.PASS_THROUGH).build()));
+        waitALittle();
+        uiDevice.click(center[0], center[1]);
+        waitALittle();
+        assertEquals("lastFailure=" + activity.getOverlayView().getLastFailure(),
+                OverlayState.CONFIGURED, activity.getOverlayView().getState());
     }
 }

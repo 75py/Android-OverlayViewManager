@@ -19,9 +19,6 @@ package com.nagopy.android.overlayviewmanager.sample;
 import android.app.Application;
 
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
-import com.nagopy.android.overlayviewmanager.opt.timber.DebugOverlayTree;
-
-import timber.log.Timber;
 
 public class SampleApplication extends Application {
 
@@ -30,9 +27,6 @@ public class SampleApplication extends Application {
         super.onCreate();
 
         OverlayViewManager.init(this);
-
-        Timber.plant(new Timber.DebugTree());
-        Timber.plant(DebugOverlayTree.init(this));
     }
 
 }

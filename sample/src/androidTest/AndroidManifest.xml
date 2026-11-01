@@ -14,8 +14,13 @@
   ~ limitations under the License.
   -->
 
-<manifest xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-sdk tools:overrideLibrary="android.support.test.uiautomator.v18" />
-
+    <application>
+        <!-- Runs in the test APK's own process and UID, so it is a cross-UID touch target for the
+             sample app's overlays. Exported so that the shell can start it. -->
+        <activity
+            android:name="com.nagopy.android.overlayviewmanager.sample.TapReceiverActivity"
+            android:exported="true" />
+    </application>
 </manifest>

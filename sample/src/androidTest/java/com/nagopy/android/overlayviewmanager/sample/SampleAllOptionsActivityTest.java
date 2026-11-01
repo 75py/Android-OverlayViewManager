@@ -17,7 +17,6 @@
 package com.nagopy.android.overlayviewmanager.sample;
 
 
-import android.Manifest;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import androidx.test.espresso.Espresso;
@@ -29,9 +28,11 @@ import androidx.test.espresso.action.Press;
 import androidx.test.espresso.action.Tap;
 import androidx.test.espresso.assertion.ViewAssertions;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.rule.GrantPermissionRule;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.cardview.widget.CardView;
+
+import com.nagopy.android.overlayviewmanager.OverlayState;
+
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
@@ -49,12 +50,13 @@ import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(AndroidJUnit4.class)
 public class SampleAllOptionsActivityTest {
 
     @Rule
-    public GrantPermissionRule grantPermissionRule = GrantPermissionRule.grant(Manifest.permission.SYSTEM_ALERT_WINDOW);
+    public GrantOverlayPermissionRule grantPermissionRule = new GrantOverlayPermissionRule();
 
     @Rule
     public ActivityTestRule<SampleAllOptionsActivity> mActivityTestRule = new ActivityTestRule<>(SampleAllOptionsActivity.class);
@@ -107,27 +109,20 @@ public class SampleAllOptionsActivityTest {
 
                 activity.binding.scrollView.smoothScrollTo(0, active.getBottom() - active.getMeasuredHeight());
                 active.setCardBackgroundColor(Color.argb(100, 255, 255, 0));
-                switch (active.getId()) {
-                    case R.id.parent_flags:
-                        break;
-                    case R.id.parent_width:
-                        activity.overlayView.getView().setText("OverlayView#setWidth(int)");
-                        break;
-                    case R.id.parent_height:
-                        activity.overlayView.getView().setText("OverlayView#setHeight(int)");
-                        break;
-                    case R.id.parent_xy:
-                        activity.overlayView.getView().setText("OverlayView#setX(int), setY(int)");
-                        break;
-                    case R.id.parent_alpha:
-                        activity.overlayView.getView().setText("OverlayView#setAlpha(float)");
-                        break;
-                    case R.id.parent_gravity:
-                        activity.overlayView.getView().setText("OverlayView#setGravity(int)");
-                        break;
-                    case R.id.parent_margins:
-                        activity.overlayView.getView().setText("OverlayView#setVerticalMargin(float), setHorizontalMargin(float)");
-                        break;
+                if (active.getId() == R.id.parent_flags) {
+                    return;
+                } else if (active.getId() == R.id.parent_width) {
+                    activity.overlayView.getView().setText("OverlaySpec.Builder#setWidth(int)");
+                } else if (active.getId() == R.id.parent_height) {
+                    activity.overlayView.getView().setText("OverlaySpec.Builder#setHeight(int)");
+                } else if (active.getId() == R.id.parent_xy) {
+                    activity.overlayView.getView().setText("OverlaySpec.Builder#setX(int), setY(int)");
+                } else if (active.getId() == R.id.parent_alpha) {
+                    activity.overlayView.getView().setText("OverlaySpec.Builder#setAlpha(float)");
+                } else if (active.getId() == R.id.parent_gravity) {
+                    activity.overlayView.getView().setText("OverlaySpec.Builder#setGravity(int)");
+                } else if (active.getId() == R.id.parent_margins) {
+                    activity.overlayView.getView().setText("OverlaySpec.Builder#setVerticalMargin(float), setHorizontalMargin(float)");
                 }
             }
         });
@@ -149,6 +144,8 @@ public class SampleAllOptionsActivityTest {
         ViewInteraction showButton = onView(withId(R.id.btn_show));
         showButton.check(ViewAssertions.matches(withText("show()")));
         performAndWait(showButton, scrollTo(), click());
+        assertEquals("lastFailure=" + activity.overlayView.getLastFailure(),
+                OverlayState.ATTACHED, activity.overlayView.getState());
 
         // Width
         if (!skipWidth) {
@@ -305,6 +302,9 @@ public class SampleAllOptionsActivityTest {
             }
             performAndWait(seekMarginHorizontal, scrollTo(), clickSeekBar(0));
         }
+        // Every update() above kept the window attached.
+        assertEquals("lastFailure=" + activity.overlayView.getLastFailure(),
+                OverlayState.ATTACHED, activity.overlayView.getState());
     }
 
     // https://qiita.com/yakitorizanmai/items/07c730db6bfccd5ff95f

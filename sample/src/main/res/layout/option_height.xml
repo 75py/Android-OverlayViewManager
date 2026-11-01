@@ -33,7 +33,7 @@
 
         <variable
             name="onProgressChanged"
-            type="androidx.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+            type="android.widget.SeekBar.OnSeekBarChangeListener" />
 
         <variable
             name="onRadioCheckedChangeListener"
@@ -98,7 +98,7 @@
             android:layout_toEndOf="@+id/lbl_height_px"
             android:enabled="@{heightCheckId == @id/rbtn_height_px}"
             android:max="@{displayHeight}"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{heightPixels}"
             android:layout_toRightOf="@+id/lbl_height_px" />
 

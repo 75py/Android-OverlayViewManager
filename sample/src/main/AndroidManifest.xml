@@ -14,14 +14,10 @@
   ~ limitations under the License.
   -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.nagopy.android.overlayviewmanager.sample">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Read the Javascript file for code highlighting -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <uses-sdk tools:overrideLibrary="android.support.test.uiautomator.v18" />
 
     <application
         android:name=".SampleApplication"
@@ -49,11 +45,8 @@
             android:name=".Sample2Activity"
             android:label="@string/title_sample2_depends_on_service" />
         <activity
-            android:name=".SampleTimberActivity"
-            android:label="@string/title_sample3_timber_depends_on_activity" />
-        <activity
             android:name=".SampleOverrideScreenBrightnessActivity"
-            android:label="@string/title_sample4_override_brightness" />
+            android:label="@string/title_sample3_override_brightness" />
 
         <service android:name=".Sample2Activity$Sample2Service" />
     </application>

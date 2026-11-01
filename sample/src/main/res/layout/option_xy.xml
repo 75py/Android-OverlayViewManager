@@ -36,7 +36,7 @@
 
         <variable
             name="onProgressChanged"
-            type="androidx.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+            type="android.widget.SeekBar.OnSeekBarChangeListener" />
     </data>
 
 
@@ -61,7 +61,7 @@
             android:layout_toEndOf="@+id/lbl_x"
             android:layout_toRightOf="@+id/lbl_x"
             android:max="@{displayWidth * 2}"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{xSeek}" />
 
         <TextView
@@ -81,7 +81,7 @@
             android:layout_toEndOf="@+id/lbl_y"
             android:layout_toRightOf="@+id/lbl_y"
             android:max="@{displayHeight * 2}"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{ySeek}" />
 
     </RelativeLayout>

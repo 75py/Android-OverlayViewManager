@@ -32,7 +32,7 @@
 
         <variable
             name="onProgressChanged"
-            type="androidx.databinding.adapters.SeekBarBindingAdapter.OnProgressChanged" />
+            type="android.widget.SeekBar.OnSeekBarChangeListener" />
 
         <variable
             name="onRadioCheckedChangeListener"
@@ -98,7 +98,7 @@
             android:layout_toRightOf="@+id/lbl_width_px"
             android:enabled="@{widthCheckId == @id/rbtn_width_px}"
             android:max="@{displayWidth}"
-            android:onProgressChanged="@{onProgressChanged}"
+            android:onSeekBarChangeListener="@{onProgressChanged}"
             android:progress="@{widthPixels}" />
 
     </RelativeLayout>

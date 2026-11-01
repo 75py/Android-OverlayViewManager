@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:checked="@{isTouchable}"
             android:onCheckedChanged="@{onCheckedChangeListener}"
-            android:text="setTouchable" />
+            android:text="INTERACTIVE (touchable)" />
 
         <CheckBox
             android:id="@+id/chk_draggable"
@@ -55,7 +55,7 @@
             android:layout_height="wrap_content"
             android:checked="@{isDraggable}"
             android:onCheckedChanged="@{onCheckedChangeListener}"
-            android:text="setDraggable" />
+            android:text="DRAGGABLE" />
 
         <CheckBox
             android:id="@+id/chk_allowViewToExtendOutsideScreen"
@@ -63,6 +63,6 @@
             android:layout_height="wrap_content"
             android:checked="@{allowViewToExtendOutsideScreen}"
             android:onCheckedChanged="@{onCheckedChangeListener}"
-            android:text="setOverlayAboveNavigationViews" />
+            android:text="allowOutsideBounds (system bars not guaranteed)" />
     </LinearLayout>
 </layout>
