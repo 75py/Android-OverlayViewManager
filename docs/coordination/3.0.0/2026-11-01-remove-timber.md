@@ -61,7 +61,8 @@ Codex側の結果（実行はすべてCodex。`320f671` と `a908cb4` の差はH
 実行コマンド（review worktree）:
 
 ```sh
-ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ./gradlew :core:assembleDebug :sample:assembleDebug :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest :core:lintDebug :sample:lintDebug :sample:assembleRelease :sample:assembleDebugAndroidTest :core:publishToMavenLocal -Dmaven.repo.local=/private/tmp/ovm-remove-timber-maven-20261101
+export ANDROID_HOME=/Users/ai-seb/Library/Android/sdk
+./gradlew :core:assembleDebug :sample:assembleDebug :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest :core:lintDebug :sample:lintDebug :sample:assembleRelease :sample:assembleDebugAndroidTest :core:publishToMavenLocal -Dmaven.repo.local=/private/tmp/ovm-remove-timber-maven-20261101
 ./gradlew -p /private/tmp/ovm-remove-timber-consumer-20261101 :app:assembleRelease :app:lintRelease --refresh-dependencies
 ANDROID_SERIAL=emulator-5580 ./gradlew :sample:connectedDebugAndroidTest
 ./gradlew :sample:assembleDebug
