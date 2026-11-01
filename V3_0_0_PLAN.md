@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 状態: **2026-11-01 JST: [PR68](https://github.com/75py/Android-OverlayViewManager/pull/68)（Timber連携の削除）のレビュー・CI・統合待ち**。統合するとPR66のheadが変わるため、PR66のCIと承認を取り直す。現行候補は134 unit tests（core 118、lint 12、sample 4）、配布はcoreのみ。Debug/Release、lint、core単体のJava/Kotlin/R8 consumerが成功し、sample全31件をAPI36で再検証した。API23/26/35は2026-10-31の検証結果を維持し、今回は再実行していない。JitPackサービス上の確認はタグ後。mainマージ・タグ・正式配布は未実施で今回の範囲外。詳細は[Timber削除の記録](docs/coordination/3.0.0/2026-11-01-remove-timber.md)。
+- 状態: **2026-11-01 JST: [PR68](https://github.com/75py/Android-OverlayViewManager/pull/68)（Timber連携の削除）を対向承認・CI成功後に `8794018` へ統合済み**。`work/3.0.0` も同SHAへfast-forwardして同期した。文書追記後を含む最新のrelease head、CI、SHA付き対向確認は [PR66](https://github.com/75py/Android-OverlayViewManager/pull/66) で追跡する。現行候補は134 unit tests（core 118、lint 12、sample 4）、配布はcoreのみ。Debug/Release、lint、core単体のJava/Kotlin/R8 consumerが成功し、sample全31件をAPI36で再検証した。API23/26/35は2026-10-31の検証結果を維持し、今回は再実行していない。JitPackサービス上の確認はタグ後。mainマージ・タグ・正式配布は未実施で今回の範囲外。詳細は[Timber削除の記録](docs/coordination/3.0.0/2026-11-01-remove-timber.md)。
 - 2026-10-31時点の状態: main向けリリースPR作成まで完了。PR65の修正とPR63の最終検証記録を対向承認・CI成功後に統合し、`395f2ff10109068451611a7f3573eb75b2fa923c` から `release/3.0.0` を作成、[Release 3.0.0 PR #66](https://github.com/75py/Android-OverlayViewManager/pull/66) をmain向けに作成した。必須API23/26/35/36、183 unit tests、Debug/Release、lint、独立Java/Kotlin/R8 consumer成功。追加API31のfreeform2件はhost入力非表示による未検証として記録。mainマージ・タグ・正式配布は未実施で今回の範囲外。詳細は[最終検証記録](docs/coordination/3.0.0/2026-10-31-release-validation.md)。
 - 作業・統合ブランチ: `work/3.0.0`。
 - 分岐元: ローカル `main` の `c71f7fb950ee2a4ce6cba00be82d1b6e02226789`。作成時のローカル `origin/main` も同一。2026-09-12 JSTのfetchでもorigin/mainは同一。
@@ -118,12 +118,12 @@ sampleのエラーは `SampleAllOptionsActivity` と `SampleOverrideScreenBright
 | T04c | 一時互換APIの最終除去 | Claude実装・Codex対向承認（実際はDevin実装・Claudeレビュー） | T07, T10 | 統合済み: PR61 2c256a8（Devin再実装、旧Claude worktreeの7d5af7b/WIPは不採用）、JVM可視性の追補PR62 208588f。両PRともCI成功。PR62はCodex承認なし・ユーザー許可でマージ |
 | T05 | 監視・座標・権限境界の見直し | Claude（T05aテスト修正のみCodexが直接実施） | T04b | 実装統合済み。必須matrixの権限・実座標検証成功、追加修正PR65を497a5e2へ統合済み |
 | T06 | タッチ透過・ドラッグの互換性改善 | Claude | T05b実装統合 | 実装統合済み。別UIDはPR64で検証/統合、最終drag/freeformはAPI35/36成功。PR65を497a5e2へ統合済み |
-| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `c13acee`、40 tests成功・lintエラー0/警告2・3 module build成功。最終相互承認・CI成功後6c9e2aaへ統合済み。2026-11-01: ユーザー判断でTimber連携自体を削除（PR68、レビュー/CI/統合待ち） |
+| T07 | Timber連携の安全性改善 | Claude | T01 | 段階1〜3統合済み（PR37）。寿命L1〜L7はPR54 head `c13acee`、40 tests成功・lintエラー0/警告2・3 module build成功。最終相互承認・CI成功後6c9e2aaへ統合済み。2026-11-01: ユーザー判断でTimber連携自体を削除（PR68、`8794018` へ統合済み） |
 | T08 | 初期化・Activity寿命・リソース解放 | Claude | T05, T06実装統合 | 統合済み（PR51 d6ccdf2、111 tests成功） |
 | T09 | カスタムlintの修正・配布 | Claude | T03, T06 | 統合済み（T09a PR42 65c7e95、stage 2はPR61 2c256a8）。Kotlinの`OverlaySpec(allowOutsideBounds = true)`/`copy`は未検出で、移行ガイドに既知の制限として記載 |
 | T10 | sample・README・3.0移行ガイド | Claude: sample / Codex: docs、相互レビュー | T07寿命統合、T08、T09 stage 1 | 完了: PR57 c298798 / PR56 9708061へ統合。現SHA対向承認・CI成功、API36端末3件・HTML表示・リンク確認済み |
-| T11 | 3.0.0バージョン・成果物の整備 | Claude実装、Codex最終検証 | T10, T04c | 完了: 3.0.0/id10、AAR/POM/sources/consumer rules/lint.jar、独立Java/Kotlin/R8 consumer成功。JitPackサービス上のビルドはユーザー判断に従いタグ作成後。2026-11-01: 配布をcoreのみとし、導入座標を `com.github.75py:Android-OverlayViewManager` へ変更、core単体consumer成功（PR68、レビュー/CI/統合待ち） |
-| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 完了: PR65/63の対向承認・CI成功を確認し395f2ffへ統合。183 unit tests、必須端末matrix成功。追加API31 freeform2件は前提不成立の未検証（詳細記録参照）。2026-11-01: Timber削除後の候補で134 unit tests、API36 sample全31件成功。API23/26/35は10/31の結果を維持（PR68、レビュー/CI/統合待ち） |
+| T11 | 3.0.0バージョン・成果物の整備 | Claude実装、Codex最終検証 | T10, T04c | 完了: 3.0.0/id10、AAR/POM/sources/consumer rules/lint.jar、独立Java/Kotlin/R8 consumer成功。JitPackサービス上のビルドはユーザー判断に従いタグ作成後。2026-11-01: 配布をcoreのみとし、導入座標を `com.github.75py:Android-OverlayViewManager` へ変更、core単体consumer成功（PR68、`8794018` へ統合済み） |
+| T12 | 統合検証・端末試験・最終相互レビュー | 両司令塔 | T11 | 完了: PR65/63の対向承認・CI成功を確認し395f2ffへ統合。183 unit tests、必須端末matrix成功。追加API31 freeform2件は前提不成立の未検証（詳細記録参照）。2026-11-01: Timber削除後の候補で134 unit tests、API36 sample全31件成功。API23/26/35は10/31の結果を維持（PR68、`8794018` へ統合済み） |
 | T13 | release/3.0.0作成・mainへのPR | Codex、Claude確認 | T12 | 完了: 395f2ffからrelease/3.0.0を作成しmain向けPR66を作成。mainマージ・タグ・配布は未実施・対象外 |
 
 T02とT01、T04とT07などは編集範囲が独立する場合に並列実行する。T03中のビルド検証や、T04〜T06・T08の同一coreファイル変更は直列化する。大きいタスクはファイル所有範囲が明確な小PRへ分割してよい。
@@ -246,8 +246,8 @@ T02とT01、T04とT07などは編集範囲が独立する場合に並列実行�
 - [x] `release/3.0.0` → `main` のPR #66を作成する。版、変更要約、移行方法、検証結果、既知の制限、関連PRを記載し、Claude司令塔へ最終確認を依頼済み。
 - [ ] ユーザーへreleaseブランチ、main向けPR URL、実施済み検証、残課題、利用したエージェント構成を報告する。
 - [x] 2026-11-01: Timber削除後の候補で全ローカルテスト134件、lint、Debug/Release、core単体consumer、API36 sample全31件を確認する。API23/26/35は10/31の結果を維持する。
-- [ ] 2026-11-01: PR68の現head対向承認・CI確認後にrelease/3.0.0へ統合し、統合SHAをPR66コメントへ記録、work/3.0.0を承認済みreleaseへfast-forwardする。merge操作はCodex。
-- [ ] 2026-11-01: PR66の現headのCIと対向確認を取り直す。
+- [x] 2026-11-01: PR68の現head対向承認・CI成功後に `8794018` へ統合し、統合SHAをPR66コメントへ記録、work/3.0.0を同SHAへfast-forwardしてpushした。merge操作はCodex。
+- 文書追記後を含むPR66の現headごとのCIと対向確認は、同PRのchecksとSHA付き確認コメントで追跡する。
 
 受け入れ条件: 検証済みリリース候補のmain向けPRが存在する。未解決の不具合・未実施試験・承認状態を隠さない。
 
@@ -611,3 +611,9 @@ PR63 head `a47d95cb64f75fc87aa98c158b0bfc92af6b531a` の[Claude承認](https://g
 ### 2026-11-01: Timber連携の削除（Codex対向レビュー待ち）
 
 ユーザーの判断を受け、前項の「製品コードを追加変更しない」を更新し、公開前に `opt-timber` を削除する変更を[PR68](https://github.com/75py/Android-OverlayViewManager/pull/68)としてrelease/3.0.0向けに提案した。Codexが差分レビューと検証を完了した。134 unit tests、API36 sample全31件、core単体consumerが成功し、API23/26/35は10/31の結果を維持する。導入座標は `com.github.75py:Android-OverlayViewManager` へ変更し、JitPackサービス上の確認はタグ後とする。mergeするとPR66のheadが変わるため、PR66の承認とCIは取り直しになる。PR68の現head承認・CI・統合は待ち。詳細は[Timber削除の記録](docs/coordination/3.0.0/2026-11-01-remove-timber.md)。
+
+### 2026-11-01: Timber削除の統合完了
+
+PR68 head `d773e7e83890aeaa4eae9e95750c4fe2b8c02391` の[Codex承認](https://github.com/75py/Android-OverlayViewManager/pull/68#issuecomment-6555266404)と[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41286948503)、base `release/3.0.0`、同一head、CLEANを確認し、通常mergeで `8794018bcc6d67d338982bfaeaddef78db821540` へ統合した。承認headと統合SHAのtree差分なし。`work/3.0.0` も同SHAへfast-forward/push済み。[PR66の統合記録](https://github.com/75py/Android-OverlayViewManager/pull/66#issuecomment-6555284723)と本文を更新した。
+
+本追記は計画・連携記録だけで、製品・テスト・ビルド設定に変更はない。最新release headのCIとClaude確認はPR66のchecksとSHA付きコメントを参照する。mainへのmerge、タグ、正式配布は引き続き対象外。
