@@ -1,6 +1,6 @@
 # 2026-11-01 リリース前レビュー指摘への対応
 
-状態: 修正・検証中。基点は PR66 の `a79dcb8254d83eaf72784f524f34a12d68668cb7`。今回の依頼は、妥当性確認、再現する問題の修正、回帰テスト、現headの相互レビューとCI成功を経た `release/3.0.0` への反映まで。mainマージ・タグ・正式公開は対象外。
+状態: PR70・PR71を相互承認/CI成功後に統合済み。基点は PR66 の `a79dcb8254d83eaf72784f524f34a12d68668cb7`。今回の依頼は、妥当性確認、再現する問題の修正、回帰テスト、現headの相互レビューとCI成功を経た `release/3.0.0` への反映まで。mainマージ・タグ・正式公開は対象外。
 
 ## 所有と合意
 
@@ -54,3 +54,51 @@ ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ./gradlew :core:assembleDebug :sa
 ```
 
 公開先を一時Maven repositoryへ隔離しているが、実行するpublishタスクはJitPackと同じ。`git diff --check` 成功。core修正後の検証、相互レビュー、CI、統合は未完了。
+
+
+### 再現と修正の検証
+
+実装は既存Claude Code司令塔（Opus 5.5 / high）が担当し、Codexが直接レビュー・検証した。追加の子agentは起動していない。ClaudeのsandboxからOrca inboxを読めなかったため、補足と結果はterminal sendでも再共有し、双方の回答を確認した。
+
+最初のテストcommit `a231952` は、旧製品コードに対して70件中18件失敗。仕様整理後のテストだけのcommit `b036288` は72件中21件失敗（Lifecycle10件中2、State32件中9、Drag30件中10）。後者は、spec.alphaを利用者の値として保持し、一時表示はwindow alphaとして検証する仕様に合わせたもの。旧実装の二重remove、DISPOSEDの上書き、host listenerの消失、Activity破棄後の誤分類、mode変更後のalpha残留、明示alphaの上書き、復元失敗後の透明度累積を再現した。追加テストだけでなく、既存のdragテストも実際のwindow alphaを検証するよう更新した。
+
+`381e827` がcore修正、`e344aa5c05420b8c75be6a84b332090812c09ac4` がレビュー補正後の候補。CodexはNOT_ATTACHEDのKDocがdispose時のDISPOSEDを表現できていない点、設計書の「異なるspecだけを適用」が復元失敗後のequal update再適用と矛盾する点、通常CANCELのwindow alpha assertionを指摘し、Claudeが修正した（request `bdbebee7-b24c-4199-8e59-69a1402b5028`）。
+
+| 指摘 | 結論・修正 |
+| --- | --- |
+| 削除中の再入 | 妥当。removeは一度だけ。再入hideはno-op、再入disposeは参照を解放しDISPOSEDを維持。通常の削除失敗はATTACHEDを保ちretry可能。再入disposeが既に解放した後の削除失敗は外側へ報告するがDISPOSEDを戻さない。この境界も文書化。 |
+| drag alpha | 妥当。spec.alphaは利用者の値を保ち、windowだけを一時的に0.6倍。モード変更、UP/CANCEL、hide/disposeで終了し、明示値を古いbackupで上書きしない。復元失敗後はequal updateでも再適用できる。 |
+| A1 | 妥当。非DRAGGABLEの生成・show・update・releaseはhost listenerを触らない。library listenerの切替だけsetOnTouchListenerを呼ぶ。DRAGGABLE中はlibraryがlistenerを所有し、hostが直接置換したlistenerも解除時に消える制約はPR71本文で明示した。 |
+| A2 | 妥当。Activity破棄経由で処分したhandleのshow/updateはACTIVITY_DESTROYED。通常disposeは従来の分類を維持。 |
+| A3/A4/A5/B | 指摘を確認し、CI公開タスク、Timberの現行記述/画像、stdlib説明、到達不能SDK分岐、例外判定コメント、MOVEログ、license headersを修正。 |
+
+`e344aa5` に対するCodexの実行コマンド:
+
+```sh
+ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ./gradlew :core:assembleDebug :sample:assembleDebug :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest :core:lintDebug :sample:lintDebug :core:assembleRelease :core:publishToMavenLocal :sample:assembleDebugAndroidTest -Dmaven.repo.local=/private/tmp/ovm-review-core-maven-20261101
+ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ./gradlew -p /private/tmp/ovm-review-core-consumer-20261101 :app:assembleRelease :app:lintRelease --refresh-dependencies
+ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ANDROID_SERIAL=emulator-5580 ./gradlew :sample:connectedDebugAndroidTest
+```
+
+- 最初のbuild/unit/lint/publishは176 tasks成功。unitはcore145/lint12/sample4の計161件、failure/error/skipは0。旧134件から27件増加。lintはcore警告6/sample警告55、エラー0。
+- 独立したJava/Kotlin consumerはR8有効のRelease・lint、45 tasks成功。意図的なALLOW_OUTSIDE_BOUNDS警告1件とfixture由来3件、エラー0。
+- Releaseのclassファイルをjavapで比較し、syntheticを除いたJavaから呼べるpublic/protected宣言15クラスに変更なし。追加helperはinternalかつJvmSynthetic。enum値も変更なし。API検査プラグインの導入ではなく、一時的な比較のみ。
+- API36 sample端末試験は31/31成功（freeform2件を含む）、failure/error/skip0、4分4秒。専用AVDのfreeform設定を元のnullへ復元しemulator5580を終了した。無関係の5554は操作していない。物理実機およびAPI23/26/31/35は今回未検証。今回の再入・モード切替の直接再現はRobolectric/backend callbackによるもので、実機再現とは区別する。
+
+### PR70の統合
+
+[PR70](https://github.com/75py/Android-OverlayViewManager/pull/70) head `e8f39de71899ff6d96bc12f290fc8e65e052d2a8` は、[Claude承認](https://github.com/75py/Android-OverlayViewManager/pull/70#issuecomment-6555757402)と[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41290341804)、base/head/CLEANを再確認し、`--match-head-commit` の通常mergeで `87c753da35951cd1f4fde50c00b211e4bbd05455` へ統合。PR71の統合結果は次節。
+
+
+### PR71の統合と最終checkpoint
+
+[PR71](https://github.com/75py/Android-OverlayViewManager/pull/71) head `e344aa5c05420b8c75be6a84b332090812c09ac4` は、[Codex承認](https://github.com/75py/Android-OverlayViewManager/pull/71#issuecomment-6555825058)と[CI成功](https://github.com/75py/Android-OverlayViewManager/actions/runs/41290698222)、base/head/CLEAN/readyを確認し、`--match-head-commit` の通常mergeで `4b9b2a78cbc1ca89e1994c35d00343ae57bd7905` へ統合した。レビュー済みheadと統合SHAのcore/sampleソース/lint/build設定に差分なし。PR70のCI・文書・画像削除も同時に含む。PR71本文の検証コマンドはCodexが実行した一時Maven repository引数とconsumerを含む完全形に揃えた。
+
+今回の記録追記は文書だけで製品/テスト/build変更なし。最終release headとwork/3.0.0の同期、SHA付きClaude確認、CIは[PR66](https://github.com/75py/Android-OverlayViewManager/pull/66)の最新コメント/checksで追跡する。mainへのマージ・タグ・正式公開は実行しない。C1〜C4は引き続き提案のみで、ユーザー判断待ち。
+
+再現情報（候補e344aa5）:
+
+- API36 fingerprint: `google/sdk_gphone64_arm64/emu64a:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys`
+- core Release AAR SHA256: `db6412e94c763f6e323f4c720eefada4c252a48c67b0ace30a0e8bc457e7cde8`
+- sample Debug APK SHA256: `a0e55a5ee8697a6ec26ac17468944f53f6276e7452766e9e15ef91208ab91982`
+- sample test APK SHA256: `e0e93fb1aee652533953d4bc9835df7daf4d6c1bc7230a0ac9491a6675fa3576`
