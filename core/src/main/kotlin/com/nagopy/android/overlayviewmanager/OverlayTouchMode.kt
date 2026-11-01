@@ -18,7 +18,16 @@ package com.nagopy.android.overlayviewmanager
 
 /** Defines whether an overlay passes through, receives, or handles drag touches. */
 public enum class OverlayTouchMode {
+    /** The window is not touchable. The library does not change the View's touch listener. */
     PASS_THROUGH,
+
+    /** The View receives touches. The library does not change the View's touch listener. */
     INTERACTIVE,
+
+    /**
+     * The library drags the window. It installs its own `View.OnTouchListener`, which replaces any
+     * listener the host had set, because a View holds only one. Leaving this mode or disposing the
+     * handle removes the listener without restoring the host's, so set it again if needed.
+     */
     DRAGGABLE,
 }
