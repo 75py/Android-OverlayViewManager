@@ -85,7 +85,7 @@ ANDROID_SERIAL=emulator-5580 ./gradlew :sample:connectedDebugAndroidTest
 
 専用のAPI36環境のfreeform設定は元のnullへ戻した。`emulator-5554` は操作していない。
 
-Sample1の画像はシンタックスハイライトなしで表示されている。`run_prettify.js` の読み込みはSample3と同じで、今回のassetの変更は `TAG` の1行の追加のみ。原因は未確認で、表示コードの内容には影響しない。
+観測の限界: Sample1の画像はシンタックスハイライトなしで写っている。起動直後のcaptureで、`run_prettify.js` はDOMContentLoadedと `setTimeout` で非同期に装飾するため、画像だけではハイライトの欠落を確定できない。表示文字と `TAG` 宣言は確認済み。描画タイミングと既存の装飾は今回の削除の受入条件ではなく、追加修正もrelease blockerの扱いもしない。
 
 ## JitPack座標
 
