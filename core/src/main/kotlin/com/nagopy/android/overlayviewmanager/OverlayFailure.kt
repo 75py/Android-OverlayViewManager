@@ -36,7 +36,11 @@ public enum class OverlayFailure {
     /** The managed View already has a parent, so it cannot be added to a window. */
     ALREADY_HAS_PARENT,
 
-    /** The window was already gone. The handle reconciles to [OverlayState.CONFIGURED]. */
+    /**
+     * The window was already gone. The handle reconciles, and the resulting state depends on the
+     * operation: [OverlayState.CONFIGURED] after [OverlayView.update] or [OverlayView.hide], and
+     * [OverlayState.DISPOSED] after [OverlayView.dispose].
+     */
     NOT_ATTACHED,
 
     /** The combined opacity of the pass-through overlays would exceed the platform's maximum. */

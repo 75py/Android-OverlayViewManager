@@ -277,10 +277,11 @@ class DraggableOnTouchListenerTest {
 
     @Test fun downMoveCancelRestoresOriginalAlphaWithoutResettingCoordinates() {
         val view = PositionedView(50, 160, 20)
+        val backend = RecordingBackend()
         val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
-            RecordingBackend(),
+            backend,
             OverlaySpec(alpha = .75f, touchMode = OverlayTouchMode.DRAGGABLE),
         )
         overlay.show()
@@ -288,12 +289,14 @@ class DraggableOnTouchListenerTest {
 
         assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 10f, 30f))
         assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 10f + slop + 10, 55f))
+        assertEquals(.45f, backend.lastParams!!.alpha, .0001f)
         val draggedX = overlay.spec.x
         val draggedY = overlay.spec.y
         assertTrue(dispatch(overlay, MotionEvent.ACTION_CANCEL, 10f + slop + 10, 55f))
         assertEquals(draggedX, overlay.spec.x)
         assertEquals(draggedY, overlay.spec.y)
         assertEquals(.75f, overlay.spec.alpha, 0f)
+        assertEquals(.75f, backend.lastParams!!.alpha, 0f)
     }
 
     @Test fun cancelBelowSlopIsANoOpAndReturnsFalse() {
@@ -496,9 +499,11 @@ class DraggableOnTouchListenerTest {
         assertEquals(100 + slop + 60, overlay.spec.x)
         assertEquals(256, overlay.spec.y)
         assertEquals(3, backend.updateCalls)
+        assertEquals(.54f, backend.lastParams!!.alpha, .0001f)
 
         assertTrue(dispatch(overlay, MotionEvent.ACTION_CANCEL, 110f + slop + 60, 300f))
         assertEquals(.9f, overlay.spec.alpha, 0f)
+        assertEquals(.9f, backend.lastParams!!.alpha, 0f)
         assertEquals(100 + slop + 60, overlay.spec.x)
     }
 
