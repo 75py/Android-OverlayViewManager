@@ -4,7 +4,7 @@
 
 ## 現在の状態と今回の作業範囲
 
-- 2026-11-01最新依頼: C1〜C4のユーザー判断を確定。C1はdata class維持・デフォルト付き末尾追加・Kotlin constructor/copyとJava Builderのソース互換維持・中間ライブラリのconstructor/copyのminor間バイナリ互換非保証、JavaはBuilder。C2はRestrictTo/internalパッケージ慣習の現状維持、C3は3.0導入せず3.1着手前へ、C4は記録類をmainに維持。CodexがKDoc/文書/検証/統合、Claudeが対向レビューを担当。基点c1eafeb、API23必須とAPI26/35のsample connected再検証、指定Gradle全タスク・PR CIは実行中。端末失敗時は修正せず報告する。詳細は[ユーザー決定と追加検証](docs/coordination/3.0.0/2026-11-01-review-fixes.md#c1c4のユーザー決定と追加端末検証)。
+- 2026-11-01最新依頼: C1〜C4のユーザー判断を確定。C1はdata class維持・デフォルト付き末尾追加・Kotlin constructor/copyとJava Builderのソース互換維持・中間ライブラリのconstructor/copyのminor間バイナリ互換非保証、JavaはBuilder。C2はRestrictTo/internalパッケージ慣習の現状維持、C3は3.0導入せず3.1着手前へ、C4は記録類をmainに維持。CodexがKDoc/文書/検証/統合、Claudeが対向レビューを担当。基点c1eafebの修正済みコアでAPI23/26は各26件、API35は31件のsample connected試験が成功（各failure/error/skip0、専用AVD、物理実機未検証）。指定Gradle全タスクと161 unit testsも成功。製品/テスト変更なし。最終headの対向承認・CI・統合SHAはPR66コメントで追跡する。詳細は[ユーザー決定と追加検証](docs/coordination/3.0.0/2026-11-01-review-fixes.md#c1c4のユーザー決定と追加端末検証)。
 
 - 2026-11-01追加依頼: PR66レビューの削除中再入・drag alpha・A1〜A5・BはPR70/71で修正・検証し、相互承認とCI成功後に `4b9b2a7` へ統合済み。161 unit tests、API36 sample31件、build/lint/publish/consumer成功。coreと設計書をClaude、CI・移行文書・計画/ログ・検証/統合をCodexが所有する。この時点のC1〜C4推奨案は、上記の後続ユーザー決定で確定した。全PRのbaseはrelease/3.0.0。最新の経過は[レビュー対応記録](docs/coordination/3.0.0/2026-11-01-review-fixes.md)。
 
@@ -638,3 +638,10 @@ PR70（CI公開タスク・移行文書・未参照画像）を `87c753d`、PR71
 - [ ] C1の互換性方針に沿う意図的なconstructor/copy差分のレビュー・baseline更新手順を決め、Java Builder/Kotlin consumer検証を併用する。
 
 担当は3.1着手前に確定する。今回の変更は計画追加のみで、プラグイン・ビルド設定・API baselineは追加しない。
+
+
+### 2026-11-01: C1〜C4の決定反映と追加端末検証
+
+ユーザー決定によりC1はdata class維持の互換性方針をKDoc/移行ガイドに明記、C2/C4は現状維持、C3は上記3.1着手前タスクへ追加した。C2のLIBRARY_GROUP方針と、現実装にあるLIBRARY/TESTS等のscopeを区別して記録し、注釈は変更していない。Codexが直接実装・検証、Claudeが対向レビュー。公開APIシグネチャ・enum・README未公開表記・CHANGELOG日付は不変。
+
+API23は26/26（220.09秒）、API26は26/26（202.95秒）、API35は31/31（244.88秒）、すべてfailure/error/skip0。時間はGradle実行の実測値。API23/26のSDK条件対象外5件は成功やskipに加算しない。API35はfreeform2件を含む。指定Gradle全タスク、161 unit tests、lintエラー0、Release公開タスク成功。AVD設定は復元し専用AVDを終了済み。最終PRと統合SHA/CIの証跡は[PR66](https://github.com/75py/Android-OverlayViewManager/pull/66)の最新コメントを参照する。詳細と再現条件は[レビュー対応記録](docs/coordination/3.0.0/2026-11-01-review-fixes.md#c1c4のユーザー決定と追加端末検証)。

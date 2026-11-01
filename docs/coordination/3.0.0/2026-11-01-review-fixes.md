@@ -1,6 +1,8 @@
 # 2026-11-01 リリース前レビュー指摘への対応
 
-状態: PR70・PR71を相互承認/CI成功後に統合済み。基点は PR66 の `a79dcb8254d83eaf72784f524f34a12d68668cb7`。今回の依頼は、妥当性確認、再現する問題の修正、回帰テスト、現headの相互レビューとCI成功を経た `release/3.0.0` への反映まで。mainマージ・タグ・正式公開は対象外。
+最新: C1〜C4のユーザー決定を反映し、指定Gradle全タスクとAPI23/26/35のsample端末試験が成功。今回のPRの現head承認・CI・統合SHAは[PR66](https://github.com/75py/Android-OverlayViewManager/pull/66)のコメントで追跡する。
+
+前回の完了状態: PR70・PR71を相互承認/CI成功後に統合済み。基点は PR66 の `a79dcb8254d83eaf72784f524f34a12d68668cb7`。今回の依頼は、妥当性確認、再現する問題の修正、回帰テスト、現headの相互レビューとCI成功を経た `release/3.0.0` への反映まで。mainマージ・タグ・正式公開は対象外。
 
 ## 所有と合意
 
@@ -115,10 +117,72 @@ PR72初稿 `63cf89b` の対向レビューで、Claudeは計画冒頭の旧134 t
 | 項目 | ユーザー決定・今回の対応 |
 | --- | --- |
 | C1 | `OverlaySpec` はdata classを維持。3.xの新プロパティはデフォルト値付きで末尾に追加する。Kotlinのconstructor/copy呼び出しとJava Builder利用のソース互換を保つ一方、コンパイル済み中間ライブラリのconstructor/copyに関するバイナリ互換はマイナーバージョン間で保証しない。JavaはBuilderを使う。KDocと移行ガイドへ明記する。 |
-| C2 | 現状維持。internalパッケージの宣言は `@RestrictTo(LIBRARY_GROUP)` とinternalパッケージ名の慣習で保護し、コードは変更しない。 |
+| C2 | 現状維持。ユーザーの方針は `@RestrictTo(LIBRARY_GROUP)` とinternalパッケージ名の慣習で保護し、コードを変更しないこと。現実装には `LIBRARY_GROUP` に加え、より狭い `LIBRARY` やテスト用の `TESTS` もあり、それぞれの既存scopeを維持する。 |
 | C3 | 3.0.0ではAPI互換チェックを導入しない。3.0.0タグをbaselineに、3.1着手前の導入タスクを計画に追加。binary-compatibility-validatorとKotlin Gradle plugin組み込みABI validationの比較、およびAGP 9のbuilt-in Kotlinとの組合せ検証を含む。 |
 | C4 | 現状維持。AGENTS・計画・連携記録・共有設定をmainにもそのまま含める。移動や削除はしない。 |
 
-分担: Codexが専用worktree `codex-compatibility-device-validation` / `fix/3.0.0/compatibility-device-validation` でKDoc・migration・計画・本記録の編集、Gradle/AVD検証、PR、統合を所有する。既存Claude司令塔（Opus 5.5 / high）は対向レビューを担当し、元のcore KDoc所有権を今回の範囲でCodexへ移管した。端末送信request `008e4871-05f5-4d50-9e27-2e8956d18d94` に対しClaudeが明示合意。追加子agentは起動しない。
+分担: Codexが専用worktree `codex-compatibility-device-validation` / `fix/3.0.0/compatibility-device-validation` でKDoc・migration・計画・本記録の編集、Gradle/AVD検証、PR、統合を所有する。既存Claude司令塔（Opus 5.5 / high）は対向レビューを担当し、元のcore KDoc所有権を今回の範囲でCodexへ移管した。端末送信request `008e4871-05f5-4d50-9e27-2e8956d18d94` に対しClaudeが明示合意し、Orca `msg_7b024f803e55` にも記録。追加子agentは起動しない。
 
-受け入れ条件: 公開APIシグネチャ・enum・README未公開表記・CHANGELOG日付は不変。指定Gradle全タスクとPR CI成功、最低API23のsample connected試験を再実行し、可能なAPI26/35も実行。失敗時は修正せず原因・再現手順を報告する。release向けPRは現head対向承認とCI後に統合し、PR66へ統合SHA/CI結果をコメントする。mainマージ・タグ・正式公開はしない。現在検証中で、成功結果は未確定。
+受け入れ条件: 公開APIシグネチャ・enum・README未公開表記・CHANGELOG日付は不変。指定Gradle全タスクとPR CI成功、最低API23のsample connected試験を再実行し、可能なAPI26/35も実行。失敗時は修正せず原因・再現手順を報告する。release向けPRは現head対向承認とCI後に統合し、PR66へ統合SHA/CI結果をコメントする。mainマージ・タグ・正式公開はしない。検証結果は以下のとおり確定。PRの最終head承認・CI成功後に統合する。
+
+
+先行レビュー: `409b7ab` のKDoc/migration/C1/C3/C4にClaudeの必須指摘なし。C2について既存annotation scopeが一律LIBRARY_GROUPではなくLIBRARY等もあるとの指摘を受け、Codexが実宣言を確認し、ユーザー判断と現実装の違いを上表へ追記した。注釈自体は変更しない。
+
+
+### 追加検証の確定結果（2026-11-01）
+
+対象は `c1eafebdd04e2a3f77f84a6154d766c6d9a06980` にKDocだけを追記した `409b7ab808b510d00dfc30a489abb7cdd24aef6e` のcore/sample/test。今回の後続変更は文書のみ。PR71の修正済みコアを使い、製品の実装・テスト・ビルド設定は一切変更していない。OverlaySpecはコメントを除いた内容が基点と完全一致し、他のソース・enum・README・CHANGELOGに差分なし。
+
+CodexがJDK17、Android SDK36、Gradle wrapperで以下を実行。すべて成功（148 tasks、22秒）、unitはcore145/lint12/sample4の計161件、failure/error/skip0。lintはcore警告6/sample警告55、エラー0。publish先は一時Maven repositoryへ隔離した。JitPackサービス上の確認ではない。
+
+```sh
+JAVA_HOME=/Users/ai-seb/.local/share/mise/installs/java/temurin-17.0.20+101 \
+ANDROID_HOME=/Users/ai-seb/Library/Android/sdk \
+./gradlew :core:assembleDebug :sample:assembleDebug :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest :core:lintDebug :sample:lintDebug :core:assembleRelease :core:publishToMavenLocal \
+  -Dmaven.repo.local=/private/tmp/ovm-c1234-maven-20261101
+```
+
+物理実機は未接続。API23/26/35の専用AVDを順番に `emulator-5580` として起動し、各端末でフィルタを指定せず `:sample:connectedDebugAndroidTest` を実行した。無関係のemulator5554は操作していない。
+
+| API | 端末 | 成功 / 実行 | failure / error / skip | Gradle実行の実測時間 | XMLの試験時間 |
+| --- | --- | --- | --- | --- | --- |
+| 23 | `OverlayViewManager_3_0_API_23` / Android SDK arm64-v8a | 26 / 26 | 0 / 0 / 0 | 220.09秒 | 215.058秒 |
+| 26 | `OverlayViewManager_3_0_API_26` / Android SDK arm64-v8a | 26 / 26 | 0 / 0 / 0 | 202.95秒 | 199.205秒 |
+| 35 | `OverlayViewManager_3_0_API_35` / Android SDK arm64-v8a | 31 / 31 | 0 / 0 / 0 | 244.88秒 | 240.730秒 |
+
+合計83件成功。API23/26ではfreeform2件（minSdk28）と別UID透過3件（minSdk31）がSDK条件で対象外。これらを実行成功や実行後のskipとして加算していない。API35は31件にfreeform2件と別UID3件を含み、skipなし。今回、端末試験の失敗はなく、製品・テストの修正や失敗後の再試行は行っていない。
+
+API23/26はanimation設定を変更せず、API35もwindow/transition=1.0・animator=nullを維持。API35の `enable_freeform_support` の元値nullを保存して1へ変更し、試験終了後にdeleteしてnullへ復元した。専用AVDは全て終了済み。物理実機・API31・API36は今回再実行していない（API36のPR71後31件成功は前節の証拠）。
+
+再現コマンド（APIごとにAVD名を23/26/35へ変え、起動完了・API値を確認してから実行）:
+
+```sh
+/Users/ai-seb/Library/Android/sdk/emulator/emulator -avd OverlayViewManager_3_0_API_23 -port 5580 \
+  -no-snapshot -no-window -no-audio -gpu swiftshader_indirect
+```
+
+起動コマンドを実行した端末はそのままにし、別の端末で起動完了を確認してから以下を実行する。freeform設定の行はAPI35のみ。
+
+```sh
+# API 35 only: record the original value, enable freeform, and restore it after testing.
+/Users/ai-seb/Library/Android/sdk/platform-tools/adb -s emulator-5580 shell settings put global enable_freeform_support 1
+JAVA_HOME=/Users/ai-seb/.local/share/mise/installs/java/temurin-17.0.20+101 \
+ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ANDROID_SERIAL=emulator-5580 \
+./gradlew :sample:connectedDebugAndroidTest
+```
+
+| API | fingerprint |
+| --- | --- |
+| 23 | `Android/sdk_google_phone_arm64/generic_arm64:6.0/MASTER/8690019:userdebug/test-keys` |
+| 26 | `google/sdk_gphone_arm64/generic_arm64:8.0.0/OSR1.180418.028.A3/10734686:userdebug/dev-keys` |
+| 35 | `google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys` |
+
+一時的な生ログ・JUnit XML・端末情報・実行時間は `/private/tmp/ovm-c1234-evidence-20261101/` に保存。主なファイルは `build.log`、`api23-connected.log`（26/35も同様）、`api23-results/`、`api23-device.json`、`api23-run.json`。共有用の再現条件・確定結果は本記録に残した。
+
+成果物SHA256:
+
+- `core/build/outputs/aar/core-release.aar`: `eb8ff9d04523e118d79eef3792a7f3ac6fbf198057247360216ee1687a66630d`
+- `sample/build/outputs/apk/debug/sample-debug.apk`: `ee17acd78c3009f86169647d1c4d5dd470a093f88bbeabd6b8d41fc94d60448f`
+- `sample/build/outputs/apk/androidTest/debug/sample-debug-androidTest.apk`: `e0e93fb1aee652533953d4bc9835df7daf4d6c1bc7230a0ac9491a6675fa3576`
+
+最終対向レビューはClaude司令塔が担当する。上記の端末・Gradle結果はCodexの実行であり、Claude自身による再実行ではない。統合後のrelease headとCIはPR66へコメントし、work/3.0.0にも同じrelease headを同期する。mainマージ・タグ・正式公開は実行しない。
