@@ -22,11 +22,11 @@ dependencyResolutionManagement {
 
 ```groovy
 dependencies {
-    implementation 'com.github.75py.Android-OverlayViewManager:overlayviewmanager:<version>'
+    implementation 'com.github.75py:Android-OverlayViewManager:<version>'
 }
 ```
 
-The JitPack build of these coordinates can only be checked once a 3.0.0 tag exists. See the [sample project](sample/) for source dependencies during development.
+The JitPack build of this coordinate can only be checked once a 3.0.0 tag exists. See the [sample project](sample/) for source dependencies during development.
 
 ## Initialize once per process
 
