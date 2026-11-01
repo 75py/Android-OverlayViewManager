@@ -102,3 +102,5 @@ ANDROID_HOME=/Users/ai-seb/Library/Android/sdk ANDROID_SERIAL=emulator-5580 ./gr
 - core Release AAR SHA256: `db6412e94c763f6e323f4c720eefada4c252a48c67b0ace30a0e8bc457e7cde8`
 - sample Debug APK SHA256: `a0e55a5ee8697a6ec26ac17468944f53f6276e7452766e9e15ef91208ab91982`
 - sample test APK SHA256: `e0e93fb1aee652533953d4bc9835df7daf4d6c1bc7230a0ac9491a6675fa3576`
+
+PR72初稿 `63cf89b` の対向レビューで、Claudeは計画冒頭の旧134 testsが「現行候補」と読める点を指摘した。Codexは「Timber削除時点の候補」と時点を明記して161件の最新結果と区別した。製品コードの追加変更はない。
