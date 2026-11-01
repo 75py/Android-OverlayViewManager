@@ -34,7 +34,6 @@ Based on the [official GPT-6 Astra guide](https://developers.openai.com/api/docs
 ## Project Structure & Module Organization
 
 - `core/`: overlay APIs, permission handling, and internal window/lifecycle management.
-- `opt-timber/`: optional Timber logging integration, depending on `core`.
 - `lint/`: Java library containing custom Android lint detectors and their tests.
 - `sample/`: Android demo app; layouts are in `src/main/res/`, and displayed code examples are in `src/main/assets/`.
 
@@ -44,8 +43,8 @@ Java and Kotlin sources live under each module's `src/main/java/` or `src/main/k
 
 Use JDK 17, Android SDK 36 (Build Tools 36.0.0), and the checked-in Gradle wrapper (Gradle 9.4.1). The Android modules use AGP 9.2.1 with built-in Kotlin 2.2.10 and support API 23 or later. Configure your SDK through `ANDROID_HOME` or an untracked `local.properties`.
 
-- `./gradlew :core:assembleDebug :opt-timber:assembleDebug :sample:assembleDebug`: build libraries and the demo APK.
-- `./gradlew :core:testDebugUnitTest :opt-timber:testDebugUnitTest :lint:test :sample:testDebugUnitTest`: run local tests.
+- `./gradlew :core:assembleDebug :sample:assembleDebug`: build the library and the demo APK.
+- `./gradlew :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest`: run local tests.
 - `./gradlew :core:lintDebug :sample:lintDebug`: run Android lint checks.
 - `./gradlew :core:connectedDebugAndroidTest :sample:connectedDebugAndroidTest`: run instrumentation tests on a connected device or emulator.
 - `./gradlew :sample:installDebug`: install the demo; launch it from the device and grant overlay permission when prompted.

@@ -22,14 +22,11 @@ dependencyResolutionManagement {
 
 ```groovy
 dependencies {
-    implementation 'com.github.75py.Android-OverlayViewManager:overlayviewmanager:<version>'
-    // Optional: the host also supplies Timber.
-    implementation 'com.github.75py.Android-OverlayViewManager:overlayviewmanager-opt-timber:<version>'
-    implementation 'com.jakewharton.timber:timber:5.0.1'
+    implementation 'com.github.75py:Android-OverlayViewManager:<version>'
 }
 ```
 
-The JitPack build of these coordinates can only be checked once a 3.0.0 tag exists. See the [sample project](sample/) for source dependencies during development.
+The JitPack build of this coordinate can only be checked once a 3.0.0 tag exists. See the [sample project](sample/) for source dependencies during development.
 
 ## Initialize once per process
 
@@ -136,39 +133,7 @@ A grant can be revoked after the check. Always inspect the subsequent operation 
 - Geometry uses the owning window's bounds and insets. Obtain slider limits from the host window, with a compatible fallback on older supported APIs. `allowOutsideBounds` relaxes normal bounds handling; it does not guarantee placement over system bars or other restricted areas. A drag normalizes `spec` to top-left offsets without margins; with `allowOutsideBounds` it keeps the gravity and margins and only changes `x` and `y`.
 - `screenBrightness` is an optional Activity-scope setting. Supplying it to an application overlay is an argument error.
 
-Factories, operations, and `view`/`spec` access belong on the main thread. Only `state` and `lastFailure` are thread-safe handle reads. `OverlayPermission` is immutable and thread-safe. Timber's logging entry point accepts background-thread calls.
-
-## Optional Timber overlay
-
-Initialize the manager first, then plant one tree from the Application. Register each Activity whose visible lifetime should show the log overlay.
-
-```java
-DebugOverlayTree tree = DebugOverlayTree.init(this);
-tree.setThreshold(Log.DEBUG);
-tree.setMaxLines(5);
-Timber.plant(tree);
-```
-
-```java
-// In Activity.onCreate():
-DebugOverlayTree.getInstance().register(this);
-```
-
-Same-Application `init()` is idempotent, but the host should still avoid planting the same tree repeatedly. The Timber overlay is application-scoped and requires overlay permission to show; failed shows are reported through the library logger.
-
-To stop it, call `dispose()` on the main thread and retain the tree on failure:
-
-```java
-OverlayResult result = tree.dispose();
-if (result.isSuccess()) {
-    Timber.uproot(tree);
-} else {
-    Log.w("Overlay", "Disposal failed: " + result.getFailure(), result.getCause());
-    // Keep tree and retry only when the host requests it.
-}
-```
-
-Successful disposal unregisters callbacks and clears the buffer and Activity caches. Later logs and old queued renders become no-ops; a later initialization starts a fresh lifecycle generation.
+Factories, operations, and `view`/`spec` access belong on the main thread. Only `state` and `lastFailure` are thread-safe handle reads. `OverlayPermission` is immutable and thread-safe.
 
 ## Development and limits
 

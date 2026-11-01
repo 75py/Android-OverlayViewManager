@@ -24,6 +24,7 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.CompoundButton;
@@ -48,8 +49,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import timber.log.Timber;
-
 /**
  * Activity-scoped overlay driven by every {@link OverlaySpec} option. Each control derives a new
  * immutable spec from the effective one ({@code overlayView.getSpec().toBuilder()...build()}),
@@ -60,6 +59,8 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
         , SeekBar.OnSeekBarChangeListener
         , RadioGroup.OnCheckedChangeListener {
 
+    private static final String TAG = "SampleAllOptionsActivity";
+
     ActivitySampleAllOptionsBinding binding;
     OverlayView<TextView> overlayView;
     private boolean attachedBeforeStop;
@@ -67,7 +68,7 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Timber.d("onCreate %s", savedInstanceState);
+        Log.d(TAG, "onCreate " + savedInstanceState);
 
         TextView textView = createTextView();
         textView.setOnClickListener(v -> updateText("Clicked: %s", SimpleDateFormat.getTimeInstance().format(new Date())));
@@ -171,7 +172,7 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
 
     private static void logIfFailed(String action, OverlayResult result) {
         if (!result.isSuccess()) {
-            Timber.w(result.getCause(), "%s failed: %s", action, result.getFailure());
+            Log.w(TAG, action + " failed: " + result.getFailure(), result.getCause());
         }
     }
 
@@ -184,7 +185,7 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        Timber.d("onCheckedChanged id:%d, isChecked:%s", buttonView.getId(), isChecked);
+        Log.d(TAG, "onCheckedChanged id:" + buttonView.getId() + ", isChecked:" + isChecked);
         if (buttonView.getId() == R.id.chk_touchable) {
             binding.flags.setIsTouchable(isChecked);
             OverlayTouchMode mode = touchMode(isChecked, binding.flags.getIsDraggable());
@@ -203,7 +204,7 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        Timber.d("onProgressChanged seekBarId:%d, progress:%d", seekBar.getId(), progress);
+        Log.d(TAG, "onProgressChanged seekBarId:" + seekBar.getId() + ", progress:" + progress);
         if (seekBar.getId() == R.id.seek_alpha) {
             binding.alpha.setAlphaPercentage(progress);
             float alpha = progress / 100f;
@@ -247,7 +248,7 @@ public class SampleAllOptionsActivity extends AppCompatActivity implements
 
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
-        Timber.d("onCheckedChanged groupId:%d, checkedId:%d", group.getId(), checkedId);
+        Log.d(TAG, "onCheckedChanged groupId:" + group.getId() + ", checkedId:" + checkedId);
         if (group.getId() == R.id.rgrp_gravity) {
             binding.gravity.setGravityCheckId(checkedId);
             applySpec(spec().setGravity(getGravityValue(checkedId)).build(), ".setGravity(Gravity." + getGravityValueString(checkedId) + ")");

@@ -27,6 +27,7 @@ pre {
 <pre class="prettyprint">
 public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeActivity implements SeekBar.OnSeekBarChangeListener {
 
+    private static final String TAG = "SampleBrightness";
     private static final int INITIAL_BRIGHTNESS = 128;
 
     OverlayView&lt;View&gt; overlayView;
@@ -52,7 +53,7 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
     protected void onDestroy() {
         OverlayResult disposed = overlayView.dispose();
         if (!disposed.isSuccess()) {
-            Timber.w(disposed.getCause(), "dispose() failed: %s", disposed.getFailure());
+            Log.w(TAG, "dispose() failed: " + disposed.getFailure(), disposed.getCause());
         }
         super.onDestroy();
     }
@@ -62,7 +63,7 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
                 ? overlayView.hide()
                 : overlayView.show();
         if (!result.isSuccess()) {
-            Timber.w(result.getCause(), "show()/hide() failed: %s", result.getFailure());
+            Log.w(TAG, "show()/hide() failed: " + result.getFailure(), result.getCause());
         }
         binding.setIsOverrideEnabled(overlayView.getState() == OverlayState.ATTACHED);
     }
@@ -75,7 +76,7 @@ public class SampleOverrideScreenBrightnessActivity extends BaseSampleWithCodeAc
                 .build();
         OverlayResult updated = overlayView.update(next);
         if (!updated.isSuccess()) {
-            Timber.w(updated.getCause(), "update() failed: %s", updated.getFailure());
+            Log.w(TAG, "update() failed: " + updated.getFailure(), updated.getCause());
         }
         binding.setBrightness(progress);
     }

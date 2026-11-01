@@ -7,7 +7,7 @@
 - Replace overlay fluent configuration, visibility getters and library-owned permission dialogs with the new state/spec API and host-owned permission flow. See the [2.x migration guide](docs/migration/2.x-to-3.0.md).
 - Remove the 2.x methods outright instead of deprecating them: the `OverlayView` setters, the `OverlayViewManager` permission and display-size helpers, `PermissionRequestDialogFragment` with its strings, and the public `DraggableOnTouchListener`. `core` no longer depends on AndroidX Fragment, and `OverlayView` handles can be created only through `OverlayViewManager`.
 - Rework window geometry, drag handling and managed pass-through opacity admission. A drag normalizes the spec to top-left offsets without margins; with `allowOutsideBounds` it keeps the gravity and margins. `START` and `END` now resolve correctly on the first show in an RTL configuration.
-- Make the optional Timber tree lifecycle explicit, preserve logging on failed disposal, and prevent stale queued renders from affecting a reinitialized tree.
+- Remove the optional Timber integration: the `overlayviewmanager-opt-timber` artifact and `DebugOverlayTree` have no replacement. With one published artifact, the JitPack dependency becomes `com.github.75py:Android-OverlayViewManager`.
 - Raise minimum Android support to API 23 and modernize the build to JDK 17, SDK 36, Gradle 9.4.1 and AGP 9.2.1 with built-in Kotlin.
 - Retarget the bundled lint check to `OverlaySpec.Builder.setAllowOutsideBounds` and rename its issue id from `ALLOW_VIEW_TO_EXTEND_OUTSIDE_SCREEN` to `ALLOW_OUTSIDE_BOUNDS`.
 - Update CI and Java/Kotlin regression coverage, add device tests for drag geometry, cross-UID pass-through and permission flows, and add `jitpack.yml` for JDK 17 builds.

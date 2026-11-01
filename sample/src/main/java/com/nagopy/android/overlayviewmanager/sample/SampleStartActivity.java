@@ -18,6 +18,7 @@ package com.nagopy.android.overlayviewmanager.sample;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -30,8 +31,6 @@ import com.nagopy.android.overlayviewmanager.OverlayPermission;
 import com.nagopy.android.overlayviewmanager.OverlayViewManager;
 import com.nagopy.android.overlayviewmanager.sample.databinding.ActivitySampleStartBinding;
 
-import timber.log.Timber;
-
 /**
  * Entry screen. Shows how the host application owns the "display over other apps" permission
  * flow: check with {@link OverlayPermission#isGranted}, open the system settings screen through an
@@ -39,6 +38,8 @@ import timber.log.Timber;
  * screen on its own and never retries a show() for you.
  */
 public class SampleStartActivity extends AppCompatActivity {
+
+    private static final String TAG = "SampleStartActivity";
 
     ActivitySampleStartBinding binding;
     OverlayPermission overlayPermission;
@@ -71,8 +72,6 @@ public class SampleStartActivity extends AppCompatActivity {
             startActivity(new Intent(this, Sample1Activity.class));
         } else if (view.getId() == R.id.btn_sample2) {
             startActivity(new Intent(this, Sample2Activity.class));
-        } else if (view.getId() == R.id.btn_sample_timber) {
-            startActivity(new Intent(this, SampleTimberActivity.class));
         } else if (view.getId() == R.id.btn_sample_override_brightness) {
             startActivity(new Intent(this, SampleOverrideScreenBrightnessActivity.class));
         }
@@ -80,7 +79,7 @@ public class SampleStartActivity extends AppCompatActivity {
 
     private void refreshPermissionState() {
         boolean granted = overlayPermission.isGranted(this);
-        Timber.d("overlay permission granted: %s", granted);
+        Log.d(TAG, "overlay permission granted: " + granted);
         binding.setCanDrawOverlays(granted);
     }
 }
