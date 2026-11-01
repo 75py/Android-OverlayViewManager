@@ -40,6 +40,9 @@ jobs:
       - name: Assemble debug builds
         run: ./gradlew :core:assembleDebug :sample:assembleDebug
 
+      - name: Assemble and publish release artifact
+        run: ./gradlew :core:assembleRelease :core:publishToMavenLocal
+
       - name: Run unit tests
         run: ./gradlew :core:testDebugUnitTest :lint:test :sample:testDebugUnitTest
 
