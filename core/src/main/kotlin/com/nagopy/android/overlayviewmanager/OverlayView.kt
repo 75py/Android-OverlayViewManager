@@ -34,6 +34,9 @@ import com.nagopy.android.overlayviewmanager.internal.PassThroughOpacityRegistry
  * Handles are created only by [OverlayViewManager]. The constructor is private rather than
  * `internal` because Kotlin compiles an `internal` constructor to a public JVM constructor, which
  * Java callers could invoke directly.
+ *
+ * The View's touch listener stays the host's unless the mode is [OverlayTouchMode.DRAGGABLE].
+ * See that mode for what happens to a host listener.
  */
 public class OverlayView<T : View> private constructor(
     view: T,
@@ -59,12 +62,20 @@ public class OverlayView<T : View> private constructor(
     @Volatile private var currentState: OverlayState = OverlayState.CONFIGURED
     @Volatile private var currentFailure: OverlayFailure? = null
     private var libraryRemovalInProgress: Boolean = false
+    /** What [show] and [update] report once this handle is disposed. */
+    private var disposedFailureKind: OverlayFailure = OverlayFailure.WINDOW_MANAGER_REJECTED
+    /** Whether a drag is showing its translucent feedback. It is never part of [effectiveSpec]. */
+    private var dragFeedback: Boolean = false
+    /**
+     * Whether the window's last accepted layout carries the feedback. A failed restore leaves this
+     * `true` after [dragFeedback] became `false`, so the next [update] reapplies the layout.
+     */
+    private var windowHasDragFeedback: Boolean = false
 
     init {
         if (initialSpec.touchMode == OverlayTouchMode.DRAGGABLE) {
-            effectiveDragListener = DraggableOnTouchListener(this)
+            applyTouchListener(DraggableOnTouchListener(this))
         }
-        applyTouchListener(effectiveDragListener)
     }
 
     /** The managed view. It cannot be read once this handle is disposed. */
@@ -103,7 +114,7 @@ public class OverlayView<T : View> private constructor(
         val candidate = effectiveSpec
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         if (managedView.parent != null) return failure(OverlayFailure.ALREADY_HAS_PARENT, null)
-        if (scope == OverlayScope.APPLICATION && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !permission.isGranted(managedView.context)) {
+        if (scope == OverlayScope.APPLICATION && !permission.isGranted(managedView.context)) {
             return failure(OverlayFailure.PERMISSION_DENIED, null)
         }
         admitPassThroughOpacity(candidate, managedView)?.let { return failure(it, null) }
@@ -145,10 +156,13 @@ public class OverlayView<T : View> private constructor(
             accept(spec, nextDragListener)
             return success(changed = true)
         }
-        if (spec == effectiveSpec) return success(changed = false)
+        // Leaving DRAGGABLE ends the feedback here, because the listener that would have ended it
+        // is removed before the gesture's UP or CANCEL arrives.
+        val feedback = dragFeedback && spec.touchMode == OverlayTouchMode.DRAGGABLE
+        if (spec == effectiveSpec && feedback == windowHasDragFeedback) return success(changed = false)
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
         admitPassThroughOpacity(spec, managedView)?.let { return failure(it, null) }
-        val params = layoutParams(spec)
+        val params = layoutParams(spec, feedback)
         try {
             backendOrThrow().update(managedView, params)
         } catch (exception: Exception) {
@@ -160,47 +174,88 @@ public class OverlayView<T : View> private constructor(
         }
         appliedGravity = params.gravity
         updatePassThroughOpacityRegistration(spec)
+        dragFeedback = feedback
+        windowHasDragFeedback = feedback
         accept(spec, nextDragListener)
         return success(changed = true)
     }
 
-    /** Removes the view synchronously. A not-attached result is a successful reconciliation. */
+    /**
+     * Applies a drag position with the translucent feedback. The feedback only changes the
+     * window's alpha, so [spec] keeps the caller's alpha throughout the gesture.
+     */
+    @MainThread
+    @JvmSynthetic
+    internal fun updateDuringDrag(spec: OverlaySpec): OverlayResult {
+        val previous = dragFeedback
+        dragFeedback = true
+        val result = update(spec)
+        if (!result.isSuccess) dragFeedback = previous && currentState == OverlayState.ATTACHED
+        return result
+    }
+
+    /**
+     * Ends the feedback when a gesture finishes. If the window rejects the restore, the failure is
+     * reported through [lastFailure] and the next [update] or gesture applies it again.
+     */
+    @MainThread
+    @JvmSynthetic
+    internal fun endDragFeedback() {
+        dragFeedback = false
+        if (windowHasDragFeedback) update(effectiveSpec)
+    }
+
+    /**
+     * Removes the view synchronously. A not-attached result is a successful reconciliation.
+     *
+     * The removal runs detach callbacks before it returns. A [hide] from one of them is a no-op,
+     * because the removal is already running. See [dispose] for a [dispose] from one of them.
+     */
     @MainThread
     public fun hide(): OverlayResult {
         requireMainThread()
-        if (currentState == OverlayState.DISPOSED) return success(changed = false, preserveDiagnostic = true)
-        if (currentState == OverlayState.CONFIGURED) return success(changed = false, preserveDiagnostic = true)
+        if (currentState != OverlayState.ATTACHED || libraryRemovalInProgress) {
+            return success(changed = false, preserveDiagnostic = true)
+        }
         val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
-        libraryRemovalInProgress = true
-        try {
-            backendOrThrow().hide(managedView)
-        } catch (exception: Exception) {
-            libraryRemovalInProgress = false
+        val exception = removeFromWindow(managedView)
+        if (currentState == OverlayState.DISPOSED) return resultAfterReentrantDispose(exception)
+        if (exception != null) {
             if (isNotAttached(exception)) {
                 reconcileExternalDetach()
                 return successfulReconciliation()
             }
             return failure(classify(exception), exception)
         }
-        libraryRemovalInProgress = false
         currentState = OverlayState.CONFIGURED
         removeAttachmentListeners(managedView)
+        clearDragFeedback()
         PassThroughOpacityRegistry.unregister(this)
         return success(changed = true)
     }
 
-    /** Releases owned resources after a successful synchronous removal. */
+    /**
+     * Releases owned resources after a successful synchronous removal.
+     *
+     * The removal runs detach callbacks before it returns. A [dispose] from one of them releases
+     * the handle at once without removing the view a second time, because the view is already
+     * leaving its window, and the handle stays [DISPOSED][OverlayState.DISPOSED]. If the running
+     * removal then fails, the operation that started it reports the failure; the handle is not
+     * reopened for a retry.
+     */
     @MainThread
     public fun dispose(): OverlayResult {
         requireMainThread()
         if (currentState == OverlayState.DISPOSED) return success(changed = false, preserveDiagnostic = true)
+        if (libraryRemovalInProgress) {
+            ownedView?.let(::release)
+            return success(changed = true, preserveDiagnostic = true)
+        }
         if (currentState == OverlayState.ATTACHED) {
             val managedView = ownedView ?: return failure(OverlayFailure.WINDOW_MANAGER_REJECTED, null)
-            libraryRemovalInProgress = true
-            try {
-                backendOrThrow().hide(managedView)
-            } catch (exception: Exception) {
-                libraryRemovalInProgress = false
+            val exception = removeFromWindow(managedView)
+            if (currentState == OverlayState.DISPOSED) return resultAfterReentrantDispose(exception)
+            if (exception != null) {
                 if (isNotAttached(exception)) {
                     reconcileExternalDetach()
                     release(managedView)
@@ -208,7 +263,6 @@ public class OverlayView<T : View> private constructor(
                 }
                 return failure(classify(exception), exception)
             }
-            libraryRemovalInProgress = false
             release(managedView)
             return success(changed = true)
         }
@@ -223,25 +277,42 @@ public class OverlayView<T : View> private constructor(
      * with the existing [classify] mapping and retained as [lastFailure] -- the exception itself is
      * never retained. `DISPOSED` here means library ownership is released, not proof that the
      * framework removal succeeded. Idempotent: a no-op once already [DISPOSED][OverlayState.DISPOSED].
+     * A later [show] or [update] reports [OverlayFailure.ACTIVITY_DESTROYED].
      */
     @MainThread
     @JvmSynthetic
     internal fun disposeForActivityDestruction() {
         requireMainThread()
         if (currentState == OverlayState.DISPOSED) return
+        disposedFailureKind = OverlayFailure.ACTIVITY_DESTROYED
         val managedView = ownedView
-        if (currentState == OverlayState.ATTACHED && managedView != null) {
-            libraryRemovalInProgress = true
-            try {
-                backendOrThrow().hide(managedView)
-            } catch (exception: Exception) {
+        if (currentState == OverlayState.ATTACHED && managedView != null && !libraryRemovalInProgress) {
+            removeFromWindow(managedView)?.let { exception ->
                 currentFailure = classify(exception)
                 Logger.w(exception, "Forced Activity-destruction removeViewImmediate failed; classified as %s", currentFailure)
-            } finally {
-                libraryRemovalInProgress = false
             }
         }
         managedView?.let(::release)
+    }
+
+    /** Makes the one library removal, during which detach callbacks can re-enter this handle. */
+    private fun removeFromWindow(managedView: T): Exception? {
+        libraryRemovalInProgress = true
+        return try {
+            backendOrThrow().hide(managedView)
+            null
+        } catch (exception: Exception) {
+            exception
+        } finally {
+            libraryRemovalInProgress = false
+        }
+    }
+
+    /** The outcome of a removal whose detach callback already disposed this handle. */
+    private fun resultAfterReentrantDispose(exception: Exception?): OverlayResult = when {
+        exception == null -> success(changed = true)
+        isNotAttached(exception) -> successfulReconciliation(OverlayState.DISPOSED)
+        else -> failure(classify(exception), exception)
     }
 
     /**
@@ -273,6 +344,7 @@ public class OverlayView<T : View> private constructor(
                 try {
                     backendOrThrow().update(managedView, params)
                     appliedGravity = params.gravity
+                    windowHasDragFeedback = dragFeedback
                 } catch (exception: Exception) {
                     Logger.w(exception, "Could not correct the gravity after the first layout")
                     if (isNotAttached(exception)) reconcileExternalDetach() else failure(classify(exception), exception)
@@ -309,13 +381,20 @@ public class OverlayView<T : View> private constructor(
         currentState = OverlayState.CONFIGURED
         currentFailure = OverlayFailure.NOT_ATTACHED
         ownedView?.let(::removeAttachmentListeners)
+        clearDragFeedback()
         PassThroughOpacityRegistry.unregister(this)
     }
 
+    private fun clearDragFeedback() {
+        dragFeedback = false
+        windowHasDragFeedback = false
+    }
+
     private fun release(managedView: T) {
+        if (currentState == OverlayState.DISPOSED) return
         removeAttachmentListeners(managedView)
-        managedView.setOnTouchListener(null)
-        effectiveDragListener = null
+        clearDragFeedback()
+        applyTouchListener(null)
         ownedView = null
         backend = null
         currentState = OverlayState.DISPOSED
@@ -327,7 +406,6 @@ public class OverlayView<T : View> private constructor(
 
     private fun accept(spec: OverlaySpec, dragListener: DraggableOnTouchListener<T>?) {
         effectiveSpec = spec
-        effectiveDragListener = dragListener
         applyTouchListener(dragListener)
     }
 
@@ -339,11 +417,20 @@ public class OverlayView<T : View> private constructor(
         return DraggableOnTouchListener(this)
     }
 
+    /**
+     * Changes the View's listener only when the library's own listener changes. A non-draggable
+     * handle therefore never touches the host's listener.
+     */
     private fun applyTouchListener(listener: DraggableOnTouchListener<T>?) {
+        if (listener === effectiveDragListener) return
+        effectiveDragListener = listener
         ownedView?.setOnTouchListener(listener)
     }
 
-    private fun layoutParams(value: OverlaySpec): WindowManager.LayoutParams = WindowManager.LayoutParams().apply {
+    private fun layoutParams(
+        value: OverlaySpec,
+        withDragFeedback: Boolean = dragFeedback,
+    ): WindowManager.LayoutParams = WindowManager.LayoutParams().apply {
         width = value.width
         height = value.height
         gravity = OverlayGeometry.absoluteGravity(value.gravity, view)
@@ -351,7 +438,7 @@ public class OverlayView<T : View> private constructor(
         y = value.y
         horizontalMargin = value.horizontalMargin
         verticalMargin = value.verticalMargin
-        alpha = value.alpha
+        alpha = if (withDragFeedback) value.alpha * DRAG_FEEDBACK_ALPHA_FACTOR else value.alpha
         format = android.graphics.PixelFormat.TRANSLUCENT
         flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
         if (value.allowOutsideBounds) flags = flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
@@ -379,7 +466,7 @@ public class OverlayView<T : View> private constructor(
     private fun disposedFailure(): OverlayResult = OverlayResult(
         currentState,
         false,
-        OverlayFailure.WINDOW_MANAGER_REJECTED,
+        disposedFailureKind,
         null,
     )
 
@@ -430,6 +517,11 @@ public class OverlayView<T : View> private constructor(
         else -> OverlayFailure.WINDOW_MANAGER_REJECTED
     }
 
+    /**
+     * AOSP's `WindowManagerGlobal.findViewLocked` reports an unknown view with an
+     * [IllegalArgumentException] saying "not attached to window manager". The platform has no
+     * dedicated exception type, so the message is the only signal.
+     */
     private fun isNotAttached(exception: Exception): Boolean = exception is IllegalArgumentException && exception.message?.contains("not attached", ignoreCase = true) == true
 
     private fun requireMainThread() {
@@ -438,6 +530,9 @@ public class OverlayView<T : View> private constructor(
     }
 
     internal companion object {
+        /** Scales the window's alpha while a drag is in progress. */
+        private const val DRAG_FEEDBACK_ALPHA_FACTOR = 0.6f
+
         /** Library-internal factory; synthetic so that Java sources cannot call it. */
         @JvmSynthetic
         internal fun <T : View> create(

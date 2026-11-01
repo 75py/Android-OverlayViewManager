@@ -313,6 +313,207 @@ class OverlayViewStateMachineTest {
         assertEquals(1, backend.updateCalls)
     }
 
+    @Test fun disposeReenteredFromHideRemovesOnceAndStaysDisposed() {
+        val backend = RecordingBackend()
+        val overlay = overlay(backend)
+        overlay.show()
+        var nested: OverlayResult? = null
+        backend.onHide = { backend.onHide = null; nested = overlay.dispose() }
+
+        val result = overlay.hide()
+
+        assertEquals(1, backend.hideCalls)
+        assertTrue(nested!!.isSuccess)
+        assertEquals(OverlayState.DISPOSED, nested!!.state)
+        assertTrue(result.isSuccess)
+        assertEquals(OverlayState.DISPOSED, result.state)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertNull(privateField(overlay, "ownedView"))
+        assertThrows(IllegalStateException::class.java) { overlay.view }
+    }
+
+    @Test fun disposeReenteredFromDisposeRemovesOnceAndReleasesOnce() {
+        val backend = RecordingBackend()
+        var releases = 0
+        val overlay = OverlayView.create(
+            View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, OverlaySpec(),
+            activityReleaseCallback = { releases++ },
+        )
+        overlay.show()
+        backend.onHide = { backend.onHide = null; overlay.dispose() }
+
+        val result = overlay.dispose()
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, backend.hideCalls)
+        assertEquals(1, releases)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+    }
+
+    @Test fun hideReenteredFromDisposeDoesNotRemoveAgain() {
+        val backend = RecordingBackend()
+        val overlay = overlay(backend)
+        overlay.show()
+        backend.onHide = { backend.onHide = null; overlay.hide() }
+
+        val result = overlay.dispose()
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, backend.hideCalls)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+    }
+
+    @Test fun hideReenteredFromHideDoesNotRemoveAgain() {
+        val backend = RecordingBackend()
+        val overlay = overlay(backend)
+        overlay.show()
+        backend.onHide = { backend.onHide = null; overlay.hide() }
+
+        val result = overlay.hide()
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, backend.hideCalls)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+    }
+
+    @Test fun removalFailureAfterAReenteredDisposeIsReportedWithoutReopeningTheHandle() {
+        val failure = IllegalStateException("busy")
+        val backend = RecordingBackend(removeFailure = failure)
+        val overlay = overlay(backend)
+        overlay.show()
+        backend.onHide = { backend.onHide = null; overlay.dispose() }
+
+        val result = overlay.hide()
+
+        assertEquals(OverlayFailure.WINDOW_MANAGER_REJECTED, result.failure)
+        assertSame(failure, result.cause)
+        assertEquals(OverlayState.DISPOSED, result.state)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertEquals(OverlayFailure.WINDOW_MANAGER_REJECTED, overlay.lastFailure)
+    }
+
+    @Test fun notAttachedAfterAReenteredDisposeStaysDisposed() {
+        val backend = RecordingBackend(removeFailure = IllegalArgumentException("View not attached"))
+        val overlay = overlay(backend)
+        overlay.show()
+        backend.onHide = { backend.onHide = null; overlay.dispose() }
+
+        val result = overlay.hide()
+
+        assertTrue(result.isSuccess)
+        assertEquals(OverlayState.DISPOSED, overlay.state)
+        assertEquals(OverlayFailure.NOT_ATTACHED, overlay.lastFailure)
+    }
+
+    @Test fun failedHideWithoutReentryStaysAttachedAndCanBeRetried() {
+        val backend = RecordingBackend(removeFailure = IllegalStateException("busy"))
+        val overlay = overlay(backend)
+        overlay.show()
+
+        assertFalse(overlay.hide().isSuccess)
+        assertEquals(OverlayState.ATTACHED, overlay.state)
+
+        backend.removeFailure = null
+        assertTrue(overlay.hide().isSuccess)
+        assertEquals(2, backend.hideCalls)
+        assertEquals(OverlayState.CONFIGURED, overlay.state)
+    }
+
+    @Test fun hostTouchListenerSetAfterInteractiveCreationSurvivesShowAndPositionUpdate() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.INTERACTIVE))
+        var touches = 0
+        view.setOnTouchListener { _, _ -> touches++; false }
+
+        overlay.show()
+        touch(view)
+        overlay.update(overlay.spec.copy(x = 8))
+        touch(view)
+
+        assertEquals(2, touches)
+    }
+
+    @Test fun hostTouchListenerSetBeforeCreationSurvivesEveryNonDragOperation() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        var touches = 0
+        view.setOnTouchListener { _, _ -> touches++; false }
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.INTERACTIVE))
+
+        touch(view)
+        overlay.show()
+        touch(view)
+        overlay.update(overlay.spec.copy(x = 8))
+        touch(view)
+        overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.PASS_THROUGH))
+        touch(view)
+        overlay.hide()
+        touch(view)
+        overlay.update(overlay.spec.copy(x = 16))
+        touch(view)
+        overlay.dispose()
+        touch(view)
+
+        assertEquals(7, touches)
+    }
+
+    @Test fun hostTouchListenerSetAfterLeavingDraggableSurvivesLaterOperations() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
+        overlay.show()
+        overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE))
+        var touches = 0
+        view.setOnTouchListener { _, _ -> touches++; false }
+
+        overlay.update(overlay.spec.copy(x = 8))
+        touch(view)
+        overlay.dispose()
+        touch(view)
+
+        assertEquals(2, touches)
+    }
+
+    @Test fun leavingDraggableRemovesTheLibraryListener() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
+        overlay.show()
+        overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE))
+        val updates = backend.updateCalls
+
+        dragPastSlop(view)
+
+        assertEquals(updates, backend.updateCalls)
+    }
+
+    @Test fun disposeRemovesTheLibraryListener() {
+        val backend = RecordingBackend()
+        val view = View(RuntimeEnvironment.getApplication())
+        val overlay = OverlayView.create(view, OverlayScope.ACTIVITY, backend, OverlaySpec(touchMode = OverlayTouchMode.DRAGGABLE))
+        overlay.show()
+        overlay.dispose()
+
+        dragPastSlop(view)
+
+        assertEquals(0, backend.updateCalls)
+    }
+
+    private fun touch(view: View) {
+        val down = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_DOWN, 1f, 1f, 0)
+        view.dispatchTouchEvent(down)
+        down.recycle()
+    }
+
+    private fun dragPastSlop(view: View) {
+        touch(view)
+        val slop = android.view.ViewConfiguration.get(view.context).scaledTouchSlop
+        val move = android.view.MotionEvent.obtain(0, 0, android.view.MotionEvent.ACTION_MOVE, 1f + slop + 10, 1f, 0)
+        view.dispatchTouchEvent(move)
+        move.recycle()
+    }
+
     private fun overlay(backend: RecordingBackend, spec: OverlaySpec = OverlaySpec()): OverlayView<View> = OverlayView.create(
         View(RuntimeEnvironment.getApplication()), OverlayScope.ACTIVITY, backend, spec,
     )
@@ -338,9 +539,12 @@ class OverlayViewStateMachineTest {
     ) : OverlayWindowManager() {
         var addCalls = 0
         var updateCalls = 0
+        var hideCalls = 0
+        /** Stands in for a host detach callback running inside `removeViewImmediate`. */
+        var onHide: (() -> Unit)? = null
         var lastSuccessfulParams: WindowManager.LayoutParams? = null
         override fun show(view: View, params: WindowManager.LayoutParams) { addCalls++; addFailure?.let { throw it }; lastSuccessfulParams = WindowManager.LayoutParams().also { it.copyFrom(params) } }
         override fun update(view: View, params: WindowManager.LayoutParams) { updateCalls++; updateFailure?.let { throw it }; lastSuccessfulParams = WindowManager.LayoutParams().also { it.copyFrom(params) } }
-        override fun hide(view: View) { removeFailure?.let { throw it } }
+        override fun hide(view: View) { hideCalls++; onHide?.invoke(); removeFailure?.let { throw it } }
     }
 }

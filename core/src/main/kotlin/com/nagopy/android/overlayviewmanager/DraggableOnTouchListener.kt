@@ -50,6 +50,14 @@ import kotlin.math.abs
  * [View.isPressed] cancel a pending click/long-press on a clickable view so `ACTION_UP` cannot
  * fire one after a drag.
  *
+ * ## Translucent feedback
+ *
+ * While a drag runs, [OverlayView] lowers the window's alpha. That is an appearance of the window,
+ * not configuration: `spec.alpha` keeps the caller's value, so a caller's update during the drag
+ * is never overwritten when the gesture ends. [OverlayView] also ends the feedback itself if the
+ * mode leaves [OverlayTouchMode.DRAGGABLE], since this listener is then removed before it can see
+ * the gesture's `ACTION_UP` or `ACTION_CANCEL`.
+ *
  * ## Failure recovery
  *
  * The drag only advances its internal "last applied" position and raw touch reference after the
@@ -78,7 +86,6 @@ internal class DraggableOnTouchListener<T : View>(
     private var lastRawY = 0f
     private var posX = 0f
     private var posY = 0f
-    internal var backupAlpha: Float = overlayView.spec.alpha
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouch(view: View, ev: MotionEvent): Boolean = when (ev.actionMasked) {
@@ -113,7 +120,6 @@ internal class DraggableOnTouchListener<T : View>(
         downRawY = ev.rawY
         lastRawX = downRawX
         lastRawY = downRawY
-        backupAlpha = overlayView.spec.alpha
 
         val spec = overlayView.spec
         if (spec.allowOutsideBounds) {
@@ -160,11 +166,9 @@ internal class DraggableOnTouchListener<T : View>(
         val gravity = OverlayGeometry.absoluteGravity(placement.gravity, view)
         val candidateX = posX + OverlayGeometry.horizontalOffsetSign(gravity) * (rawX - lastRawX)
         val candidateY = posY + OverlayGeometry.verticalOffsetSign(gravity) * (rawY - lastRawY)
-        val alpha = if (dragApplied) spec.alpha else backupAlpha * 0.6f
-        val result = overlayView.update(
-            placement.copy(x = candidateX.toInt(), y = candidateY.toInt(), alpha = alpha),
+        val result = overlayView.updateDuringDrag(
+            placement.copy(x = candidateX.toInt(), y = candidateY.toInt()),
         )
-        Logger.d("candidateX:%f, candidateY:%f, applied:%b", candidateX, candidateY, result.isSuccess)
         if (result.isSuccess) {
             posX = candidateX
             posY = candidateY
@@ -203,10 +207,7 @@ internal class DraggableOnTouchListener<T : View>(
     }
 
     private fun onActionEnd(): Boolean {
-        val wasDragging = isDragging
-        if (wasDragging) {
-            overlayView.update(overlayView.spec.copy(alpha = backupAlpha))
-        }
+        overlayView.endDragFeedback()
         val result = consumed()
         isDragging = false
         dragApplied = false

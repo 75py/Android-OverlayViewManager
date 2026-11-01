@@ -170,6 +170,65 @@ class ActivityLifecycleCleanupTest {
         assertEquals(1, backend.hideCalls)
     }
 
+    @Test fun showAndUpdateAfterActivityDestructionReportActivityDestroyed() {
+        val application = RuntimeEnvironment.getApplication()
+        OverlayViewManager.init(application)
+        val controller = Robolectric.buildActivity(Activity::class.java).create().start().resume()
+        val activity = controller.get()
+        val backend = RecordingBackend()
+        OverlayWindowManager.setActivityInstance(activity, backend)
+        val manager = OverlayViewManager.getInstance()
+        val attached = manager.newOverlayView(View(activity), activity)
+        val configured = manager.newOverlayView(View(activity), activity)
+        assertTrue(attached.show().isSuccess)
+
+        controller.pause().stop().destroy()
+
+        for (handle in listOf(attached, configured)) {
+            val shown = handle.show()
+            assertEquals(OverlayFailure.ACTIVITY_DESTROYED, shown.failure)
+            assertEquals(OverlayState.DISPOSED, shown.state)
+            assertEquals(OverlayFailure.ACTIVITY_DESTROYED, handle.update(handle.spec.copy(x = 8)).failure)
+            assertNull(handle.lastFailure)
+        }
+        assertEquals(1, backend.showCalls)
+    }
+
+    @Test fun showAfterOrdinaryDisposeKeepsItsClassificationEvenOnceTheActivityIsDestroyed() {
+        val application = RuntimeEnvironment.getApplication()
+        OverlayViewManager.init(application)
+        val controller = Robolectric.buildActivity(Activity::class.java).create().start().resume()
+        val activity = controller.get()
+        val handle = OverlayViewManager.getInstance().newOverlayView(View(activity), activity)
+        assertTrue(handle.dispose().isSuccess)
+
+        assertEquals(OverlayFailure.WINDOW_MANAGER_REJECTED, handle.show().failure)
+        assertEquals(OverlayFailure.WINDOW_MANAGER_REJECTED, handle.update(handle.spec.copy(x = 8)).failure)
+
+        controller.pause().stop().destroy()
+
+        assertEquals(OverlayFailure.WINDOW_MANAGER_REJECTED, handle.show().failure)
+    }
+
+    @Test fun disposeReenteredDuringForcedDisposalRemovesOnce() {
+        val application = RuntimeEnvironment.getApplication()
+        OverlayViewManager.init(application)
+        val controller = Robolectric.buildActivity(Activity::class.java).create().start().resume()
+        val activity = controller.get()
+        val backend = RecordingBackend()
+        OverlayWindowManager.setActivityInstance(activity, backend)
+        val handle = OverlayViewManager.getInstance().newOverlayView(View(activity), activity)
+        assertTrue(handle.show().isSuccess)
+        backend.onHide = { backend.onHide = null; handle.dispose() }
+
+        controller.pause().stop().destroy()
+
+        assertEquals(1, backend.hideCalls)
+        assertEquals(OverlayState.DISPOSED, handle.state)
+        assertFalse(activityOverlayRegistryContains(activity))
+        assertEquals(OverlayFailure.ACTIVITY_DESTROYED, handle.show().failure)
+    }
+
     @Test fun everyLiveHandleOfTheDestroyedActivityIsDisposed() {
         val application = RuntimeEnvironment.getApplication()
         OverlayViewManager.init(application)
@@ -265,10 +324,13 @@ class ActivityLifecycleCleanupTest {
     private class RecordingBackend(private val hideFailure: Throwable? = null) : OverlayWindowManager() {
         var showCalls = 0
         var hideCalls = 0
+        /** Stands in for a host detach callback running inside `removeViewImmediate`. */
+        var onHide: (() -> Unit)? = null
         override fun show(view: View, params: WindowManager.LayoutParams) { showCalls++ }
         override fun update(view: View, params: WindowManager.LayoutParams) = Unit
         override fun hide(view: View) {
             hideCalls++
+            onHide?.invoke()
             hideFailure?.let { throw it }
         }
     }

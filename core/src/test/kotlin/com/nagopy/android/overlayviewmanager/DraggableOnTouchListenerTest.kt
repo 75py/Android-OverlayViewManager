@@ -89,14 +89,18 @@ class DraggableOnTouchListenerTest {
         assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 20, 260f))
         assertEquals(100 + slop + 20, overlay.spec.x)
         assertEquals(216, overlay.spec.y)
-        assertEquals(.48f, overlay.spec.alpha, .0001f)
+        // The translucent feedback belongs to the window; the caller's alpha stays in the spec.
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+        assertEquals(.48f, backend.lastParams!!.alpha, .0001f)
 
         assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 50, 290f))
         assertEquals(100 + slop + 50, overlay.spec.x)
         assertEquals(246, overlay.spec.y)
+        assertEquals(.48f, backend.lastParams!!.alpha, .0001f)
 
         assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 50, 290f))
         assertEquals(.8f, overlay.spec.alpha, 0f)
+        assertEquals(.8f, backend.lastParams!!.alpha, 0f)
         assertEquals(100 + slop + 50, overlay.spec.x)
         assertEquals(246, overlay.spec.y)
         assertEquals(3, backend.updateCalls)
@@ -273,10 +277,11 @@ class DraggableOnTouchListenerTest {
 
     @Test fun downMoveCancelRestoresOriginalAlphaWithoutResettingCoordinates() {
         val view = PositionedView(50, 160, 20)
+        val backend = RecordingBackend()
         val overlay = OverlayView.create(
             view,
             OverlayScope.ACTIVITY,
-            RecordingBackend(),
+            backend,
             OverlaySpec(alpha = .75f, touchMode = OverlayTouchMode.DRAGGABLE),
         )
         overlay.show()
@@ -284,12 +289,14 @@ class DraggableOnTouchListenerTest {
 
         assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 10f, 30f))
         assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 10f + slop + 10, 55f))
+        assertEquals(.45f, backend.lastParams!!.alpha, .0001f)
         val draggedX = overlay.spec.x
         val draggedY = overlay.spec.y
         assertTrue(dispatch(overlay, MotionEvent.ACTION_CANCEL, 10f + slop + 10, 55f))
         assertEquals(draggedX, overlay.spec.x)
         assertEquals(draggedY, overlay.spec.y)
         assertEquals(.75f, overlay.spec.alpha, 0f)
+        assertEquals(.75f, backend.lastParams!!.alpha, 0f)
     }
 
     @Test fun cancelBelowSlopIsANoOpAndReturnsFalse() {
@@ -492,10 +499,172 @@ class DraggableOnTouchListenerTest {
         assertEquals(100 + slop + 60, overlay.spec.x)
         assertEquals(256, overlay.spec.y)
         assertEquals(3, backend.updateCalls)
+        assertEquals(.54f, backend.lastParams!!.alpha, .0001f)
 
         assertTrue(dispatch(overlay, MotionEvent.ACTION_CANCEL, 110f + slop + 60, 300f))
         assertEquals(.9f, overlay.spec.alpha, 0f)
+        assertEquals(.9f, backend.lastParams!!.alpha, 0f)
         assertEquals(100 + slop + 60, overlay.spec.x)
+    }
+
+    @Test fun leavingDraggableMidDragToInteractiveRestoresTheAlpha() = assertModeChangeRestoresTheAlpha(OverlayTouchMode.INTERACTIVE)
+
+    @Test fun leavingDraggableMidDragToPassThroughRestoresTheAlpha() = assertModeChangeRestoresTheAlpha(OverlayTouchMode.PASS_THROUGH)
+
+    private fun assertModeChangeRestoresTheAlpha(mode: OverlayTouchMode) {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = 1f)
+        assertEquals(1f, overlay.spec.alpha, 0f)
+        assertEquals(.6f, backend.lastParams!!.alpha, .0001f)
+
+        assertTrue(overlay.update(overlay.spec.copy(touchMode = mode)).isSuccess)
+
+        assertEquals(mode, overlay.spec.touchMode)
+        assertEquals(1f, overlay.spec.alpha, 0f)
+        assertEquals(1f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun leavingDraggableMidDragKeepsAnExplicitAlpha() {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+
+        assertTrue(overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE, alpha = .3f)).isSuccess)
+
+        assertEquals(.3f, overlay.spec.alpha, 0f)
+        assertEquals(.3f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun explicitAlphaDuringADragSurvivesUp() = assertExplicitAlphaSurvives(MotionEvent.ACTION_UP)
+
+    @Test fun explicitAlphaDuringADragSurvivesCancel() = assertExplicitAlphaSurvives(MotionEvent.ACTION_CANCEL)
+
+    private fun assertExplicitAlphaSurvives(endAction: Int) {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+        val slop = touchSlop(overlay.view)
+
+        assertTrue(overlay.update(overlay.spec.copy(alpha = .5f)).isSuccess)
+        assertEquals(.3f, backend.lastParams!!.alpha, .0001f)
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 40, 260f))
+        assertEquals(.5f, overlay.spec.alpha, 0f)
+        assertEquals(.3f, backend.lastParams!!.alpha, .0001f)
+        assertTrue(dispatch(overlay, endAction, 110f + slop + 40, 260f))
+
+        assertEquals(.5f, overlay.spec.alpha, 0f)
+        assertEquals(.5f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun positionUpdateDuringADragStillRestoresTheAlphaOnUp() {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+        val slop = touchSlop(overlay.view)
+
+        assertTrue(overlay.update(overlay.spec.copy(x = 4)).isSuccess)
+        assertEquals(4, overlay.spec.x)
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
+
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+        assertEquals(.8f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun failedModeChangeKeepsTheDragAndUpStillRestoresTheAlpha() {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+        val slop = touchSlop(overlay.view)
+        val dragged = overlay.spec
+
+        backend.updateFailure = IllegalStateException("rejected")
+        assertFalse(overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE)).isSuccess)
+        assertEquals(dragged, overlay.spec)
+        assertEquals(.48f, backend.lastParams!!.alpha, .0001f)
+
+        backend.updateFailure = null
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
+        assertEquals(OverlayTouchMode.DRAGGABLE, overlay.spec.touchMode)
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+        assertEquals(.8f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun failedRestoreOnUpKeepsTheCallerAlphaAndDoesNotCompoundOnTheNextDrag() {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+        val slop = touchSlop(overlay.view)
+
+        backend.updateFailure = IllegalStateException("rejected")
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+
+        backend.updateFailure = null
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + slop + 30, 260f))
+        assertEquals(.48f, backend.lastParams!!.alpha, .0001f)
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 30, 260f))
+
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+        assertEquals(.8f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun failedRestoreOnUpIsRecoveredByALaterEqualUpdate() {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+        val slop = touchSlop(overlay.view)
+
+        backend.updateFailure = IllegalStateException("rejected")
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
+        assertEquals(.48f, backend.lastParams!!.alpha, .0001f)
+
+        backend.updateFailure = null
+        assertTrue(overlay.update(overlay.spec).isSuccess)
+
+        assertEquals(.8f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun failedRestoreOnUpIsRecoveredByALaterModeChange() {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+        val slop = touchSlop(overlay.view)
+
+        backend.updateFailure = IllegalStateException("rejected")
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_UP, 110f + slop + 20, 260f))
+
+        backend.updateFailure = null
+        assertTrue(overlay.update(overlay.spec.copy(touchMode = OverlayTouchMode.INTERACTIVE)).isSuccess)
+
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+        assertEquals(.8f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun hideDuringADragRestoresTheAlphaForTheNextShow() {
+        val backend = RecordingBackend()
+        val overlay = draggingOverlay(backend, alpha = .8f)
+
+        assertTrue(overlay.hide().isSuccess)
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+
+        assertTrue(overlay.show().isSuccess)
+        assertEquals(.8f, backend.lastParams!!.alpha, 0f)
+    }
+
+    @Test fun disposeDuringADragLeavesTheOriginalAlphaInTheFinalSpec() {
+        val overlay = draggingOverlay(RecordingBackend(), alpha = .8f)
+
+        assertTrue(overlay.dispose().isSuccess)
+
+        assertEquals(.8f, overlay.spec.alpha, 0f)
+    }
+
+    private fun draggingOverlay(backend: RecordingBackend, alpha: Float): OverlayView<PositionedView> {
+        val view = PositionedView(100, 240, 24)
+        val overlay = OverlayView.create(
+            view,
+            OverlayScope.ACTIVITY,
+            backend,
+            OverlaySpec(alpha = alpha, touchMode = OverlayTouchMode.DRAGGABLE),
+        )
+        overlay.show()
+        assertFalse(dispatch(overlay, MotionEvent.ACTION_DOWN, 110f, 260f))
+        assertTrue(dispatch(overlay, MotionEvent.ACTION_MOVE, 110f + touchSlop(view) + 20, 260f))
+        return overlay
     }
 
     @Test fun dragBeyondSlopCancelsPendingClickAndLongPressSoNeitherFiresOnUp() {
